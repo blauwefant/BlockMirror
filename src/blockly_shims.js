@@ -1,11 +1,14 @@
 python.pythonGenerator.imports = new TypeRegistry();
 python.pythonGenerator.variables = new TypesRegistry();
 
+// Hook for cases where custom scrubbing needs to be undone
+python.pythonGenerator.unscrub_ = line => line
+
 python.pythonGenerator.finish = function(code) {
-    let lines = code.split('\n');
+    let lines = code.split('\n').map(python.pythonGenerator.unscrub_);
     let importRegExp = /^(from\s+\S+\s+)?import\s+\S+/
-    let imports = lines.filter(function(line){ return line.match(importRegExp) })
-    code = lines.filter(function(line) { return !line.match(importRegExp) }).join('\n');
+    let imports = lines.filter(line => line.match(importRegExp))
+    code = lines.filter(line => !line.match(importRegExp)).join('\n');
 
     for (let [name, type] of [...this.imports.entries()].sort()) {
         // Only add imports from the registry if not already defined in code

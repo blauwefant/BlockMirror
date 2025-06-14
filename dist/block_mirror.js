@@ -217,8 +217,13 @@ var TypesRegistry = /*#__PURE__*/function () {
 }();
 python.pythonGenerator.imports = new TypeRegistry();
 python.pythonGenerator.variables = new TypesRegistry();
+
+// Hook for cases where custom scrubbing needs to be undone
+python.pythonGenerator.unscrub_ = function (line) {
+  return line;
+};
 python.pythonGenerator.finish = function (code) {
-  var lines = code.split('\n');
+  var lines = code.split('\n').map(python.pythonGenerator.unscrub_);
   var importRegExp = /^(from\s+\S+\s+)?import\s+\S+/;
   var imports = lines.filter(function (line) {
     return line.match(importRegExp);
