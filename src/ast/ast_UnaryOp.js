@@ -25,7 +25,7 @@ BlockMirrorTextToBlocks.UNARYOPS.forEach(function (unaryop) {
 
     python.pythonGenerator.forBlock[fullName] = function (block) {
         // Basic arithmetic operators, and power.
-        var order = (unaryop[1] === 'Not' ? python.pythonGenerator.ORDER_LOGICAL_NOT : python.pythonGenerator.ORDER_UNARY_SIGN);
+        var order = (unaryop[1] === 'Not' ? python.Order.LOGICAL_NOT : python.Order.UNARY_SIGN);
         var argument1 = python.pythonGenerator.valueToCode(block, 'VALUE', order) || python.pythonGenerator.blank;
         var code = unaryop[0] + (unaryop[1] === 'Not' ? ' ' : '') + argument1;
         return [code, order];

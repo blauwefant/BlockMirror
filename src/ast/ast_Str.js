@@ -105,15 +105,15 @@ python.pythonGenerator.forBlock['ast_Str'] = function(block, generator) {
     // Text value
     let code = python.pythonGenerator.quote_(block.getFieldValue('TEXT'));
     code = code.replace("\n", "n");
-    return [code, python.pythonGenerator.ORDER_ATOMIC];
+    return [code, python.Order.ATOMIC];
 };
 
 python.pythonGenerator.forBlock['ast_StrChar'] = function(block, generator) {
     // Text value
     let value = block.getFieldValue('TEXT');
     switch (value) {
-        case "\n": return ["'\\n'", python.pythonGenerator.ORDER_ATOMIC];
-        case "\t": return ["'\\t'", python.pythonGenerator.ORDER_ATOMIC];
+        case "\n": return ["'\\n'", python.Order.ATOMIC];
+        case "\t": return ["'\\t'", python.Order.ATOMIC];
     }
 };
 
@@ -121,7 +121,7 @@ python.pythonGenerator.forBlock['ast_Image'] = function(block, generator) {
     // Text value
     //python.pythonGenerator.definitions_["import_image"] = "from image import Image";
     let code = python.pythonGenerator.quote_(block.src_);
-    return [code, python.pythonGenerator.ORDER_FUNCTION_CALL];
+    return [code, python.Order.FUNCTION_CALL];
 };
 
 const multiline_quote = function (string) {
@@ -133,7 +133,7 @@ const multiline_quote = function (string) {
 python.pythonGenerator.forBlock['ast_StrMultiline'] = function(block, generator) {
     // Text value
     let code = multiline_quote(block.getFieldValue('TEXT'));
-    return [code, python.pythonGenerator.ORDER_ATOMIC];
+    return [code, python.Order.ATOMIC];
 };
 
 python.pythonGenerator.forBlock['ast_StrDocstring'] = function(block, generator) {
@@ -153,7 +153,7 @@ BlockMirrorTextToBlocks.prototype.isSingleChar = function (text) {
 };
 
 BlockMirrorTextToBlocks.prototype.isDocString = function (node, parent) {
-    return (parent._astname === 'Expr' &&
+    return (parent?._astname === 'Expr' &&
         parent._parent &&
         ['FunctionDef', 'ClassDef'].indexOf(parent._parent._astname) !== -1 &&
         parent._parent.body[0] === parent);

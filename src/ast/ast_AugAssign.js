@@ -86,13 +86,13 @@ python.pythonGenerator.forBlock['ast_AugAssign'] = function(block, generator) {
             Blockly.Variables.NAME_TYPE);
     } else {
         target = python.pythonGenerator.valueToCode(block, 'TARGET',
-            python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank;
+            python.Order.NONE) || python.pythonGenerator.blank;
     }
 
     let operator = BINOPS_BLOCKLY_GENERATE[block.getFieldValue('OP_NAME')][0];
 
     let value = python.pythonGenerator.valueToCode(block, 'VALUE',
-        python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank;
+        python.Order.NONE) || python.pythonGenerator.blank;
     return target + operator + "= " + value + "\n";
 };
 

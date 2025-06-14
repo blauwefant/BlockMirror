@@ -50,7 +50,7 @@ Blockly.Blocks['ast_While'] = {
 python.pythonGenerator.forBlock['ast_While'] = function(block, generator) {
     // Test
     let test = "while " + (python.pythonGenerator.valueToCode(block, 'TEST',
-        python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank) + ":\n";
+        python.Order.NONE) || python.pythonGenerator.blank) + ":\n";
     // Body:
     let body = python.pythonGenerator.statementToCode(block, 'BODY') || python.pythonGenerator.PASS;
     // Orelse:

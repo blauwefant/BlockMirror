@@ -97,7 +97,7 @@ python.pythonGenerator.forBlock['ast_Try'] = function(block, generator) {
         let clause = "except";
         if (level !== BlockMirrorTextToBlocks.HANDLERS_CATCH_ALL) {
             clause += " " + python.pythonGenerator.valueToCode(block, 'TYPE' + i,
-                python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank;
+                python.Order.NONE) || python.pythonGenerator.blank;
             if (level === BlockMirrorTextToBlocks.HANDLERS_COMPLETE) {
                 clause += " as " + python.pythonGenerator.getVariableName(block.getFieldValue('NAME' + i),
                     Blockly.Variables.NAME_TYPE);

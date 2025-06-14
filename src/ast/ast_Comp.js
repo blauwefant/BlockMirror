@@ -294,13 +294,13 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
           python.pythonGenerator.valueToCode(
             child,
             "KEY",
-            python.pythonGenerator.ORDER_NONE,
+            python.Order.NONE,
           ) || python.pythonGenerator.blank;
         let value =
           python.pythonGenerator.valueToCode(
             child,
             "VALUE",
-            python.pythonGenerator.ORDER_NONE,
+            python.Order.NONE,
           ) || python.pythonGenerator.blank;
         elt = key + ": " + value;
       }
@@ -309,7 +309,7 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
         python.pythonGenerator.valueToCode(
           block,
           "ELT",
-          python.pythonGenerator.ORDER_NONE,
+          python.Order.NONE,
         ) || python.pythonGenerator.blank;
     }
     // generators
@@ -329,7 +329,7 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
           python.pythonGenerator.valueToCode(
             child,
             "TEST",
-            python.pythonGenerator.ORDER_NONE,
+            python.Order.NONE,
           ) || python.pythonGenerator.blank;
         elements[i] = "if " + test;
       } else if (child.type === "ast_comprehensionFor") {
@@ -337,13 +337,13 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
           python.pythonGenerator.valueToCode(
             child,
             "TARGET",
-            python.pythonGenerator.ORDER_NONE,
+            python.Order.NONE,
           ) || python.pythonGenerator.blank;
         let iter =
           python.pythonGenerator.valueToCode(
             child,
             "ITER",
-            python.pythonGenerator.ORDER_NONE,
+            python.Order.NONE,
           ) || python.pythonGenerator.blank;
         elements[i] = "for " + target + " in " + iter;
       } else {
@@ -357,7 +357,7 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
       " " +
       elements.join(" ") +
       BlockMirrorTextToBlocks.COMP_SETTINGS[kind].end;
-    return [code, python.pythonGenerator.ORDER_ATOMIC];
+    return [code, python.Order.ATOMIC];
   };
 
   BlockMirrorTextToBlocks.prototype["ast_" + kind] = function (node, parent) {

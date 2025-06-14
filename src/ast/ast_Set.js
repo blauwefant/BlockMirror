@@ -162,7 +162,7 @@ Blockly.Blocks["ast_Set_create_with_item"] = {
 python.pythonGenerator.forBlock["ast_Set"] = function (block, generator) {
   // Create a set with any number of elements of any type.
   if (block.itemCount_ === 0) {
-    return ["set()", python.pythonGenerator.ORDER_FUNCTION_CALL];
+    return ["set()", python.Order.FUNCTION_CALL];
   }
   var elements = new Array(block.itemCount_);
   for (var i = 0; i < block.itemCount_; i++) {
@@ -170,11 +170,11 @@ python.pythonGenerator.forBlock["ast_Set"] = function (block, generator) {
       python.pythonGenerator.valueToCode(
         block,
         "ADD" + i,
-        python.pythonGenerator.ORDER_NONE,
+        python.Order.NONE,
       ) || python.pythonGenerator.blank;
   }
   var code = "{" + elements.join(", ") + "}";
-  return [code, python.pythonGenerator.ORDER_ATOMIC];
+  return [code, python.Order.ATOMIC];
 };
 
 BlockMirrorTextToBlocks.prototype["ast_Set"] = function (node, parent) {

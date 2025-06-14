@@ -35,7 +35,7 @@ python.pythonGenerator.forBlock['ast_Return'] = function(block, generator) {
 };
 
 python.pythonGenerator.forBlock['ast_ReturnFull'] = function(block, generator) {
-    var value = python.pythonGenerator.valueToCode(block, 'VALUE', python.pythonGenerator.ORDER_ATOMIC) || python.pythonGenerator.blank;
+    var value = python.pythonGenerator.valueToCode(block, 'VALUE', python.Order.ATOMIC) || python.pythonGenerator.blank;
     return "return " + value + "\n";
 };
 

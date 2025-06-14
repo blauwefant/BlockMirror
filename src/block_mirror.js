@@ -96,6 +96,8 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
     this.configuration.imageLiteralHook = configuration.imageLiteralHook || (old => old);
     this.configuration.imageDetection = configuration.imageDetection || 'string';
     this.configuration.imageMode = configuration.imageMode || false;
+    this.configuration.libraries = configuration.libraries || BlockMirror.LIBRARIES;
+    this.configuration.preferFullAttributeBlocks = configuration.preferFullAttributeBlocks || false;
 };
 
 BlockMirror.prototype.initializeVariables = function () {
@@ -142,6 +144,7 @@ BlockMirror.prototype.initializeVariables = function () {
 
     // Listeners
     this.listeners_ = [];
+    this.libraries = new Libraries(this.configuration.libraries);
 };
 
 BlockMirror.prototype.loadSkulpt = function () {

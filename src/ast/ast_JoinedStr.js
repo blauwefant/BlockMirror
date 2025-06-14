@@ -336,7 +336,7 @@ python.pythonGenerator.forBlock["ast_JoinedStr"] = function (block, generator) {
       }
       code = "f" + quote + elements.join("") + quote;
   }
-  return [code, python.pythonGenerator.ORDER_ATOMIC];
+  return [code, python.Order.ATOMIC];
 };
 
 BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {

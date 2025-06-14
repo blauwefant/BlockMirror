@@ -41,11 +41,13 @@ const JS_SKULPT_PARSER_FILES = [
 
 // BlockMirror
 const JS_BLOCKMIRROR_FILES = [
+    path.resolve(__dirname, 'src/type_registry.js'),
     path.resolve(__dirname, 'src/blockly_shims.js'),
     path.resolve(__dirname, 'src/block_mirror.js'),
     path.resolve(__dirname, 'src/text_editor.js'),
     path.resolve(__dirname, 'src/block_editor.js'),
     path.resolve(__dirname, 'src/text_to_blocks.js'),
+    path.resolve(__dirname, 'src/libraries.js'),
     path.resolve(__dirname, 'src/ast/ast_functions.js'),
     path.resolve(__dirname, 'src/toolbars.js'),
     // AST Handlers

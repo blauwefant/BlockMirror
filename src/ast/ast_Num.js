@@ -14,13 +14,13 @@ python.pythonGenerator.forBlock['ast_Num'] = function(block) {
   var order;
   if (code == Infinity) {
     code = 'float("inf")';
-    order = python.pythonGenerator.ORDER_FUNCTION_CALL;
+    order = python.Order.FUNCTION_CALL;
   } else if (code == -Infinity) {
     code = '-float("inf")';
-    order = python.pythonGenerator.ORDER_UNARY_SIGN;
+    order = python.Order.UNARY_SIGN;
   } else {
-    order = code < 0 ? python.pythonGenerator.ORDER_UNARY_SIGN :
-            python.pythonGenerator.ORDER_ATOMIC;
+    order = code < 0 ? python.Order.UNARY_SIGN :
+            python.Order.ATOMIC;
   }
   return [code, order];
 };

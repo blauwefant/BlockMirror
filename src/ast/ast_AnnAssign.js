@@ -112,14 +112,15 @@ Blockly.Blocks['ast_AnnAssign'] = {
 python.pythonGenerator.forBlock['ast_AnnAssignFull'] = function(block, generator) {
     // Create a list with any number of elements of any type.
     let target = python.pythonGenerator.valueToCode(block, 'TARGET',
-        python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank;
+        python.Order.NONE) || python.pythonGenerator.blank;
     let annotation = python.pythonGenerator.valueToCode(block, 'ANNOTATION',
-        python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank;
+        python.Order.NONE) || python.pythonGenerator.blank;
     let value = "";
     if (this.initialized_) {
         value = " = " + python.pythonGenerator.valueToCode(block, 'VALUE',
-            python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank;
+            python.Order.NONE) || python.pythonGenerator.blank;
     }
+    python.pythonGenerator.variables.add(annotation, target)
     return target + ": " + annotation + value + "\n";
 };
 
@@ -134,8 +135,9 @@ python.pythonGenerator.forBlock['ast_AnnAssign'] = function(block, generator) {
     let value = "";
     if (this.initialized_) {
         value = " = " + python.pythonGenerator.valueToCode(block, 'VALUE',
-            python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank;
+            python.Order.NONE) || python.pythonGenerator.blank;
     }
+    python.pythonGenerator.variables.add(annotation, target)
     return target + ": " + annotation + value + "\n";
 };
 
@@ -179,8 +181,11 @@ BlockMirrorTextToBlocks.prototype['ast_AnnAssign'] = function (node, parent) {
 
     if (target._astname === 'Name' && target.id.v !== python.pythonGenerator.blank && builtinAnnotation !== false) {
         mutations['@str'] = annotation._astname === 'Str'
+
+        let variableName = target.id.v
+        this.variables.add(builtinAnnotation, variableName)
         return BlockMirrorTextToBlocks.create_block("ast_AnnAssign", node.lineno, {
-                'TARGET': target.id.v,
+                'TARGET': variableName,
                 'ANNOTATION': builtinAnnotation,
             },
             values,
@@ -189,7 +194,16 @@ BlockMirrorTextToBlocks.prototype['ast_AnnAssign'] = function (node, parent) {
             }, mutations);
     } else {
         values['TARGET'] = this.convert(target, node);
-        values['ANNOTATION'] = this.convert(annotation, node);
+        let annotationElement = this.convert(annotation, node);
+        values['ANNOTATION'] = annotationElement
+
+        let variableType = annotationElement.getAttribute('type') === "ast_NameConstantNone" ? "None" : annotationElement.childNodes[0]?.textContent;
+        let variableName = values['TARGET'].childNodes[0].textContent;
+
+        if (variableType) {
+            this.variables.add(variableType, variableName)
+        }
+
         return BlockMirrorTextToBlocks.create_block("ast_AnnAssignFull", node.lineno, {},
             values,
             {

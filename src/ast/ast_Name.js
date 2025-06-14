@@ -78,7 +78,7 @@ python.pythonGenerator.forBlock['ast_Name'] = function(block, generator) {
     // Variable getter.
     var code = python.pythonGenerator.getVariableName(block.getFieldValue('VAR'),
         Blockly.Variables.NAME_TYPE);
-    return [code, python.pythonGenerator.ORDER_ATOMIC];
+    return [code, python.Order.ATOMIC];
 };
 
 BlockMirrorTextToBlocks.prototype['ast_Name'] = function (node, parent) {

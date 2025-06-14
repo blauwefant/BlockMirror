@@ -202,18 +202,18 @@ python.pythonGenerator.forBlock["ast_Dict"] = function (block, generator) {
       python.pythonGenerator.valueToCode(
         child,
         "KEY",
-        python.pythonGenerator.ORDER_NONE,
+        python.Order.NONE,
       ) || python.pythonGenerator.blank;
     let value =
       python.pythonGenerator.valueToCode(
         child,
         "VALUE",
-        python.pythonGenerator.ORDER_NONE,
+        python.Order.NONE,
       ) || python.pythonGenerator.blank;
     elements[i] = key + ": " + value;
   }
   var code = "{" + elements.join(", ") + "}";
-  return [code, python.pythonGenerator.ORDER_ATOMIC];
+  return [code, python.Order.ATOMIC];
 };
 
 BlockMirrorTextToBlocks.prototype["ast_Dict"] = function (node, parent) {

@@ -168,11 +168,11 @@ python.pythonGenerator.forBlock["ast_List"] = function (block, generator) {
       python.pythonGenerator.valueToCode(
         block,
         "ADD" + i,
-        python.pythonGenerator.ORDER_NONE,
+        python.Order.NONE,
       ) || python.pythonGenerator.blank;
   }
   var code = "[" + elements.join(", ") + "]";
-  return [code, python.pythonGenerator.ORDER_ATOMIC];
+  return [code, python.Order.ATOMIC];
 };
 
 BlockMirrorTextToBlocks.prototype["ast_List"] = function (node, parent) {

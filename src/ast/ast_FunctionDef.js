@@ -62,14 +62,14 @@ BlockMirrorTextToBlocks.BLOCKS.push({
         let typed = "";
         if (parameterTyped) {
             typed = ": " + (python.pythonGenerator.valueToCode(block, 'TYPE',
-                python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank);
+                python.Order.NONE) || python.pythonGenerator.blank);
         }
         let defaulted = "";
         if (parameterDefault) {
             defaulted = "=" + (python.pythonGenerator.valueToCode(block, 'DEFAULT',
-                python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank);
+                python.Order.NONE) || python.pythonGenerator.blank);
         }
-        return [parameterPrefix + name + typed + defaulted, python.pythonGenerator.ORDER_ATOMIC];
+        return [parameterPrefix + name + typed + defaulted, python.Order.ATOMIC];
     }
 });
 
@@ -292,20 +292,20 @@ python.pythonGenerator.forBlock['ast_FunctionDef'] = function(block, generator) 
     // Decorators
     let decorators = new Array(block.decoratorsCount_);
     for (let i = 0; i < block.decoratorsCount_; i++) {
-        let decorator = (python.pythonGenerator.valueToCode(block, 'DECORATOR' + i, python.pythonGenerator.ORDER_NONE) ||
+        let decorator = (python.pythonGenerator.valueToCode(block, 'DECORATOR' + i, python.Order.NONE) ||
             python.pythonGenerator.blank);
         decorators[i] = "@" + decorator + "\n";
     }
     // Parameters
     let parameters = new Array(block.parametersCount_);
     for (let i = 0; i < block.parametersCount_; i++) {
-        parameters[i] = (python.pythonGenerator.valueToCode(block, 'PARAMETER' + i, python.pythonGenerator.ORDER_NONE) ||
+        parameters[i] = (python.pythonGenerator.valueToCode(block, 'PARAMETER' + i, python.Order.NONE) ||
             python.pythonGenerator.blank);
     }
     // Return annotation
     let returns = "";
     if (this.hasReturn_) {
-        returns = " -> " + python.pythonGenerator.valueToCode(block, 'RETURNS', python.pythonGenerator.ORDER_NONE) ||
+        returns = " -> " + python.pythonGenerator.valueToCode(block, 'RETURNS', python.Order.NONE) ||
             python.pythonGenerator.blank;
     }
     // Body

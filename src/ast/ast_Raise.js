@@ -54,9 +54,9 @@ Blockly.Blocks['ast_Raise'] = {
 
 python.pythonGenerator.forBlock['ast_Raise'] = function(block, generator) {
     if (this.exc_) {
-        let exc = python.pythonGenerator.valueToCode(block, 'EXC', python.pythonGenerator.ORDER_NONE) || python.pythonGenerator.blank;
+        let exc = python.pythonGenerator.valueToCode(block, 'EXC', python.Order.NONE) || python.pythonGenerator.blank;
         if (this.cause_) {
-            let cause = python.pythonGenerator.valueToCode(block, 'CAUSE', python.pythonGenerator.ORDER_NONE)
+            let cause = python.pythonGenerator.valueToCode(block, 'CAUSE', python.Order.NONE)
                 || python.pythonGenerator.blank;
             return "raise " + exc + " from " + cause + "\n";
         } else {

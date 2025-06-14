@@ -46,6 +46,9 @@ function BlockMirrorBlockEditor(blockMirror) {
 
     window.addEventListener('resize', this.resized.bind(this), false);
     this.resized();
+
+    // Needed for libraries with dynamic toolbox
+    this.blockMirror.addChangeListener(event => this.remakeToolbox());
 }
 
 BlockMirrorBlockEditor.prototype.resizeReadOnlyDiv = function () {
@@ -140,18 +143,29 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
 
 BlockMirrorBlockEditor.prototype.makeToolbox = function () {
     let toolbox = this.blockMirror.configuration.toolbox;
-    // Use palette if it exists, otherwise assume its a custom one.
+    // Use palette if it exists, otherwise assume it is a custom one.
     if (toolbox in this.TOOLBOXES) {
         toolbox = this.TOOLBOXES[toolbox];
     }
     // Convert if necessary
-    if (typeof toolbox  !== "string") {
-        toolbox = this.toolboxPythonToBlocks(toolbox);
+    if (typeof toolbox !== "string") {
+        let textToBlocks = this.blockMirror.textToBlocks
+        let originalImports = textToBlocks.imports
+        try {
+            textToBlocks.imports = new TypeRegistry()
+            this.blockMirror.libraries.registerImports(textToBlocks.imports)
+            toolbox = this.toolboxPythonToBlocks(toolbox);
+        } finally {
+            textToBlocks.imports = originalImports
+        }
     }
     // TODO: Fix Hack, this should be configurable by instance rather than by class
     for (let name in BlockMirrorBlockEditor.EXTRA_TOOLS) {
         toolbox += BlockMirrorBlockEditor.EXTRA_TOOLS[name];
     }
+
+    toolbox += this.blockMirror.libraries.toToolbox(this.blockMirror.textToBlocks);
+
     return '<xml id="toolbox" style="display:none">'+toolbox+'</xml>';
 };
 
@@ -235,7 +249,8 @@ BlockMirrorBlockEditor.prototype.setMode = function (mode) {
  * percolating.
  */
 BlockMirrorBlockEditor.prototype.getCode = function () {
-    return python.pythonGenerator.workspaceToCode(this.workspace);
+    python.pythonGenerator.libraries = this.blockMirror.libraries
+    return python.pythonGenerator.workspaceToCode(this.workspace)
 };
 
 /**
@@ -245,6 +260,8 @@ BlockMirrorBlockEditor.prototype.getCode = function () {
  */
 BlockMirrorBlockEditor.prototype.setCode = function (code, quietly) {
     if (this.isVisible()) {
+        this.blockMirror.textToBlocks.imports.clear()
+        this.blockMirror.textToBlocks.variables.clear()
         let result = this.blockMirror.textToBlocks.convertSource('__main__.py', code);
         if (quietly) {
             Blockly.Events.disable();
@@ -340,7 +357,7 @@ BlockMirrorBlockEditor.prototype.getPngFromBlocks = function(callback) {
             var bbox = document.getElementsByClassName("blocklyBlockCanvas")[0].getBBox();
             // Create the XML representation of the SVG
             var xml = new XMLSerializer().serializeToString(blocks);
-            const classes = 'class="Thrasos-renderer classic-theme" ';
+            const classes = 'class="' + this.blockMirror.configuration.renderer + '-renderer classic-theme" ';
             xml = '<svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" '+classes+' width="'+bbox.width+'" height="'+bbox.height+'" viewBox="0 0 '+bbox.width+" "+bbox.height+'"><rect width="100%" height="100%" fill="white"></rect>'+xml+"</svg>";
             console.log(xml);
             // create a file blob of our SVG.

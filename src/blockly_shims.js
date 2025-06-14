@@ -1,38 +1,43 @@
-{
-    let orig_init = python.pythonGenerator.init
-
-    /**
-     * Initialise the database of variable names.
-     * @param {!Blockly.Workspace} workspace Workspace to generate code from.
-     */
-    python.pythonGenerator.init = function (workspace) {
-        // Keep track of datasets that are already imported
-        python.pythonGenerator.imported_ = Object.create(null);
-        orig_init.bind(this)(workspace);
-    };
-}
+python.pythonGenerator.imports = new TypeRegistry();
+python.pythonGenerator.variables = new TypesRegistry();
 
 python.pythonGenerator.finish = function(code) {
-    // Convert the definitions dictionary into a list.
-    var imports = [];
-    var definitions = [];
-    for (let name in this.definitions_) {
-      var def = this.definitions_[name];
-      if (def.match(/^(from\s+\S+\s+)?import\s+\S+/)) {
-        imports.push(def);
-      } else {
-        definitions.push(def);
-      }
+    let lines = code.split('\n');
+    let importRegExp = /^(from\s+\S+\s+)?import\s+\S+/
+    let imports = lines.filter(function(line){ return line.match(importRegExp) })
+    code = lines.filter(function(line) { return !line.match(importRegExp) }).join('\n');
+
+    for (let [name, type] of [...this.imports.entries()].sort()) {
+        // Only add imports from the registry if not already defined in code
+        if (!imports.some(function(item) {
+            return item.match(new RegExp(`\\s+${name}\\s*(,.*)?$`));
+        })) {
+            if (name === type) {
+                imports.push(`import ${type}`);
+            } else {
+                let lastIndexOfDot = type.lastIndexOf('.')
+                let simpleType = type.substring(lastIndexOfDot + 1)
+                if (simpleType === name) {
+                    // TODO gather from statements first
+                    let fromModule = type.substring(0, lastIndexOfDot)
+                    imports.push(`from ${fromModule} import ${name}`)
+                } else {
+                    imports.push(`import ${type} as ${name}`);
+                }
+            }
+        }
     }
+
     this.definitions_ = Object.create(null);
     this.functionNames_ = Object.create(null);
-    this.imported_ = Object.create(null);
     this.isInitialized = false;
+    this.imports.clear();
+    this.variables.clear();
 
     this.nameDB_.reset();
     // acbart: Don't actually inject initializations - we don't need 'em.
-    var allDefs = imports.join('\n') + '\n\n' // + definitions.join('\n\n');
-    return allDefs.replace(/\n\n+/g, '\n\n').replace(/\n*$/, '\n\n\n') + code;
+    var allDefs = imports.join('\n') + '\n\n';
+    return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code;
 }
 
 python.pythonGenerator.INDENT = '    ';
@@ -119,7 +124,7 @@ Blockly.Variables.flyoutCategoryBlocks = function (workspace) {
 };
 
 //******************************************************************************
-// Hacks to make variable names case sensitive
+// Hacks to make variable names case-sensitive
 
 /**
  * A custom compare function for the VariableModel objects.

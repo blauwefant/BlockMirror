@@ -22,6 +22,7 @@
     <script src="../src/skulpt/astnodes.js" type="text/javascript"></script>
     <script src="../src/skulpt/token.js" type="text/javascript"></script>
     <script src="../src/skulpt/parse_tables.js" type="text/javascript"></script>
+    <script src="../src/skulpt/Unicode.js" type="text/javascript"></script>
     <script src="../src/skulpt/tokenize.js" type="text/javascript"></script>
     <script src="../src/skulpt/parser.js" type="text/javascript"></script>
     <script src="../src/skulpt/ast.js" type="text/javascript"></script>
@@ -38,11 +39,13 @@
 
     <!-- BlockMirror -->
     <link rel="stylesheet" href="../src/block_mirror.css">
+    <script src="../src/type_registry.js" type="text/javascript"></script>
     <script src="../src/blockly_shims.js" type="text/javascript"></script>
     <script src="../src/block_mirror.js" type="text/javascript"></script>
     <script src="../src/text_editor.js" type="text/javascript"></script>
     <script src="../src/block_editor.js" type="text/javascript"></script>
     <script src="../src/text_to_blocks.js" type="text/javascript"></script>
+    <script src="../src/libraries.js" type="text/javascript"></script>
     <script src="../src/ast/ast_functions.js" type="text/javascript"></script>
     <script src="../src/toolbars.js" type="text/javascript"></script>
 
@@ -222,8 +225,9 @@
         '{*{}}',
         "0 if True else False",
         "dog.growl\nalpha.beta.gamma\n'Test'.save",
-        'alpha\nalpha(1)\nbeta(2)\nbeta',
-        'alpha(beta)\nalpha.beta(gamma)\nhello(1, 2, 3)\nfor a in b:\n    (corgi(run))',
+        // Double newline after beta(2) because it may return something, but variable beta has no input:
+        'alpha\nalpha(1)\nbeta(2)\n\nbeta',
+        'alpha(beta)\nalpha.beta(gamma)\nhello(1, 2, 3)\nfor a in b:\n    corgi(run)',
         'sorted([1, 2, 3], reverse=True)',
         'complex(1, 2, *first, *second, **big, **dog, third=3, fourth=4)',
         "raise\nraise Exception()\nraise Exception() from wherever",
@@ -272,13 +276,13 @@
         "with open('filename') as outfile, open('file2') as infile, other_context:\n    pass",
         "#hello world!\n# Another comment\n#: int\n\na",
         "#TODO: We need to work harder on this!",
-        "a = 0\nprint(a)\nfor x in y:\n    print(b)\n    (max(a, b))",
+        "a = 0\nprint(a)\nfor x in y:\n    print(b)\n    max(a, b)",
         "with x():\n    pass",
         "(lambda x: x)()",
-        // Changed due to https://github.com/google/blockly/issues/3978:
-        "class Alpha:\n    def beta():\n        '' + '\\n' +\n        'Hello World!' + '\\n' +\n        'Testing.' + '\\n' +\n        ''\n",        "'test'.replace(1, 2, 3)",        "'\\n'",
-        // Changed due to https://github.com/google/blockly/issues/3978:
-        "'' + '\\n' +\n'test'"
+        "class Alpha:\n    def beta():\n        '''\n        Hello World!\n        Testing.\n        '''",
+        "'test'.replace(1, 2, 3)",
+        "'\\n'",
+        "'''\ntest'''"
     ];
 
     function runTests() {

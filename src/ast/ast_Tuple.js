@@ -171,7 +171,7 @@ python.pythonGenerator.forBlock["ast_Tuple"] = function (block, generator) {
       python.pythonGenerator.valueToCode(
         block,
         "ADD" + i,
-        python.pythonGenerator.ORDER_NONE,
+        python.Order.NONE,
       ) || python.pythonGenerator.blank;
   }
   let requiredComma = "";
@@ -179,7 +179,7 @@ python.pythonGenerator.forBlock["ast_Tuple"] = function (block, generator) {
     requiredComma = ", ";
   }
   var code = "(" + elements.join(", ") + requiredComma + ")";
-  return [code, python.pythonGenerator.ORDER_ATOMIC];
+  return [code, python.Order.ATOMIC];
 };
 
 BlockMirrorTextToBlocks.prototype["ast_Tuple"] = function (node, parent) {

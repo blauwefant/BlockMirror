@@ -6,6 +6,8 @@ function BlockMirrorTextToBlocks(blockMirror) {
         Blockly.common.defineBlocksWithJsonArray(BlockMirrorTextToBlocks.BLOCKS);
         BlockMirrorTextToBlocks.LOADED = true;
     }
+    this.imports = new TypeRegistry();
+    this.variables = new TypesRegistry();
 }
 
 BlockMirrorTextToBlocks.xmlToString = function (xml) {
@@ -349,6 +351,15 @@ BlockMirrorTextToBlocks.prototype.isTopLevel = function (parent) {
     return !parent || this.TOP_LEVEL_NODES.indexOf(parent._astname) !== -1;
 };
 
+BlockMirrorTextToBlocks.prototype.isStatementContainer = function(ast) {
+    return (
+        ast instanceof Sk.astnodes.Module ||
+        ast instanceof Sk.astnodes.Expression ||
+        ast instanceof Sk.astnodes.Interactive ||
+        ast instanceof Sk.astnodes.Suite
+    ) || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent)
+}
+
 BlockMirrorTextToBlocks.prototype.convert = function (node, parent) {
     let functionName = 'ast_' + node._astname;
     if (this[functionName] === undefined) {
@@ -478,8 +489,8 @@ BlockMirrorTextToBlocks.create_block = function (type, lineNumber, fields, value
     return newBlock;
 };
 
-BlockMirrorTextToBlocks.raw_block = function (txt, lineno) {
-    return BlockMirrorTextToBlocks.create_block("ast_Raw", lineno || 0, {"TEXT": txt});
+BlockMirrorTextToBlocks.raw_block = function (txt, lineno=0) {
+    return BlockMirrorTextToBlocks.create_block("ast_Raw", lineno, {"TEXT": txt});
 };
 
 BlockMirrorTextToBlocks.BLOCKS = [];
@@ -534,3 +545,50 @@ BlockMirrorTextToBlocks.COLOR = {
     SET: 10,
     TUPLE: 20
 };
+
+
+BlockMirrorTextToBlocks.prototype.getAsModule = function (node) {
+    if (node._astname === 'Name') {
+        return Sk.ffi.remapToJs(node.id);
+    } else if (node._astname === 'Attribute') {
+        let origin = this.getAsModule(node.value);
+        if (origin !== null) {
+            return origin + '.' + Sk.ffi.remapToJs(node.attr);
+        }
+    } else {
+        return null;
+    }
+};
+
+BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function(node) {
+    if (node._astname === 'Name') {
+        let name = Sk.ffi.remapToJs(node.id);
+        let fullTypeName = this.imports.getType(name) ?? name
+        return this.blockMirror.libraries.resolve(fullTypeName)
+    }
+    if (node._astname === 'Attribute') {
+        let caller = node.value;
+        let potentialModule = this.getAsModule(caller);
+
+        if (potentialModule) {
+            let fullTypeName = this.variables.getSingleType(potentialModule) ?? this.imports.getType(potentialModule) ?? potentialModule
+            let attributeName = Sk.ffi.remapToJs(node.attr);
+            return this.blockMirror.libraries.resolve(fullTypeName + "." + attributeName)
+        }
+        let callerBlock = this.convert(caller, node._parent) // TODO caller node
+
+        if (!callerBlock?.children) {
+            return null
+        }
+
+        let mutationElement = callerBlock.children[0]
+
+        // TODO is this clean/reliable enough?
+        if (mutationElement && (/^mutation$/i).test(mutationElement.tagName)) {
+            let attributeName = Sk.ffi.remapToJs(node.attr);
+            return this.blockMirror.libraries.resolve(mutationElement.getAttribute('returns') + "." + attributeName)
+        }
+    }
+
+    return null
+}
