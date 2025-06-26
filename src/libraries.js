@@ -1438,10 +1438,7 @@ BlockMirror.LIBRARIES = {
   turtle: {
     __colour: BlockMirrorTextToBlocks.COLOR.PLOTTING,
     turtle: [
-      {
-        signature: 'forward fd(amount: float): None // move turtle forward by(50)',
-        colour: BlockMirrorTextToBlocks.COLOR.LOGIC
-      },
+      'forward fd(amount: float): None // move turtle forward by(50)',
       'backward bd(amount: float): None // move turtle backward by(50)',
       'right rt(angle: float): None // turn turtle right by(90)',
       'left lt(angle: float): None // turn turtle left by(90)',
