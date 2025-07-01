@@ -17,14 +17,14 @@ function _getPrototypeOf(t) { return _getPrototypeOf = Object.setPrototypeOf ? O
 function _classPrivateMethodInitSpec(e, a) { _checkPrivateRedeclaration(e, a), a.add(e); }
 function _checkPrivateRedeclaration(e, t) { if (t.has(e)) throw new TypeError("Cannot initialize the same private elements twice on an object"); }
 function _assertClassBrand(e, t, n) { if ("function" == typeof e ? e === t : e.has(t)) return arguments.length < 3 ? t : n; throw new TypeError("Private element is not present on this object"); }
-function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
-function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
-function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
-function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 function _toConsumableArray(r) { return _arrayWithoutHoles(r) || _iterableToArray(r) || _unsupportedIterableToArray(r) || _nonIterableSpread(); }
 function _nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
 function _iterableToArray(r) { if ("undefined" != typeof Symbol && null != r[Symbol.iterator] || null != r["@@iterator"]) return Array.from(r); }
 function _arrayWithoutHoles(r) { if (Array.isArray(r)) return _arrayLikeToArray(r); }
+function _slicedToArray(r, e) { return _arrayWithHoles(r) || _iterableToArrayLimit(r, e) || _unsupportedIterableToArray(r, e) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(r, l) { var t = null == r ? null : "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (null != t) { var e, n, i, u, a = [], f = !0, o = !1; try { if (i = (t = t.call(r)).next, 0 === l) { if (Object(t) !== t) return; f = !1; } else for (; !(f = (e = i.call(t)).done) && (a.push(e.value), a.length !== l); f = !0); } catch (r) { o = !0, n = r; } finally { try { if (!f && null != t["return"] && (u = t["return"](), Object(u) !== u)) return; } finally { if (o) throw n; } } return a; } }
+function _arrayWithHoles(r) { if (Array.isArray(r)) return r; }
 function _createForOfIteratorHelper(r, e) { var t = "undefined" != typeof Symbol && r[Symbol.iterator] || r["@@iterator"]; if (!t) { if (Array.isArray(r) || (t = _unsupportedIterableToArray(r)) || e && r && "number" == typeof r.length) { t && (r = t); var _n = 0, F = function F() {}; return { s: F, n: function n() { return _n >= r.length ? { done: !0 } : { done: !1, value: r[_n++] }; }, e: function e(r) { throw r; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var o, a = !0, u = !1; return { s: function s() { t = t.call(r); }, n: function n() { var r = t.next(); return a = r.done, r; }, e: function e(r) { u = !0, o = r; }, f: function f() { try { a || null == t["return"] || t["return"](); } finally { if (u) throw o; } } }; }
 function _unsupportedIterableToArray(r, a) { if (r) { if ("string" == typeof r) return _arrayLikeToArray(r, a); var t = {}.toString.call(r).slice(8, -1); return "Object" === t && r.constructor && (t = r.constructor.name), "Map" === t || "Set" === t ? Array.from(r) : "Arguments" === t || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(t) ? _arrayLikeToArray(r, a) : void 0; } }
 function _arrayLikeToArray(r, a) { (null == a || a > r.length) && (a = r.length); for (var e = 0, n = Array(a); e < a; e++) n[e] = r[e]; return n; }
@@ -219,25 +219,40 @@ python.pythonGenerator.imports = new TypeRegistry();
 python.pythonGenerator.variables = new TypesRegistry();
 
 // Hook for cases where custom scrubbing needs to be undone
-python.pythonGenerator.unscrub_ = function (line) {
+python.pythonGenerator.descrub_ = function (line) {
   return line;
 };
 python.pythonGenerator.finish = function (code) {
-  var lines = code.split('\n').map(python.pythonGenerator.unscrub_);
   var importRegExp = /^(from\s+\S+\s+)?import\s+\S+/;
-  var imports = lines.filter(function (line) {
-    return line.match(importRegExp);
-  });
-  code = lines.filter(function (line) {
-    return !line.match(importRegExp);
-  }).join('\n');
-  var _iterator3 = _createForOfIteratorHelper(_toConsumableArray(this.imports.entries()).sort()),
+  var lines = code.split('\n');
+  var descrubbed_lines = lines.map(python.pythonGenerator.descrub_);
+  var code_lines = [];
+  var imports = [];
+  var _iterator3 = _createForOfIteratorHelper(descrubbed_lines.entries()),
     _step3;
   try {
-    var _loop = function _loop() {
+    for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
       var _step3$value = _slicedToArray(_step3.value, 2),
-        name = _step3$value[0],
-        type = _step3$value[1];
+        index = _step3$value[0],
+        descrubbed_line = _step3$value[1];
+      if (descrubbed_line.match(importRegExp)) {
+        imports.push(descrubbed_line);
+      } else {
+        code_lines.push(lines[index]);
+      }
+    }
+  } catch (err) {
+    _iterator3.e(err);
+  } finally {
+    _iterator3.f();
+  }
+  var _iterator4 = _createForOfIteratorHelper(_toConsumableArray(this.imports.entries()).sort()),
+    _step4;
+  try {
+    var _loop = function _loop() {
+      var _step4$value = _slicedToArray(_step4.value, 2),
+        name = _step4$value[0],
+        type = _step4$value[1];
       // Only add imports from the registry if not already defined in code
       if (!imports.some(function (item) {
         return item.match(new RegExp("\\s+".concat(name, "\\s*(,.*)?$")));
@@ -257,13 +272,13 @@ python.pythonGenerator.finish = function (code) {
         }
       }
     };
-    for (_iterator3.s(); !(_step3 = _iterator3.n()).done;) {
+    for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
       _loop();
     }
   } catch (err) {
-    _iterator3.e(err);
+    _iterator4.e(err);
   } finally {
-    _iterator3.f();
+    _iterator4.f();
   }
   this.definitions_ = Object.create(null);
   this.functionNames_ = Object.create(null);
@@ -273,7 +288,7 @@ python.pythonGenerator.finish = function (code) {
   this.nameDB_.reset();
   // acbart: Don't actually inject initializations - we don't need 'em.
   var allDefs = imports.join('\n') + '\n\n';
-  return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code;
+  return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code_lines.join('\n');
 };
 python.pythonGenerator.INDENT = '    ';
 python.pythonGenerator.RESERVED_WORDS_ = "False,None,True,and,as,assert,break,class," + "continue,def,del,elif,else,except,finally,for," + "from,global,if,import,in,is,lambda,nonlocal," + "not,or,pass,raise,return,try,while,with,yield";
@@ -1941,24 +1956,24 @@ var PythonModule = /*#__PURE__*/function () {
     this.requiresImport = this.fullName === "" ? "" : this.name === this.fullName ? this.fullName : this.fullName + " as " + this.name;
     this.members = new Map();
     if (members !== undefined) {
-      var _iterator4 = _createForOfIteratorHelper(members),
-        _step4;
+      var _iterator5 = _createForOfIteratorHelper(members),
+        _step5;
       try {
-        for (_iterator4.s(); !(_step4 = _iterator4.n()).done;) {
-          var input = _step4.value;
+        for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
+          var input = _step5.value;
           if (_typeof(input) === "object") {
             if (input.signatures) {
-              var _iterator5 = _createForOfIteratorHelper(input.signatures),
-                _step5;
+              var _iterator6 = _createForOfIteratorHelper(input.signatures),
+                _step6;
               try {
-                for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
-                  var _signature = _step5.value;
+                for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
+                  var _signature = _step6.value;
                   this.addMember(_signature, input);
                 }
               } catch (err) {
-                _iterator5.e(err);
+                _iterator6.e(err);
               } finally {
-                _iterator5.f();
+                _iterator6.f();
               }
             } else {
               this.addMember(input.signature, input);
@@ -1968,9 +1983,9 @@ var PythonModule = /*#__PURE__*/function () {
           }
         }
       } catch (err) {
-        _iterator4.e(err);
+        _iterator5.e(err);
       } finally {
-        _iterator4.f();
+        _iterator5.f();
       }
     }
   }
@@ -1985,17 +2000,17 @@ var PythonModule = /*#__PURE__*/function () {
       if (PythonFunction.isA(code)) {
         var _inputObject$colour;
         member = new PythonFunction(this, code, comment, (_inputObject$colour = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour !== void 0 ? _inputObject$colour : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
-        var _iterator6 = _createForOfIteratorHelper(member.aliases),
-          _step6;
+        var _iterator7 = _createForOfIteratorHelper(member.aliases),
+          _step7;
         try {
-          for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
-            var alias = _step6.value;
+          for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+            var alias = _step7.value;
             this.members.set(alias.name, alias);
           }
         } catch (err) {
-          _iterator6.e(err);
+          _iterator7.e(err);
         } finally {
-          _iterator6.f();
+          _iterator7.f();
         }
       } else {
         var _inputObject$colour2;
@@ -2016,17 +2031,17 @@ var PythonModule = /*#__PURE__*/function () {
       try {
         textToBlocks.imports = new TypeRegistry();
         textToBlocks.imports.set(this.fullName, this.name);
-        var _iterator7 = _createForOfIteratorHelper(this.members.values()),
-          _step7;
+        var _iterator8 = _createForOfIteratorHelper(this.members.values()),
+          _step8;
         try {
-          for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
-            var value = _step7.value;
+          for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
+            var value = _step8.value;
             result += value.toToolbox(textToBlocks) + "<sep></sep>";
           }
         } catch (err) {
-          _iterator7.e(err);
+          _iterator8.e(err);
         } finally {
-          _iterator7.f();
+          _iterator8.f();
         }
       } finally {
         textToBlocks.imports = originalImports;
@@ -2053,11 +2068,11 @@ var PythonModule = /*#__PURE__*/function () {
       if (this.fullName === "" && indexOfDot === 0) {
         // Special case, look for a method in all builtin classes
         var methodName = memberName.substring(1);
-        var _iterator8 = _createForOfIteratorHelper(this.members.values()),
-          _step8;
+        var _iterator9 = _createForOfIteratorHelper(this.members.values()),
+          _step9;
         try {
-          for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
-            var member = _step8.value;
+          for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
+            var member = _step9.value;
             if (member instanceof PythonClass) {
               var result = member.resolve(methodName);
               if (result) {
@@ -2066,9 +2081,9 @@ var PythonModule = /*#__PURE__*/function () {
             }
           }
         } catch (err) {
-          _iterator8.e(err);
+          _iterator9.e(err);
         } finally {
-          _iterator8.f();
+          _iterator9.f();
         }
         return null;
       }
@@ -2078,19 +2093,19 @@ var PythonModule = /*#__PURE__*/function () {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
       typeRegistry.set(this.fullName, this.name);
-      var _iterator9 = _createForOfIteratorHelper(this.members.values()),
-        _step9;
+      var _iterator10 = _createForOfIteratorHelper(this.members.values()),
+        _step10;
       try {
-        for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
-          var member = _step9.value;
+        for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
+          var member = _step10.value;
           if (member instanceof PythonClass) {
             typeRegistry.set(member.fullName, member.name);
           }
         }
       } catch (err) {
-        _iterator9.e(err);
+        _iterator10.e(err);
       } finally {
-        _iterator9.f();
+        _iterator10.f();
       }
     }
   }], [{
@@ -2196,34 +2211,34 @@ var PythonParameter = /*#__PURE__*/function () {
         var shouldShadow = _assertClassBrand(_PythonParameter_brand, this, _shouldShadow).call(this, argBlock);
         if (argBlock instanceof HTMLElement) {
           // Blockly XML
-          var _iterator10 = _createForOfIteratorHelper(_toConsumableArray(argBlock.getElementsByTagName(shouldShadow ? 'block' : 'shadow')).reverse()),
-            _step10;
-          try {
-            for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
-              var childElement = _step10.value;
-              _assertClassBrand(_PythonParameter_brand, this, _replaceTagName).call(this, childElement, shouldShadow ? 'shadow' : 'block');
-            }
-          } catch (err) {
-            _iterator10.e(err);
-          } finally {
-            _iterator10.f();
-          }
-        } else if (argBlock.shadow !== shouldShadow) {
-          // Blockly block
-          argBlock.shadow = shouldShadow;
-          argBlock.setStyle(argBlock.getStyleName()); // Re-apply the style
-          var _iterator11 = _createForOfIteratorHelper(argBlock.getChildren()),
+          var _iterator11 = _createForOfIteratorHelper(_toConsumableArray(argBlock.getElementsByTagName(shouldShadow ? 'block' : 'shadow')).reverse()),
             _step11;
           try {
             for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
-              var child = _step11.value;
-              argBlock.shadow = shouldShadow;
-              argBlock.setStyle(argBlock.getStyleName()); // Re-apply the style
+              var childElement = _step11.value;
+              _assertClassBrand(_PythonParameter_brand, this, _replaceTagName).call(this, childElement, shouldShadow ? 'shadow' : 'block');
             }
           } catch (err) {
             _iterator11.e(err);
           } finally {
             _iterator11.f();
+          }
+        } else if (argBlock.shadow !== shouldShadow) {
+          // Blockly block
+          argBlock.shadow = shouldShadow;
+          argBlock.setStyle(argBlock.getStyleName()); // Re-apply the style
+          var _iterator12 = _createForOfIteratorHelper(argBlock.getChildren()),
+            _step12;
+          try {
+            for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
+              var child = _step12.value;
+              argBlock.shadow = shouldShadow;
+              argBlock.setStyle(argBlock.getStyleName()); // Re-apply the style
+            }
+          } catch (err) {
+            _iterator12.e(err);
+          } finally {
+            _iterator12.f();
           }
         }
       }
@@ -2300,11 +2315,11 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
       var positional = true;
       var keyword = !parameterParts.includes("/");
       var argIndex = 0;
-      var _iterator12 = _createForOfIteratorHelper(parameterParts),
-        _step12;
+      var _iterator13 = _createForOfIteratorHelper(parameterParts),
+        _step13;
       try {
-        for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
-          var _parameter = _step12.value;
+        for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
+          var _parameter = _step13.value;
           if (_parameter === "/") {
             keyword = true;
           } else if (_parameter === "*") {
@@ -2321,9 +2336,9 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
 
         // Any parameter before *args should not be addressable by keyword
       } catch (err) {
-        _iterator12.e(err);
+        _iterator13.e(err);
       } finally {
-        _iterator12.f();
+        _iterator13.f();
       }
       var positionalOnly = false;
       for (var i = _this8.length - 1; i >= 0; i--) {
@@ -2543,24 +2558,24 @@ var PythonClass = /*#__PURE__*/function () {
 
     // Default constructor
     this.members.set("__init__", new PythonConstructorMethod(this, "__init__()", "", null));
-    var _iterator13 = _createForOfIteratorHelper(members),
-      _step13;
+    var _iterator14 = _createForOfIteratorHelper(members),
+      _step14;
     try {
-      for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
-        var input = _step13.value;
+      for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
+        var input = _step14.value;
         if (_typeof(input) === "object") {
           if (input.signatures) {
-            var _iterator14 = _createForOfIteratorHelper(input.signatures),
-              _step14;
+            var _iterator15 = _createForOfIteratorHelper(input.signatures),
+              _step15;
             try {
-              for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
-                var _signature2 = _step14.value;
+              for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
+                var _signature2 = _step15.value;
                 this.addMember(_signature2, input);
               }
             } catch (err) {
-              _iterator14.e(err);
+              _iterator15.e(err);
             } finally {
-              _iterator14.f();
+              _iterator15.f();
             }
           } else {
             this.addMember(input.signature, input);
@@ -2570,9 +2585,9 @@ var PythonClass = /*#__PURE__*/function () {
         }
       }
     } catch (err) {
-      _iterator13.e(err);
+      _iterator14.e(err);
     } finally {
-      _iterator13.f();
+      _iterator14.f();
     }
   }
   return _createClass(PythonClass, [{
@@ -2591,17 +2606,17 @@ var PythonClass = /*#__PURE__*/function () {
         } else {
           var _inputObject$colour4;
           member = new PythonMethod(this, code, comment, (_inputObject$colour4 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour4 !== void 0 ? _inputObject$colour4 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
-          var _iterator15 = _createForOfIteratorHelper(member.aliases),
-            _step15;
+          var _iterator16 = _createForOfIteratorHelper(member.aliases),
+            _step16;
           try {
-            for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
-              var alias = _step15.value;
+            for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
+              var alias = _step16.value;
               this.members.set(alias.name, alias);
             }
           } catch (err) {
-            _iterator15.e(err);
+            _iterator16.e(err);
           } finally {
-            _iterator15.f();
+            _iterator16.f();
           }
         }
       } else {
@@ -2623,17 +2638,17 @@ var PythonClass = /*#__PURE__*/function () {
       try {
         textToBlocks.imports = new TypeRegistry();
         textToBlocks.imports.set(this.fullName, this.name);
-        var _iterator16 = _createForOfIteratorHelper(this.members.values()),
-          _step16;
+        var _iterator17 = _createForOfIteratorHelper(this.members.values()),
+          _step17;
         try {
-          for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
-            var member = _step16.value;
+          for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
+            var member = _step17.value;
             result += member.toToolbox(textToBlocks);
           }
         } catch (err) {
-          _iterator16.e(err);
+          _iterator17.e(err);
         } finally {
-          _iterator16.f();
+          _iterator17.f();
         }
       } finally {
         textToBlocks.imports = originalImports;
@@ -2896,30 +2911,30 @@ var Library = /*#__PURE__*/function () {
         return this.toolbox;
       }
       if (imports) {
-        var _iterator17 = _createForOfIteratorHelper(imports.types()),
-          _step17;
+        var _iterator18 = _createForOfIteratorHelper(imports.types()),
+          _step18;
         try {
-          for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
-            var importedType = _step17.value;
-            var _iterator18 = _createForOfIteratorHelper(this.modules.values()),
-              _step18;
+          for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
+            var importedType = _step18.value;
+            var _iterator19 = _createForOfIteratorHelper(this.modules.values()),
+              _step19;
             try {
-              for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
-                var module = _step18.value;
+              for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
+                var module = _step19.value;
                 if (module.resolve(importedType) !== null) {
                   return true;
                 }
               }
             } catch (err) {
-              _iterator18.e(err);
+              _iterator19.e(err);
             } finally {
-              _iterator18.f();
+              _iterator19.f();
             }
           }
         } catch (err) {
-          _iterator17.e(err);
+          _iterator18.e(err);
         } finally {
-          _iterator17.f();
+          _iterator18.f();
         }
         return false;
       }
@@ -2932,17 +2947,17 @@ var Library = /*#__PURE__*/function () {
         return "";
       }
       var categoryXml = "<category name=\"".concat(this.name, "\">"); // TODO color
-      var _iterator19 = _createForOfIteratorHelper(this.modules.values()),
-        _step19;
+      var _iterator20 = _createForOfIteratorHelper(this.modules.values()),
+        _step20;
       try {
-        for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
-          var module = _step19.value;
+        for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
+          var module = _step20.value;
           categoryXml += module.toToolbox(textToBlocks);
         }
       } catch (err) {
-        _iterator19.e(err);
+        _iterator20.e(err);
       } finally {
-        _iterator19.f();
+        _iterator20.f();
       }
       categoryXml += "</category>";
       return categoryXml;
@@ -2950,20 +2965,20 @@ var Library = /*#__PURE__*/function () {
   }, {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
-      var _iterator20 = _createForOfIteratorHelper(this.modules.values()),
-        _step20;
+      var _iterator21 = _createForOfIteratorHelper(this.modules.values()),
+        _step21;
       try {
-        for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
-          var module = _step20.value;
+        for (_iterator21.s(); !(_step21 = _iterator21.n()).done;) {
+          var module = _step21.value;
           if (module.fullName === "") {
             continue;
           }
           module.registerImports(typeRegistry);
         }
       } catch (err) {
-        _iterator20.e(err);
+        _iterator21.e(err);
       } finally {
-        _iterator20.f();
+        _iterator21.f();
       }
     }
   }]);
@@ -2992,17 +3007,17 @@ var Libraries = /*#__PURE__*/function (_Map) {
     key: "toToolbox",
     value: function toToolbox(textToBlocks) {
       var result = "";
-      var _iterator21 = _createForOfIteratorHelper(this.values()),
-        _step21;
+      var _iterator22 = _createForOfIteratorHelper(this.values()),
+        _step22;
       try {
-        for (_iterator21.s(); !(_step21 = _iterator21.n()).done;) {
-          var library = _step21.value;
+        for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
+          var library = _step22.value;
           result += library.toToolbox(textToBlocks);
         }
       } catch (err) {
-        _iterator21.e(err);
+        _iterator22.e(err);
       } finally {
-        _iterator21.f();
+        _iterator22.f();
       }
       return result;
     }
@@ -3019,37 +3034,37 @@ var Libraries = /*#__PURE__*/function (_Map) {
         // Might not contain a module name, check the built-ins
         foundModules = this.findModulesByName('');
       }
-      var _iterator22 = _createForOfIteratorHelper(foundModules),
-        _step22;
+      var _iterator23 = _createForOfIteratorHelper(foundModules),
+        _step23;
       try {
-        for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
-          var foundModule = _step22.value;
+        for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
+          var foundModule = _step23.value;
           var found = foundModule.resolve(fullName);
           if (found) {
             return found;
           }
         }
       } catch (err) {
-        _iterator22.e(err);
+        _iterator23.e(err);
       } finally {
-        _iterator22.f();
+        _iterator23.f();
       }
       return null;
     }
   }, {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
-      var _iterator23 = _createForOfIteratorHelper(this.values()),
-        _step23;
+      var _iterator24 = _createForOfIteratorHelper(this.values()),
+        _step24;
       try {
-        for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
-          var library = _step23.value;
+        for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
+          var library = _step24.value;
           library.registerImports(typeRegistry);
         }
       } catch (err) {
-        _iterator23.e(err);
+        _iterator24.e(err);
       } finally {
-        _iterator23.f();
+        _iterator24.f();
       }
     }
   }]);
@@ -3267,10 +3282,7 @@ BlockMirror.LIBRARIES = {
   },
   turtle: {
     __colour: BlockMirrorTextToBlocks.COLOR.PLOTTING,
-    turtle: [{
-      signature: 'forward fd(amount: float): None // move turtle forward by(50)',
-      colour: BlockMirrorTextToBlocks.COLOR.LOGIC
-    }, 'backward bd(amount: float): None // move turtle backward by(50)', 'right rt(angle: float): None // turn turtle right by(90)', 'left lt(angle: float): None // turn turtle left by(90)', 'goto setpos setposition(x: float, y: float): None // move turtle to position(0, 0)', "setx(x: float): None // set turtle's x position to(100)", "sety(y: float): None // set turtle's y position to(100)", "setheading seth(angle: float): None // set turtle's heading to(270)", 'home(): None // move turtle to origin', 'circle(radius: float): None // move the turtle in a circle', 'dot(size: float, color: Any): None // turtle draws a dot(0, )', 'stamp(): Any // stamp a copy of the turtle shape()', 'clearstamp(stampid: Any): None // delete stamp with id', 'clearstamps(): None // delete all stamps', 'undo(): None // undo last turtle action', 'speed(speed: int | None = None): int | None // set or get turtle speed()', "position pos(): (float, float) // get turtle's position", 'towards(x: float, y: float): float // get the angle from the turtle to the point', "xcor(): float // get turtle's x position", "ycor(): float // get turtle's y position", "heading(): float // get turtle's heading", "distance(x: float, y: float): float // get the distance from turtle's position to()", 'degrees(): None // set turtle mode to degrees', 'radians(): None // set turtle mode to radians', 'pendown pd down(): None // pull turtle pen down', 'penup pu up(): None // pull turtle pen up',
+    turtle: ['forward fd(amount: float): None // move turtle forward by(50)', 'backward bd(amount: float): None // move turtle backward by(50)', 'right rt(angle: float): None // turn turtle right by(90)', 'left lt(angle: float): None // turn turtle left by(90)', 'goto setpos setposition(x: float, y: float): None // move turtle to position(0, 0)', "setx(x: float): None // set turtle's x position to(100)", "sety(y: float): None // set turtle's y position to(100)", "setheading seth(angle: float): None // set turtle's heading to(270)", 'home(): None // move turtle to origin', 'circle(radius: float): None // move the turtle in a circle', 'dot(size: float, color: Any): None // turtle draws a dot(0, )', 'stamp(): Any // stamp a copy of the turtle shape()', 'clearstamp(stampid: Any): None // delete stamp with id', 'clearstamps(): None // delete all stamps', 'undo(): None // undo last turtle action', 'speed(speed: int | None = None): int | None // set or get turtle speed()', "position pos(): (float, float) // get turtle's position", 'towards(x: float, y: float): float // get the angle from the turtle to the point', "xcor(): float // get turtle's x position", "ycor(): float // get turtle's y position", "heading(): float // get turtle's heading", "distance(x: float, y: float): float // get the distance from turtle's position to()", 'degrees(): None // set turtle mode to degrees', 'radians(): None // set turtle mode to radians', 'pendown pd down(): None // pull turtle pen down', 'penup pu up(): None // pull turtle pen up',
     // Skipped some
     'pensize(width: float | None = None): float | None // set or get the pen size()',
     // Skipped some
@@ -4580,11 +4592,11 @@ python.pythonGenerator.forBlock['ast_Expr'] = function (block, generator) {
   var order = python.Order.NONE;
 
   // Generate more optimal parentheses:
-  var _iterator24 = _createForOfIteratorHelper(block.getChildren()),
-    _step24;
+  var _iterator25 = _createForOfIteratorHelper(block.getChildren()),
+    _step25;
   try {
-    for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
-      var childBlock = _step24.value;
+    for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
+      var childBlock = _step25.value;
       if (childBlock.type === 'ast_Expr') {
         // Nothing to do
       } else if (childBlock.type === 'ast_Call') {
@@ -4594,9 +4606,9 @@ python.pythonGenerator.forBlock['ast_Expr'] = function (block, generator) {
       }
     }
   } catch (err) {
-    _iterator24.e(err);
+    _iterator25.e(err);
   } finally {
-    _iterator24.f();
+    _iterator25.f();
   }
   var value = python.pythonGenerator.valueToCode(block, 'VALUE', order) || python.pythonGenerator.blank;
   // TODO: Assemble JavaScript into code variable.

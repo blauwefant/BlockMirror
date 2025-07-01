@@ -2,13 +2,22 @@ python.pythonGenerator.imports = new TypeRegistry();
 python.pythonGenerator.variables = new TypesRegistry();
 
 // Hook for cases where custom scrubbing needs to be undone
-python.pythonGenerator.unscrub_ = line => line
+python.pythonGenerator.descrub_ = line => line
 
 python.pythonGenerator.finish = function(code) {
-    let lines = code.split('\n').map(python.pythonGenerator.unscrub_);
     let importRegExp = /^(from\s+\S+\s+)?import\s+\S+/
-    let imports = lines.filter(line => line.match(importRegExp))
-    code = lines.filter(line => !line.match(importRegExp)).join('\n');
+    let lines = code.split('\n')
+    let descrubbed_lines = lines.map(python.pythonGenerator.descrub_);
+    let code_lines = []
+    let imports = []
+
+    for (let [index, descrubbed_line] of descrubbed_lines.entries()) {
+        if (descrubbed_line.match(importRegExp)) {
+            imports.push(descrubbed_line)
+        } else {
+            code_lines.push(lines[index])
+        }
+    }
 
     for (let [name, type] of [...this.imports.entries()].sort()) {
         // Only add imports from the registry if not already defined in code
@@ -40,7 +49,7 @@ python.pythonGenerator.finish = function(code) {
     this.nameDB_.reset();
     // acbart: Don't actually inject initializations - we don't need 'em.
     var allDefs = imports.join('\n') + '\n\n';
-    return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code;
+    return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code_lines.join('\n');
 }
 
 python.pythonGenerator.INDENT = '    ';
