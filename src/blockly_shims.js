@@ -49,7 +49,7 @@ python.pythonGenerator.finish = function(code) {
     this.nameDB_.reset();
     // acbart: Don't actually inject initializations - we don't need 'em.
     var allDefs = imports.join('\n') + '\n\n';
-    return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code_lines.join('\n');
+    return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code_lines.join('\n').trimStart();
 }
 
 python.pythonGenerator.INDENT = '    ';

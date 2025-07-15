@@ -288,7 +288,7 @@ python.pythonGenerator.finish = function (code) {
   this.nameDB_.reset();
   // acbart: Don't actually inject initializations - we don't need 'em.
   var allDefs = imports.join('\n') + '\n\n';
-  return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code_lines.join('\n');
+  return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code_lines.join('\n').trimStart();
 };
 python.pythonGenerator.INDENT = '    ';
 python.pythonGenerator.RESERVED_WORDS_ = "False,None,True,and,as,assert,break,class," + "continue,def,del,elif,else,except,finally,for," + "from,global,if,import,in,is,lambda,nonlocal," + "not,or,pass,raise,return,try,while,with,yield";
@@ -2293,7 +2293,7 @@ function _shouldShadow(argBlock) {
     return _assertClassBrand(_PythonParameter_brand, this, _matchesDefaultValue).call(this, blockType, value);
   } else {
     // Blockly block
-    return _assertClassBrand(_PythonParameter_brand, this, _matchesDefaultValue).call(this, argBlock.type, python.pythonGenerator.blockToCode(argBlock)[0]);
+    return _assertClassBrand(_PythonParameter_brand, this, _matchesDefaultValue).call(this, argBlock.type, python.pythonGenerator.descrub_(python.pythonGenerator.blockToCode(argBlock)[0]));
   }
 }
 var PythonParameters = /*#__PURE__*/function (_Array) {
@@ -2328,6 +2328,10 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
             var _argParts$argIndex;
             var isSelfOrCls = argIndex === 0 && (_parameter === "self" || _parameter === "cls");
             _this8.push(new PythonParameter(_parameter, isSelfOrCls ? "" : (_argParts$argIndex = argParts[argIndex]) !== null && _argParts$argIndex !== void 0 ? _argParts$argIndex : "", positional, keyword));
+            if (_parameter.length > 1 && _parameter[0] === '*' && _parameter[1] !== '*') {
+              // No positional arguments after *args
+              positional = false;
+            }
             if (!isSelfOrCls) {
               argIndex++;
             }

@@ -274,7 +274,7 @@ class PythonParameter {
       return this.#matchesDefaultValue(blockType, value)
     } else {
       // Blockly block
-      return this.#matchesDefaultValue(argBlock.type, python.pythonGenerator.blockToCode(argBlock)[0])
+      return this.#matchesDefaultValue(argBlock.type, python.pythonGenerator.descrub_(python.pythonGenerator.blockToCode(argBlock)[0]))
     }
   }
 
@@ -340,6 +340,11 @@ class PythonParameters extends Array {
               keyword,
             ),
           );
+
+          if (parameter.length > 1 && parameter[0] === '*' && parameter[1] !== '*') {
+            // No positional arguments after *args
+            positional = false;
+          }
 
           if (!isSelfOrCls) {
             argIndex++;
