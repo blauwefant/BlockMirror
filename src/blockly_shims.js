@@ -10,10 +10,12 @@ python.pythonGenerator.finish = function(code) {
     let descrubbed_lines = lines.map(python.pythonGenerator.descrub_);
     let code_lines = []
     let imports = []
+    let descrubbed_imports = []
 
     for (let [index, descrubbed_line] of descrubbed_lines.entries()) {
         if (descrubbed_line.match(importRegExp)) {
-            imports.push(descrubbed_line)
+            descrubbed_imports.push(descrubbed_line)
+            imports.push(lines[index])
         } else {
             code_lines.push(lines[index])
         }
@@ -21,7 +23,7 @@ python.pythonGenerator.finish = function(code) {
 
     for (let [name, type] of [...this.imports.entries()].sort()) {
         // Only add imports from the registry if not already defined in code
-        if (!imports.some(function(item) {
+        if (!descrubbed_imports.some(function(item) {
             return item.match(new RegExp(`\\s+${name}\\s*(,.*)?$`));
         })) {
             if (name === type) {
@@ -48,7 +50,7 @@ python.pythonGenerator.finish = function(code) {
 
     this.nameDB_.reset();
     // acbart: Don't actually inject initializations - we don't need 'em.
-    var allDefs = imports.join('\n') + '\n\n';
+    var allDefs = [...new Set(imports)].join('\n') + '\n\n';
     return allDefs.replace(/\n{3,}/g, '\n\n').replace(/\n*$/, '\n\n\n') + code_lines.join('\n').trimStart();
 }
 
