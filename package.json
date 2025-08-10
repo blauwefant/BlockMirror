@@ -39,7 +39,7 @@
     "yargs": "^15.4.1"
   },
   "dependencies": {
-    "@blockly/field-multilineinput": "^5.0.13",
-    "blockly": "^11.2.2"
+    "@blockly/field-multilineinput": "^6.0.2",
+    "blockly": "^12.2.0"
   }
 }

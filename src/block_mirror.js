@@ -27,6 +27,11 @@
  */
 
 /**
+ * Location to register default libraries.
+ */
+BlockMirror.LIBRARIES = {};
+
+/**
  *
  */
 function BlockMirror(configuration) {

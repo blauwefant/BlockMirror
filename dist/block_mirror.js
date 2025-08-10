@@ -444,6 +444,11 @@ Blockly.Variables.nameUsedWithAnyType = function (name, workspace) {
  */
 
 /**
+ * Location to register default libraries.
+ */
+BlockMirror.LIBRARIES = {};
+
+/**
  *
  */
 function BlockMirror(configuration) {
@@ -1944,6 +1949,12 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function (node) {
   }
   return null;
 };
+function _resolve_colour(colour) {
+  if (typeof colour === "string" && typeof BlockMirrorTextToBlocks === "function") {
+    return BlockMirrorTextToBlocks.COLOR[colour];
+  }
+  return colour;
+}
 var PythonModule = /*#__PURE__*/function () {
   function PythonModule(library, signature, comment, members) {
     _classCallCheck(this, PythonModule);
@@ -2406,11 +2417,11 @@ function splitPremessageMessagePostmessage(toSplit) {
   }
   return [premessage, message, postmessage];
 }
-var _PythonFunction_brand = /*#__PURE__*/new WeakSet();
 var PythonFunction = /*#__PURE__*/function () {
   function PythonFunction(pythonModule, signature, comment, colour) {
+    var _this9 = this,
+      _resolve_colour2;
     _classCallCheck(this, PythonFunction);
-    _classPrivateMethodInitSpec(this, _PythonFunction_brand);
     this.pythonModule = pythonModule;
     var indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
     this.typeHint = indexOfTypeHint < 0 ? "" : signature.substring(indexOfTypeHint + 1).trim();
@@ -2439,10 +2450,12 @@ var PythonFunction = /*#__PURE__*/function () {
       // let result = structuredClone(this)
       // result.name = value
       var result = new PythonFunction(pythonModule, value + signature.substring(signature.indexOf("(")), comment);
+      result.premessage = _this9.premessage;
+      result.message = _this9.message;
       result.isAlias = true;
       return result;
     });
-    this.colour = colour !== null && colour !== void 0 ? colour : pythonModule.library.colour;
+    this.colour = (_resolve_colour2 = _resolve_colour(colour)) !== null && _resolve_colour2 !== void 0 ? _resolve_colour2 : pythonModule.library.colour;
     this.argumentOffset = 0;
   }
   return _createClass(PythonFunction, [{
@@ -2461,32 +2474,31 @@ var PythonFunction = /*#__PURE__*/function () {
     value: function applyShadow(block) {
       if (block instanceof HTMLElement) {
         var mutationElement = block.firstElementChild;
-        var i = 0;
         var blockChildren = block.children;
-        for (var _i4 = 0; _i4 < mutationElement.children.length; _i4++) {
-          var valueElement = blockChildren['ARG' + _i4];
+        for (var i = 0; i < mutationElement.children.length; i++) {
+          var valueElement = blockChildren['ARG' + i];
           if (!valueElement) {
             continue;
           }
-          var mutation = mutationElement.children[_i4].getAttribute('name');
+          var mutation = mutationElement.children[i].getAttribute('name');
           if (mutation.startsWith('KEYWORD:')) {
             var _this$parameters$find;
             (_this$parameters$find = this.parameters.findByKeyword(mutation.substring(8))) === null || _this$parameters$find === void 0 || _this$parameters$find.applyShadow(valueElement);
           } else {
             var _this$parameters;
-            (_this$parameters = this.parameters[_i4 + this.argumentOffset]) === null || _this$parameters === void 0 || _this$parameters.applyShadow(valueElement);
+            (_this$parameters = this.parameters[i + this.argumentOffset]) === null || _this$parameters === void 0 || _this$parameters.applyShadow(valueElement);
           }
         }
       } else {
-        for (var _i5 = 0; _i5 < block.arguments_.length; _i5++) {
-          var _mutation = block.arguments_[_i5];
-          var argBlock = block.getInputTargetBlock('ARG' + _i5);
+        for (var _i4 = 0; _i4 < block.arguments_.length; _i4++) {
+          var _mutation = block.arguments_[_i4];
+          var argBlock = block.getInputTargetBlock('ARG' + _i4);
           if (_mutation.startsWith('KEYWORD:')) {
             var _this$parameters$find2;
             (_this$parameters$find2 = this.parameters.findByKeyword(_mutation.substring(8))) === null || _this$parameters$find2 === void 0 || _this$parameters$find2.applyShadow(argBlock);
           } else {
             var _this$parameters2;
-            (_this$parameters2 = this.parameters[_i5 + this.argumentOffset]) === null || _this$parameters2 === void 0 || _this$parameters2.applyShadow(argBlock);
+            (_this$parameters2 = this.parameters[_i4 + this.argumentOffset]) === null || _this$parameters2 === void 0 || _this$parameters2.applyShadow(argBlock);
           }
         }
       }
@@ -2523,16 +2535,6 @@ var PythonFunction = /*#__PURE__*/function () {
     }
   }]);
 }();
-function _replaceTagName2(element, tagName) {
-  var replacementElement = document.createElement(tagName);
-  for (var i = 0, l = element.attributes.length; i < l; ++i) {
-    var nodeName = element.attributes.item(i).nodeName;
-    var nodeValue = element.attributes.item(i).nodeValue;
-    replacementElement.setAttribute(nodeName, nodeValue);
-  }
-  replacementElement.innerHTML = element.innerHTML;
-  element.parentNode.replaceChild(replacementElement, element);
-}
 var PythonClass = /*#__PURE__*/function () {
   function PythonClass(pythonModule, signature, comment, members) {
     _classCallCheck(this, PythonClass);
@@ -2557,7 +2559,7 @@ var PythonClass = /*#__PURE__*/function () {
       this.requiresImport = "";
     } else {
       this.fullName = pythonModule.fullName + "." + this.name;
-      this.requiresImport = this.fullName == this.name ? this.name : this.fullName + " as " + this.name;
+      this.requiresImport = this.fullName === this.name ? this.name : this.fullName + " as " + this.name;
     }
     this.colour = pythonModule.library.colour;
     this.members = new Map();
@@ -2691,12 +2693,13 @@ var PythonClass = /*#__PURE__*/function () {
 }();
 var PythonAttribute = /*#__PURE__*/function () {
   function PythonAttribute(pythonClassOrModule, signature, comment, colour) {
+    var _resolve_colour3;
     _classCallCheck(this, PythonAttribute);
     this.pythonClassOrModule = pythonClassOrModule;
     var indexOfTypeHint = signature.lastIndexOf(":");
     this.typeHint = indexOfTypeHint < 0 ? "" : signature.substring(indexOfTypeHint + 1).trim();
     this.name = signature.substring(0, indexOfTypeHint || signature.length).trim();
-    this.colour = colour !== null && colour !== void 0 ? colour : pythonClassOrModule.colour;
+    this.colour = (_resolve_colour3 = _resolve_colour(colour)) !== null && _resolve_colour3 !== void 0 ? _resolve_colour3 : pythonClassOrModule.colour;
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
       if (pythonClassOrModule instanceof PythonClass) {
         this.premessage = pythonClassOrModule.name;
@@ -2772,36 +2775,36 @@ var PythonAttribute = /*#__PURE__*/function () {
     }
   }]);
 }();
-var PythonMethod = /*#__PURE__*/function (_PythonFunction2) {
+var PythonMethod = /*#__PURE__*/function (_PythonFunction) {
   function PythonMethod(pythonClass, signature, comment, colour) {
-    var _this9;
+    var _this10;
     _classCallCheck(this, PythonMethod);
-    _this9 = _callSuper(this, PythonMethod, [pythonClass.module, signature, comment, colour]);
-    _this9.pythonClass = pythonClass;
-    _this9.fullName = pythonClass.fullName + "." + _this9.name;
+    _this10 = _callSuper(this, PythonMethod, [pythonClass.module, signature, comment, colour]);
+    _this10.pythonClass = pythonClass;
+    _this10.fullName = pythonClass.fullName + "." + _this10.name;
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
-      _this9.message = "." + _this9.name;
+      _this10.message = "." + _this10.name;
     }
-    if (_this9.parameters.length == 0) {
-      _this9.staticmethod = true;
-      _this9.classmethod = false;
-    } else if (_this9.parameters[0].name === 'self') {
-      _this9.staticmethod = false;
-      _this9.classmethod = false;
-    } else if (_this9.parameters[0].name === 'cls') {
-      _this9.staticmethod = false;
-      _this9.classmethod = true;
+    if (_this10.parameters.length === 0) {
+      _this10.staticmethod = true;
+      _this10.classmethod = false;
+    } else if (_this10.parameters[0].name === 'self') {
+      _this10.staticmethod = false;
+      _this10.classmethod = false;
+    } else if (_this10.parameters[0].name === 'cls') {
+      _this10.staticmethod = false;
+      _this10.classmethod = true;
     } else {
-      _this9.staticmethod = true;
-      _this9.classmethod = false;
+      _this10.staticmethod = true;
+      _this10.classmethod = false;
     }
-    if (_this9.premessage === "" && !(_this9.classmethod || _this9.staticmethod)) {
-      _this9.premessage = pythonClass.name;
+    if (_this10.premessage === "" && !(_this10.classmethod || _this10.staticmethod)) {
+      _this10.premessage = pythonClass.name;
     }
-    _this9.argumentOffset = _this9.staticmethod ? 0 : 1;
-    return _this9;
+    _this10.argumentOffset = _this10.staticmethod ? 0 : 1;
+    return _this10;
   }
-  _inherits(PythonMethod, _PythonFunction2);
+  _inherits(PythonMethod, _PythonFunction);
   return _createClass(PythonMethod, [{
     key: "toPythonSource",
     value: function toPythonSource() {
@@ -2837,14 +2840,14 @@ var PythonMethod = /*#__PURE__*/function (_PythonFunction2) {
 }(PythonFunction);
 var PythonConstructorMethod = /*#__PURE__*/function (_PythonMethod) {
   function PythonConstructorMethod(pythonClass, signature, comment, colour) {
-    var _this10;
+    var _this11;
     _classCallCheck(this, PythonConstructorMethod);
-    _this10 = _callSuper(this, PythonConstructorMethod, [pythonClass, signature, comment, colour]);
-    _this10.typeHint = pythonClass.fullName;
+    _this11 = _callSuper(this, PythonConstructorMethod, [pythonClass, signature, comment, colour]);
+    _this11.typeHint = pythonClass.fullName;
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
-      _this10.message = _this10.pythonClass.name;
+      _this11.message = _this11.pythonClass.name;
     }
-    return _this10;
+    return _this11;
   }
   _inherits(PythonConstructorMethod, _PythonMethod);
   return _createClass(PythonConstructorMethod, [{
@@ -2865,7 +2868,7 @@ var Library = /*#__PURE__*/function () {
     this.name = name;
     this.libraries = libraries;
     this.modules = new Map();
-    this.colour = BlockMirrorTextToBlocks.COLOR.FUNCTIONS;
+    this.colour = libraries.defaultColor;
     this.toolbox = null;
     var classes = [];
     for (var classOrModuleDef in libraryConfiguration) {
@@ -2876,7 +2879,7 @@ var Library = /*#__PURE__*/function () {
       if (_name.startsWith("__")) {
         // Library metadata
         if (_name === "__colour" || _name === "__color") {
-          this.colour = libraryConfiguration[_name];
+          this.colour = _resolve_colour(libraryConfiguration[_name]);
         } else if (_name === "__toolbox") {
           this.toolbox = libraryConfiguration[_name];
         }
@@ -2889,13 +2892,13 @@ var Library = /*#__PURE__*/function () {
         })) {
           classes.push(classOrModuleDef);
         } else {
-          var module = new PythonModule(this, _name, comment, members);
-          this.modules.set(module.fullName, module);
+          var _module = new PythonModule(this, _name, comment, members);
+          this.modules.set(_module.fullName, _module);
         }
       }
     }
-    for (var _i6 = 0, _classes = classes; _i6 < _classes.length; _i6++) {
-      var classDef = _classes[_i6];
+    for (var _i5 = 0, _classes = classes; _i5 < _classes.length; _i5++) {
+      var classDef = _classes[_i5];
       var _classDef$split = classDef.split("//", 2),
         _classDef$split2 = _slicedToArray(_classDef$split, 2),
         signature = _classDef$split2[0],
@@ -2926,8 +2929,8 @@ var Library = /*#__PURE__*/function () {
               _step19;
             try {
               for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
-                var module = _step19.value;
-                if (module.resolve(importedType) !== null) {
+                var _module2 = _step19.value;
+                if (_module2.resolve(importedType) !== null) {
                   return true;
                 }
               }
@@ -2957,8 +2960,8 @@ var Library = /*#__PURE__*/function () {
         _step20;
       try {
         for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
-          var module = _step20.value;
-          categoryXml += module.toToolbox(textToBlocks);
+          var _module3 = _step20.value;
+          categoryXml += _module3.toToolbox(textToBlocks);
         }
       } catch (err) {
         _iterator20.e(err);
@@ -2975,11 +2978,11 @@ var Library = /*#__PURE__*/function () {
         _step21;
       try {
         for (_iterator21.s(); !(_step21 = _iterator21.n()).done;) {
-          var module = _step21.value;
-          if (module.fullName === "") {
+          var _module4 = _step21.value;
+          if (_module4.fullName === "") {
             continue;
           }
-          module.registerImports(typeRegistry);
+          _module4.registerImports(typeRegistry);
         }
       } catch (err) {
         _iterator21.e(err);
@@ -2991,13 +2994,14 @@ var Library = /*#__PURE__*/function () {
 }();
 var Libraries = /*#__PURE__*/function (_Map) {
   function Libraries(librariesConfiguration) {
-    var _this11;
+    var _this12;
     _classCallCheck(this, Libraries);
-    _this11 = _callSuper(this, Libraries);
+    _this12 = _callSuper(this, Libraries);
+    _this12.defaultColor = _resolve_colour("FUNCTIONS");
     for (var name in librariesConfiguration) {
-      _this11.set(name, new Library(name, librariesConfiguration[name], _this11));
+      _this12.set(name, new Library(name, librariesConfiguration[name], _this12));
     }
-    return _this11;
+    return _this12;
   }
   _inherits(Libraries, _Map);
   return _createClass(Libraries, [{
@@ -3075,228 +3079,16 @@ var Libraries = /*#__PURE__*/function (_Map) {
     }
   }]);
 }(/*#__PURE__*/_wrapNativeSuper(Map));
-/**
- * Default collection of libraries for BlockMirror
- *
- * Library metadata is prefixed with __
- * Member signatures can be defined as strings or as JSON objects with additional metadata.
- *
- * {
- *     'libraryName': {
- *         __color: optional color code for this library,
- *         __toolbox: optional boolean to show or hide library in toolbox - defaults to dynamic based on imports
- *         'fully qualified module name': [
- *             'module member signature',
- *             {
- *                 signature: 'module member signature',
- *                 custom: optional custom block creation function,
- *                 color: optional color,
- *             },
- *             {
- *                 signatures: [
- *                   'module member signature',
- *                   ...
- *                 ],
- *                 custom: optional custom block creation function,
- *                 color: optional color,
- *             },
- *             ...
- *         ]
- *         'fully qualified class name': [
- *             'class member signature',
- *             {
- *                 signature: 'class member signature',
- *                 custom: optional custom block creation function,
- *                 color: optional color,
- *             },
- *             {
- *                signatures: [
- *                   'class member signature',
- *                   ...
- *                 ],
- *                 custom: optional custom block creation function,
- *                 color: optional color,
- *             },
- *             ...
- *         ],
- *         ...
- *     },
- *     ...
- * }
- */
-// TODO argument keywords are not yet translated to a message
-BlockMirror.LIBRARIES = {
-  // TODO consistency of colors may be improved, backward compatible for now
-  'builtin dict': {
-    __colour: BlockMirrorTextToBlocks.COLOR.DICTIONARY,
-    __toolbox: false,
-    'class collections.abc.Mapping': ['get(self, key, default=None, /): Any', 'items(self): Any', 'keys(self): Any', 'values(self): Any'],
-    'class collections.abc.MutableMapping(collections.abc.Mapping)': ['popitem(self): Any', 'setdefault(self, key, default=None, /): Any'],
-    'class dict(collections.abc.MutableMapping)': ['__init__(self, mapping=None, /, **kwargs)',
-    // TODO is this sufficiently accurate?
-    'fromkeys(cls, iterable, value=None, /): dict']
-  },
-  'builtin file': {
-    __colour: BlockMirrorTextToBlocks.COLOR.FILE,
-    __toolbox: false,
-    '': ['input(prompt: str | None = None): str',
-    // TODO check category/color
-    "open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None): Any", "print(*objects, sep: str = ' ', end: str ='\\n', file=None, flush: bool = False)" // TODO check category/color
-    ]
-  },
-  'builtin list': {
-    __colour: BlockMirrorTextToBlocks.COLOR.LIST,
-    __toolbox: false,
-    'class collections.abc.Sequence': ['count(self, item, /): int', 'index(self, item, /): int'],
-    'class collections.abc.MutableSequence(collections.abc.Sequence)': ['append(self, value): None // to list {} append (___)', 'extend(self, other: collections.abc.Sequence, /): None', 'insert(self, pos, elmnt, /): None // to list {} insert at (___, ___)', 'reverse(self): collections.abc.MutableSequence'],
-    'class list(collections.abc.MutableSequence)': ['__init__(self, iterable = None, /)', 'copy(self): list', 'sort(self, *, reverse: bool = False, key = None)', {
-      signatures: ['clear(self): None', 'pop(self, pos: int | None = None, /): Any', 'remove(self, value: Any): None'],
-      colour: BlockMirrorTextToBlocks.COLOR.SEQUENCES
-    }]
-  },
-  'builtin math': {
-    __colour: BlockMirrorTextToBlocks.COLOR.MATH,
-    __toolbox: false,
-    '': ['abs(x: Any, /): Any', 'bin(x: Any, /): str', 'hash(object, /): int', 'hex(int, /): str', 'min(iterable, *, key=None): Any',
-    // TODO *args variant and default argument
-    'max(iterable, *, key=None): Any',
-    // TODO *args variant and default argument
-    'oct(int, /): str', 'pow(base, exp, mod=None): Any', 'round(number: float | int, ndigits: int | None = None): float | int // round(___)', 'sum(iterable, /, start: float | int = 0): float | int', 'divmod(a: float | int, b: float | int): tuple[int, float]'],
-    'class numbers.Number': [],
-    'class numbers.Complex(numbers.Number)': ['conjugate(self): numbers.Complex'],
-    'class numbers.Real(numbers.Complex)': [],
-    'class numbers.Rational(numbers.Real)': [],
-    'class numbers.Integral(numbers.Rational)': [],
-    'class complex(numbers.Complex)': ['__init__(self, real=0, /, imag=0): ' // TODO would need support for multiple signatures to improve accuracy
-    ],
-    'class float(numbers.Real)': ['__init__(self, value: float | str = 0.0, /): None', 'as_integer_ratio(self): tuple[int, int]', 'fromhex(cls, string: str): float // fromhex(___)', 'hex(): str', 'is_integer(self): bool'],
-    'class int(numbers.Integral)': ['__init__(self, value: int | str = 0, /, base: int = 10): None', 'as_integer_ratio(self): tuple[int, int]', 'bit_length(self): int', 'from_bytes(cls, bytes, byteorder: str = "big", *, signed: bool = False): int // from_bytes(___)', 'to_bytes(self, length: int = 1, byteorder: str ="big", *, signed: bool = False): bytes', 'is_integer(self): bool']
-  },
-  'builtin oo': {
-    __colour: BlockMirrorTextToBlocks.COLOR.OO,
-    __toolbox: false,
-    '': ['callable(object: Any, /): bool', 'classmethod(method, /): Any', 'getattr(object, name: str): Any',
-    // TODO support default parameter
-    'hasattr(object, name: str, /): bool', 'isinstance(object, classinfo, /): bool', 'issubclass(object, classinfo, /): bool', 'setattr(object, name, value, /): None',
-    // TODO inconsistent with delattr color
-    'staticmethod(method, /): Any', {
-      signatures: ['all(iterable): bool', 'any(iterable): bool'],
-      colour: BlockMirrorTextToBlocks.COLOR.LOGIC
-    }],
-    'class bool': [{
-      signature: '__init__(self, object: Any = False, /): None',
-      colour: BlockMirrorTextToBlocks.COLOR.LOGIC
-    }],
-    'class object': [{
-      signatures: ['__enter__(self): Any', '__exit__(self, exc_type, exc_value, traceback): None'],
-      color: BlockMirrorTextToBlocks.COLOR.CONTROL
-    }, {
-      signature: '__iter__(self): iterator',
-      color: BlockMirrorTextToBlocks.COLOR.SEQUENCES
-    }, {
-      signatures: ['__lt__(self, other): bool', '__le__(self, other): bool', '__eq__(self, other): bool', '__ne__(self, other): bool', '__gt__(self, other): bool', '__ge__(self, other): bool'],
-      color: BlockMirrorTextToBlocks.COLOR.LOGIC
-    }],
-    'class property': ['__init__(self, fget=None, fset=None, fdel=None, doc=None): None'],
-    'class super': ['__init__(self, type, object_or_type=None, /): None'],
-    'class type': ['mro(): Any', '__subclasses__(): None']
-  },
-  'builtin sequences': {
-    __colour: BlockMirrorTextToBlocks.COLOR.SEQUENCES,
-    __toolbox: false,
-    '': ['enumerate(iterable, start: int = 0): iterator', 'filter(function, iterable): iterator', 'iter(object, sentinel = ___): iterator', 'len(s): int', 'map(function, iterable, *iterables): iterator', 'next(iterator, default = ___): Any', 'reversed(seq): iterator', 'sorted(iterable, /, *, key = None, reverse: boolean = False): list', 'zip(*iterables, strict: boolean = False): iterator'],
-    'class bytes': [{
-      signatures: ['__init__(self, source, encoding = None, errors = None): None',
-      // TODO not fully accurate
-      'decode(encoding: str = "utf-8", errors: str = "strict"): str'],
-      colour: BlockMirrorTextToBlocks.COLOR.TEXT
-    }, {
-      signature: 'fromhex(cls, string: str, /): bytes',
-      colour: BlockMirrorTextToBlocks.COLOR.MATH
-    }],
-    'class iterator': ['__next__(self): Any'],
-    'class range': ['__init__(self, startOrStop: int, stop: int | None = None, step: int = 1, /): None'],
-    'class slice': ['__init__(self, startOrStop: int, stop: int | None = None, step:int | None = None, /): None']
-  },
-  'builtin set': {
-    __colour: BlockMirrorTextToBlocks.COLOR.SET,
-    __toolbox: false,
-    'class collections.abc.Set(collections.abc.Collection)': ['isdisjoint(self, other, /): bool', 'issubset(self, other, /): bool', 'issuperset(self, other, /): bool'],
-    'class collections.abc.MutableSet(collections.abc.Set)': [],
-    'class set(collections.abc.MutableSet)': ['__init__(self, iterable = None, /): None', 'add(self, elem, /): None', 'difference(self, *others, /): set',
-    // TODO handle *arg
-    'difference_update(self, *others, /): None',
-    // TODO handle *arg
-    'discard(self, elem, /): None', 'intersection(self, *others, /): set',
-    // TODO handle *arg
-    'intersection_update(self, *others, /): None',
-    // TODO handle *arg
-    'symmetric_difference(self, others, /): set', 'symmetric_difference_update(self, others, /): None', 'union(self, *others, /): set',
-    // TODO handle *arg
-    'update(self, *others, /): None' // TODO handle *arg
-    ],
-    'class frozenset(collections.abc.Set)': [{
-      signature: '__init__(self, iterable = None, /): None',
-      colour: BlockMirrorTextToBlocks.COLOR.SEQUENCES
-    }]
-  },
-  'builtin python': {
-    __colour: BlockMirrorTextToBlocks.COLOR.PYTHON,
-    __toolbox: false,
-    '': ['breakpoint(*args, **kws): None', 'compile(source, filename, mode, flags: int = 0, dont_inherit: bool = False, optimize: int = -1)', 'dir(object = None): list', 'eval(source, /, globals: dict | None = None, locals=None): Any', 'exec(source, /, globals: dict | None = None, locals=None, *, closure=None): None', 'help(request = None): Any', 'id(object, /): int', '__import__(name, globals=None, locals=None, fromlist=(), level: int = 0)'],
-    'class memoryview': ['__init__(self, object): None', 'tobytes(self, order: str = "C"): bytes', 'tolist(self): list', 'release(self): None', 'cast(self, format: str, shape: list[int] | None = None, /): list']
-  },
-  'builtin text': {
-    __colour: BlockMirrorTextToBlocks.COLOR.TEXT,
-    __toolbox: false,
-    '': ['ascii(object: Any, /): str', 'chr(i: int, /): str', "format(value: Any, format_spec=''): Any", 'ord(c: str, /): int', 'repr(object: Any, /): str'],
-    'class bytearray': ['__init__(self, source = None, encoding = None, errors = None, /): None' // TODO not fully accurate
-    ],
-    'class str': ["__init__(self, object: str = '', encoding: str = 'utf-8', errors: str = 'strict'): None // str(___)", 'capitalize(self): str', 'casefold(self): str', 'center(self, width: int, fillchar: str = " ", /): str', 'count(self, sub, start: int | None = None, end: int | None = None, /): int', 'encode(self, encoding: str = "utf-8", errors: str = "strict"): str', 'endswith(self, suffix, start: int | None = None, end: int | None = None, /): bool', 'expandtabs(self, tabsize: int = 8): self', 'find(self, sub, start: int | None = None, end: int | None = None, /): int', 'format(self, *args, **kwargs): str',
-    // TODO handling of args and kwargs
-    'format_map(self, mapping, /): str', 'index(self, sub, start: int | None = None, end: int | None = None, /): int', 'isalnum(self): bool', 'isalpha(self): bool', 'isdecimal(self): bool', 'isdigit(self): bool', 'isidentifier(self): bool', 'islower(self): bool', 'isnumeric(self): bool', 'isprintable(self): bool', 'isspace(self): bool', 'istitle(self): bool', 'isupper(self): bool', 'join(self, iterable): str', 'ljust(self, width: int, fillchar: str = " ", /): str', 'lower(self): str', 'lstrip(self, chars: str | None = None, /): str', 'maketrans(self, x, y: str | None = None, z: str | None = None, /): str', 'partition(self, sep: str, /): tuple[str, str, str]', 'replace(self, old: str, new: str, count: int = -1, /): str', 'rfind(self, sub, start: int | None = None, end: int | None = None, /): int', 'rindex(self, sub, start: int | None = None, end: int | None = None, /): int', 'rjust(self, width: int, fillchar: str = " ", /): str', 'rpartition(self, sep: str, /): tuple[str, str, str]', 'rsplit(self, sep: str | None = None, maxsplit: int = -1): list[str]', 'rstrip(self, chars: str | None = None): str', 'split(self, sep: str | None = None, maxsplit: int = -1): list[str]', 'splitlines(self, keepends: bool = False): list[str]', 'startswith(self, prefix, start: int | None = None, end: int | None = None, /): bool', 'strip(self, chars: str | None = None): str', 'swapcase(self): str', 'title(self): str', 'translate(self, table): str', 'upper(self): str', 'zfill(self, width: int): str']
-  },
-  'builtin tuple': {
-    __colour: BlockMirrorTextToBlocks.COLOR.TUPLE,
-    __toolbox: false,
-    'class tuple': ['__init__(self, iterable = None, /): None']
-  },
-  'builtin variables': {
-    __colour: BlockMirrorTextToBlocks.COLOR.VARIABLES,
-    __toolbox: false,
-    '': ['delattr(object, name: str, /): None', 'globals(): dict', 'locals(): dict', 'vars(object = None, /): dict']
-  },
-  cisc108: {
-    __colour: BlockMirrorTextToBlocks.COLOR.PYTHON,
-    __toolbox: false,
-    'cisc108': ['assert_equal(x: Any, y: Any, precision: int = 4, exact_strings: bool = False, *args): bool' // TODO support *args
-    ]
-  },
-  image: {
-    __toolbox: false,
-    'class Image': [{
-      signature: '__init__(self, src: str, /): None',
-      custom: BlockMirrorTextToBlocks.ast_Image
-    }]
-  },
-  matplotlib: {
-    __toolbox: false,
-    __colour: BlockMirrorTextToBlocks.COLOR.PLOTTING,
-    'matplotlib.pyplot as plt': ['show(*, block: bool | None = None): None // show plot canvas', "hist(x, bins=None, *, range=None, density=False, weights=None, cumulative: bool = False, bottom=None, histtype: str = 'bar', align: str = 'mid', orientation: str = 'vertical', rwidth: float | None = None, log: bool = False, color=None, label=None, stacked: bool = False, data=None, **kwargs): Any // plot histogram", "bar(x, height, width=0.8, bottom=None, *, align: str = 'center', data=None, tick_label = None, **kwargs): Any // plot bar chart",
-    // tick_label added explicitly
-    "plot(*args, scalex: bool = True, scaley: bool = True, data=None, **kwargs): list // plot line", "boxplot(x, *, notch=None, sym=None, vert=None, orientation='vertical', whis=None, positions=None, widths=None, patch_artist=None, bootstrap=None, usermedians=None, conf_intervals=None, meanline=None, showmeans=None, showcaps=None, showbox=None, showfliers=None, boxprops=None, tick_labels=None, flierprops=None, medianprops=None, meanprops=None, capprops=None, whiskerprops=None, manage_ticks=True, autorange=False, zorder=None, capwidths=None, label=None, data=None): dict // plot boxplot", "hlines(y, xmin, xmax, colors=None, linestyles='solid', *, label='', data=None, **kwargs): Any // plot horizontal line", "vlines(x, ymin, ymax, colors=None, linestyles='solid', *, label='', data=None, **kwargs): Any // plot vertical line", "scatter(x, y, s=None, c=None, *, marker=None, cmap=None, norm=None, vmin=None, vmax=None, alpha=None, linewidths=None, edgecolors=None, colorizer=None, plotnonfinite=False, data=None, **kwargs) // plot scatter", "title(label: str, fontdict=None, loc=None, pad=None, *, y=None, **kwargs): Any // make plot's title", "xlabel(xlabel: str, fontdict=None, labelpad=None, *, loc=None, **kwargs): None // make plot's x-axis label", "ylabel(ylabel, fontdict=None, labelpad=None, *, loc=None, **kwargs) // make plot's y-axis label", 'xticks(ticks=None, labels=None, *, minor=False, **kwargs) // make x ticks', 'yticks(ticks=None, labels=None, *, minor=False, **kwargs) // make y ticks']
-  },
-  turtle: {
-    __colour: BlockMirrorTextToBlocks.COLOR.PLOTTING,
-    turtle: ['forward fd(amount: float): None // move turtle forward by(50)', 'backward bd(amount: float): None // move turtle backward by(50)', 'right rt(angle: float): None // turn turtle right by(90)', 'left lt(angle: float): None // turn turtle left by(90)', 'goto setpos setposition(x: float, y: float): None // move turtle to position(0, 0)', "setx(x: float): None // set turtle's x position to(100)", "sety(y: float): None // set turtle's y position to(100)", "setheading seth(angle: float): None // set turtle's heading to(270)", 'home(): None // move turtle to origin', 'circle(radius: float): None // move the turtle in a circle', 'dot(size: float, color: Any): None // turtle draws a dot(0, )', 'stamp(): Any // stamp a copy of the turtle shape()', 'clearstamp(stampid: Any): None // delete stamp with id', 'clearstamps(): None // delete all stamps', 'undo(): None // undo last turtle action', 'speed(speed: int | None = None): int | None // set or get turtle speed()', "position pos(): (float, float) // get turtle's position", 'towards(x: float, y: float): float // get the angle from the turtle to the point', "xcor(): float // get turtle's x position", "ycor(): float // get turtle's y position", "heading(): float // get turtle's heading", "distance(x: float, y: float): float // get the distance from turtle's position to()", 'degrees(): None // set turtle mode to degrees', 'radians(): None // set turtle mode to radians', 'pendown pd down(): None // pull turtle pen down', 'penup pu up(): None // pull turtle pen up',
-    // Skipped some
-    'pensize(width: float | None = None): float | None // set or get the pen size()',
-    // Skipped some
-    'pensize(width: float | None = None): float | None // set or get the pen size()', "pencolor(color: tuple[float, float, float] | str | None = None): tuple[float, float, float] | None // set or get the pen color('blue')", "fillcolor(color: tuple[float, float, float] | str | None = None): tuple[float, float, float] | None // set or get the fill color('yellow')", 'reset(): None // reset drawing', 'clear(): None // clear drawing', 'write(message: str): None // write text',
-    // Skipped some
-    'bgpic(url: str): None // set background to', 'done mainloop(): None // start the turtle loop', 'setup(width: float, height: float): None // set drawing area size', 'title(message: str): None // set title of drawing area', 'bye(): None // say goodbye to turtles']
-  }
-};
+if (typeof module !== 'undefined') {
+  module.exports = {
+    Libraries: Libraries,
+    Library: Library,
+    PythonModule: PythonModule,
+    PythonClass: PythonClass,
+    PythonFunction: PythonFunction,
+    PythonAttribute: PythonAttribute
+  };
+}
 BlockMirrorTextToBlocks['ast_Image'] = function (node, parent, bmttb) {
   if (!bmttb.blockMirror.configuration.imageMode) {
     throw "Not using image constructor";
@@ -5939,7 +5731,7 @@ python.pythonGenerator.forBlock["ast_JoinedStr"] = function (block, generator) {
   return [code, python.Order.ATOMIC];
 };
 BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
-  var _this12 = this;
+  var _this13 = this;
   var values = node.values;
   var elements = {};
   values.forEach(function (v, i) {
@@ -5947,8 +5739,8 @@ BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
       console.log(v);
       if (!v.conversion && !v.format_spec) {
         elements["ADD" + i] = BlockMirrorTextToBlocks.create_block("ast_FormattedValue", v.lineno, {}, {
-          "VALUE": _this12.convert(v.value, node)
-        }, _this12.LOCKED_BLOCK);
+          "VALUE": _this13.convert(v.value, node)
+        }, _this13.LOCKED_BLOCK);
       } else {
         var format_spec = v.format_spec ? chompExclamation(v.format_spec.values[0].s.v) : "";
         // Can there ever be a non-1 length format_spec?
@@ -5956,14 +5748,14 @@ BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
           "FORMAT_SPEC": format_spec,
           "CONVERSION": v.conversion
         }, {
-          "VALUE": _this12.convert(v.value, node)
-        }, _this12.LOCKED_BLOCK);
+          "VALUE": _this13.convert(v.value, node)
+        }, _this13.LOCKED_BLOCK);
       }
     } else if (v._astname === "Str") {
       var text = Sk.ffi.remapToJs(v.s);
       elements["ADD" + i] = BlockMirrorTextToBlocks.create_block("ast_JoinedStrStr", v.lineno, {
         "TEXT": text
-      }, {}, _this12.LOCKED_BLOCK);
+      }, {}, _this13.LOCKED_BLOCK);
     }
   });
   return BlockMirrorTextToBlocks.create_block("ast_JoinedStr", node.lineno, {}, elements, {
@@ -6282,11 +6074,11 @@ Blockly.Blocks['ast_Call'] = {
     this.quarkIds_ = paramIds;
     // Reconnect any child blocks.
     if (this.quarkIds_) {
-      for (var _i7 = 0; _i7 < this.arguments_.length; _i7++) {
-        var quarkId = this.quarkIds_[_i7];
+      for (var _i6 = 0; _i6 < this.arguments_.length; _i6++) {
+        var quarkId = this.quarkIds_[_i6];
         if (quarkId in this.quarkConnections_) {
           var _connection = this.quarkConnections_[quarkId];
-          if (!(_connection !== null && _connection !== void 0 && _connection.reconnect(this, 'ARG' + _i7))) {
+          if (!(_connection !== null && _connection !== void 0 && _connection.reconnect(this, 'ARG' + _i6))) {
             // Block no longer exists or has been attached elsewhere.
             delete this.quarkConnections_[quarkId];
           }
@@ -6715,23 +6507,23 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     }
   }
   if (fromLibrary instanceof PythonFunction) {
-    for (var _i8 = overallI; _i8 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i8 += 1) {
-      var pythonParameter = fromLibrary.parameters[_i8 + fromLibrary.argumentOffset];
+    for (var _i7 = overallI; _i7 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i7 += 1) {
+      var pythonParameter = fromLibrary.parameters[_i7 + fromLibrary.argumentOffset];
       if (pythonParameter.keyword || pythonParameter.preferKeyword) {
         break;
       }
       if (pythonParameter.defaultValue !== "") {
         var _this$convertSource$r;
-        argumentsNormal["ARG" + _i8] = (_this$convertSource$r = this.convertSource("positionalDefaultValue.py", "\n".repeat(node.lineno - 1) + "p=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE']) === null || _this$convertSource$r === void 0 ? void 0 : _this$convertSource$r.children[0];
+        argumentsNormal["ARG" + _i7] = (_this$convertSource$r = this.convertSource("positionalDefaultValue.py", "\n".repeat(node.lineno - 1) + "p=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE']) === null || _this$convertSource$r === void 0 ? void 0 : _this$convertSource$r.children[0];
       }
-      argumentsMutation["UNKNOWN_ARG:" + _i8] = null;
+      argumentsMutation["UNKNOWN_ARG:" + _i7] = null;
       overallI += 1;
     }
   }
   var foundKeywords = new Set();
   if (keywords !== null) {
-    for (var _i9 = 0; _i9 < keywords.length; _i9 += 1, overallI += 1) {
-      var keyword = keywords[_i9];
+    for (var _i8 = 0; _i8 < keywords.length; _i8 += 1, overallI += 1) {
+      var keyword = keywords[_i8];
       var arg = keyword.arg;
       var value = keyword.value;
       if (arg === null) {
@@ -6746,8 +6538,8 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     }
   }
   if (fromLibrary instanceof PythonFunction) {
-    for (var _i10 = overallI - foundKeywords.size; _i10 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i10 += 1) {
-      var _pythonParameter = fromLibrary.parameters[_i10 + fromLibrary.argumentOffset];
+    for (var _i9 = overallI - foundKeywords.size; _i9 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i9 += 1) {
+      var _pythonParameter = fromLibrary.parameters[_i9 + fromLibrary.argumentOffset];
       if (!(_pythonParameter.keyword || _pythonParameter.preferKeyword) || foundKeywords.has(_pythonParameter.name)) {
         continue;
       }
@@ -7688,16 +7480,16 @@ Blockly.Blocks['ast_FunctionDef'] = {
     this.parametersCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var _i11 = 0; _i11 < this.parametersCount_; _i11++) {
+    for (var _i10 = 0; _i10 < this.parametersCount_; _i10++) {
       var _connections$_i;
-      (_connections$_i = connections[_i11]) === null || _connections$_i === void 0 || _connections$_i.reconnect(this, 'PARAMETER' + _i11);
-      if (!connections[_i11]) {
-        var createName = 'ast_Function' + blockTypes[_i11].substring('ast_FunctionMutant'.length);
+      (_connections$_i = connections[_i10]) === null || _connections$_i === void 0 || _connections$_i.reconnect(this, 'PARAMETER' + _i10);
+      if (!connections[_i10]) {
+        var createName = 'ast_Function' + blockTypes[_i10].substring('ast_FunctionMutant'.length);
         var _itemBlock4 = this.workspace.newBlock(createName);
         _itemBlock4.setDeletable(false);
         _itemBlock4.setMovable(false);
         _itemBlock4.initSvg();
-        this.getInput('PARAMETER' + _i11).connection.connect(_itemBlock4.outputConnection);
+        this.getInput('PARAMETER' + _i10).connection.connect(_itemBlock4.outputConnection);
         _itemBlock4.render();
         //this.get(itemBlock, 'ADD'+i)
       }
@@ -7752,8 +7544,8 @@ python.pythonGenerator.forBlock['ast_FunctionDef'] = function (block, generator)
   }
   // Parameters
   var parameters = new Array(block.parametersCount_);
-  for (var _i12 = 0; _i12 < block.parametersCount_; _i12++) {
-    parameters[_i12] = python.pythonGenerator.valueToCode(block, 'PARAMETER' + _i12, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i11 = 0; _i11 < block.parametersCount_; _i11++) {
+    parameters[_i11] = python.pythonGenerator.valueToCode(block, 'PARAMETER' + _i11, python.Order.NONE) || python.pythonGenerator.blank;
   }
   // Return annotation
   var returns = "";
@@ -7810,14 +7602,14 @@ BlockMirrorTextToBlocks.prototype.parseArgs = function (args, values, lineno, no
   }
   // keyword arguments that must be referenced by name
   if (kwonlyargs !== null) {
-    for (var _i13 = 0; _i13 < kwonlyargs.length; _i13++) {
+    for (var _i12 = 0; _i12 < kwonlyargs.length; _i12++) {
       var _childValues = {};
       var _type = 'ast_FunctionParameter';
-      if (kw_defaults[_i13]) {
-        _childValues['DEFAULT'] = this.convert(kw_defaults[_i13], node);
+      if (kw_defaults[_i12]) {
+        _childValues['DEFAULT'] = this.convert(kw_defaults[_i12], node);
         _type += "Default";
       }
-      values['PARAMETER' + totalArgs] = this.parseArg(kwonlyargs[_i13], _type, lineno, _childValues, node);
+      values['PARAMETER' + totalArgs] = this.parseArg(kwonlyargs[_i12], _type, lineno, _childValues, node);
       totalArgs += 1;
     }
   }
@@ -8277,16 +8069,16 @@ Blockly.Blocks['ast_ClassDef'] = {
       }
       this.moveInputBefore('DECORATOR' + i, 'BODY');
     }
-    for (var _i14 = 0; _i14 < this.bases_; _i14++) {
-      var _input = this.appendValueInput("BASE" + _i14).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT);
-      if (_i14 === 0) {
+    for (var _i13 = 0; _i13 < this.bases_; _i13++) {
+      var _input = this.appendValueInput("BASE" + _i13).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT);
+      if (_i13 === 0) {
         _input.appendField("inherits from");
       }
-      this.moveInputBefore('BASE' + _i14, 'BODY');
+      this.moveInputBefore('BASE' + _i13, 'BODY');
     }
-    for (var _i15 = 0; _i15 < this.keywords_; _i15++) {
-      this.appendValueInput("KEYWORDVALUE" + _i15).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT).appendField(new Blockly.FieldTextInput("metaclass"), "KEYWORDNAME" + _i15).appendField("=");
-      this.moveInputBefore('KEYWORDVALUE' + _i15, 'BODY');
+    for (var _i14 = 0; _i14 < this.keywords_; _i14++) {
+      this.appendValueInput("KEYWORDVALUE" + _i14).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT).appendField(new Blockly.FieldTextInput("metaclass"), "KEYWORDNAME" + _i14).appendField("=");
+      this.moveInputBefore('KEYWORDVALUE' + _i14, 'BODY');
     }
   },
   /**
@@ -8324,18 +8116,18 @@ python.pythonGenerator.forBlock['ast_ClassDef'] = function (block, generator) {
   }
   // Bases
   var bases = new Array(block.bases_);
-  for (var _i16 = 0; _i16 < block.bases_; _i16++) {
-    bases[_i16] = python.pythonGenerator.valueToCode(block, 'BASE' + _i16, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i15 = 0; _i15 < block.bases_; _i15++) {
+    bases[_i15] = python.pythonGenerator.valueToCode(block, 'BASE' + _i15, python.Order.NONE) || python.pythonGenerator.blank;
   }
   // Keywords
   var keywords = new Array(block.keywords_);
-  for (var _i17 = 0; _i17 < block.keywords_; _i17++) {
-    var _name2 = block.getFieldValue('KEYWORDNAME' + _i17);
-    var value = python.pythonGenerator.valueToCode(block, 'KEYWORDVALUE' + _i17, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i16 = 0; _i16 < block.keywords_; _i16++) {
+    var _name2 = block.getFieldValue('KEYWORDNAME' + _i16);
+    var value = python.pythonGenerator.valueToCode(block, 'KEYWORDVALUE' + _i16, python.Order.NONE) || python.pythonGenerator.blank;
     if (_name2 == '**') {
-      keywords[_i17] = '**' + value;
+      keywords[_i16] = '**' + value;
     } else {
-      keywords[_i17] = _name2 + '=' + value;
+      keywords[_i16] = _name2 + '=' + value;
     }
   }
   // Body:
@@ -8361,18 +8153,18 @@ BlockMirrorTextToBlocks.prototype['ast_ClassDef'] = function (node, parent) {
     }
   }
   if (bases !== null) {
-    for (var _i18 = 0; _i18 < bases.length; _i18++) {
-      values['BASE' + _i18] = this.convert(bases[_i18], node);
+    for (var _i17 = 0; _i17 < bases.length; _i17++) {
+      values['BASE' + _i17] = this.convert(bases[_i17], node);
     }
   }
   if (keywords !== null) {
-    for (var _i19 = 0; _i19 < keywords.length; _i19++) {
-      values['KEYWORDVALUE' + _i19] = this.convert(keywords[_i19].value, node);
-      var arg = keywords[_i19].arg;
+    for (var _i18 = 0; _i18 < keywords.length; _i18++) {
+      values['KEYWORDVALUE' + _i18] = this.convert(keywords[_i18].value, node);
+      var arg = keywords[_i18].arg;
       if (arg === null) {
-        fields['KEYWORDNAME' + _i19] = "**";
+        fields['KEYWORDNAME' + _i18] = "**";
       } else {
-        fields['KEYWORDNAME' + _i19] = Sk.ffi.remapToJs(arg);
+        fields['KEYWORDNAME' + _i18] = Sk.ffi.remapToJs(arg);
       }
     }
   }
@@ -8728,3 +8520,424 @@ python.pythonGenerator.forBlock['ast_Raw'] = function (block, generator) {
   var code = block.getFieldValue('TEXT') + "\n";
   return code;
 };
+BlockMirror.LIBRARIES['cisc108'] = {
+  "__colour": "PYTHON",
+  "__toolbox": false,
+  "cisc108": [
+    "assert_equal(x: Any, y: Any, precision: int = 4, exact_strings: bool = False, *args): bool"
+  ]
+};
+
+BlockMirror.LIBRARIES['image'] = {
+  "__toolbox": false,
+  "class Image": [
+    {
+      "signature": "__init__(self, src: str, /): None",
+      "custom": "BlockMirrorTextToBlocks.ast_Image"
+    }
+  ]
+};
+
+BlockMirror.LIBRARIES['matplotlib'] = {
+  "__toolbox": false,
+  "__colour": "PLOTTING",
+  "matplotlib.pyplot as plt": [
+    "show(*, block: bool | None = None): None // show plot canvas",
+    "hist(x, bins=None, *, range=None, density=False, weights=None, cumulative: bool = False, bottom=None, histtype: str = 'bar', align: str = 'mid', orientation: str = 'vertical', rwidth: float | None = None, log: bool = False, color=None, label=None, stacked: bool = False, data=None, **kwargs): Any // plot histogram",
+    "bar(x, height, width=0.8, bottom=None, *, align: str = 'center', data=None, tick_label = None, **kwargs): Any // plot bar chart",
+    "plot(*args, scalex: bool = True, scaley: bool = True, data=None, **kwargs): list // plot line",
+    "boxplot(x, *, notch=None, sym=None, vert=None, orientation='vertical', whis=None, positions=None, widths=None, patch_artist=None, bootstrap=None, usermedians=None, conf_intervals=None, meanline=None, showmeans=None, showcaps=None, showbox=None, showfliers=None, boxprops=None, tick_labels=None, flierprops=None, medianprops=None, meanprops=None, capprops=None, whiskerprops=None, manage_ticks=True, autorange=False, zorder=None, capwidths=None, label=None, data=None): dict // plot boxplot",
+    "hlines(y, xmin, xmax, colors=None, linestyles='solid', *, label='', data=None, **kwargs): Any // plot horizontal line",
+    "vlines(x, ymin, ymax, colors=None, linestyles='solid', *, label='', data=None, **kwargs): Any // plot vertical line",
+    "scatter(x, y, s=None, c=None, *, marker=None, cmap=None, norm=None, vmin=None, vmax=None, alpha=None, linewidths=None, edgecolors=None, colorizer=None, plotnonfinite=False, data=None, **kwargs) // plot scatter",
+    "title(label: str, fontdict=None, loc=None, pad=None, *, y=None, **kwargs): Any // make plot's title",
+    "xlabel(xlabel: str, fontdict=None, labelpad=None, *, loc=None, **kwargs): None // make plot's x-axis label",
+    "ylabel(ylabel, fontdict=None, labelpad=None, *, loc=None, **kwargs) // make plot's y-axis label",
+    "xticks(ticks=None, labels=None, *, minor=False, **kwargs) // make x ticks",
+    "yticks(ticks=None, labels=None, *, minor=False, **kwargs) // make y ticks"
+  ]
+};
+
+BlockMirror.LIBRARIES['turtle'] = {
+    "__colour": "PLOTTING",
+    "turtle": [
+        "forward fd(amount: float): None // move turtle forward by(50)",
+        "backward bd(amount: float): None // move turtle backward by(50)",
+        "right rt(angle: float): None // turn turtle right by(90)",
+        "left lt(angle: float): None // turn turtle left by(90)",
+        "goto setpos setposition(x: float, y: float): None // move turtle to position(0, 0)",
+        "setx(x: float): None // set turtle's x position to(100)",
+        "sety(y: float): None // set turtle's y position to(100)",
+        "setheading seth(angle: float): None // set turtle's heading to(270)",
+        "home(): None // move turtle to origin",
+        "circle(radius: float): None // move the turtle in a circle",
+        "dot(size: float, color: Any): None // turtle draws a dot(0, )",
+        "stamp(): Any // stamp a copy of the turtle shape()",
+        "clearstamp(stampid: Any): None // delete stamp with id",
+        "clearstamps(): None // delete all stamps",
+        "undo(): None // undo last turtle action",
+        "speed(speed: int | None = None): int | None // set or get turtle speed()",
+        "position pos(): (float, float) // get turtle's position",
+        "towards(x: float, y: float): float // get the angle from the turtle to the point",
+        "xcor(): float // get turtle's x position",
+        "ycor(): float // get turtle's y position",
+        "heading(): float // get turtle's heading",
+        "distance(x: float, y: float): float // get the distance from turtle's position to()",
+        "degrees(): None // set turtle mode to degrees",
+        "radians(): None // set turtle mode to radians",
+        "pendown pd down(): None // pull turtle pen down",
+        "penup pu up(): None // pull turtle pen up",
+        "pensize(width: float | None = None): float | None // set or get the pen size()",
+        "pensize(width: float | None = None): float | None // set or get the pen size()",
+        "pencolor(color: tuple[float, float, float] | str | None = None): tuple[float, float, float] | None // set or get the pen color('blue')",
+        "fillcolor(color: tuple[float, float, float] | str | None = None): tuple[float, float, float] | None // set or get the fill color('yellow')",
+        "reset(): None // reset drawing",
+        "clear(): None // clear drawing",
+        "write(message: str): None // write text",
+        "bgpic(url: str): None // set background to",
+        "done mainloop(): None // start the turtle loop",
+        "setup(width: float, height: float): None // set drawing area size",
+        "title(message: str): None // set title of drawing area",
+        "bye(): None // say goodbye to turtles"
+    ]
+}
+;
+
+BlockMirror.LIBRARIES['builtin dict'] = {
+  "__colour": "DICTIONARY",
+  "__toolbox": false,
+  "class collections.abc.Mapping": [
+    "get(self, key, default=None, /): Any",
+    "items(self): Any",
+    "keys(self): Any",
+    "values(self): Any"
+  ],
+  "class collections.abc.MutableMapping(collections.abc.Mapping)": [
+    "popitem(self): Any",
+    "setdefault(self, key, default=None, /): Any"
+  ],
+  "class dict(collections.abc.MutableMapping)": [
+    "__init__(self, mapping=None, /, **kwargs)",
+    "fromkeys(cls, iterable, value=None, /): dict"
+  ]
+}
+;
+
+BlockMirror.LIBRARIES['builtin file'] = {
+  "__colour": "FILE",
+  "__toolbox": false,
+  "": [
+    "input(prompt: str | None = None): str",
+    "open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None): Any",
+    "print(*objects, sep: str = ' ', end: str ='\\n', file=None, flush: bool = False)"
+  ]
+}
+;
+
+BlockMirror.LIBRARIES['builtin list'] = {
+  "__colour": "LIST",
+  "__toolbox": false,
+  "class collections.abc.Sequence": [
+    "count(self, item, /): int",
+    "index(self, item, /): int"
+  ],
+  "class collections.abc.MutableSequence(collections.abc.Sequence)": [
+    "append(self, value): None // to list {} append (___)",
+    "extend(self, other: collections.abc.Sequence, /): None",
+    "insert(self, pos, elmnt, /): None // to list {} insert at (___, ___)",
+    "reverse(self): collections.abc.MutableSequence"
+  ],
+  "class list(collections.abc.MutableSequence)": [
+    "__init__(self, iterable = None, /)",
+    "copy(self): list",
+    "sort(self, *, reverse: bool = False, key = None)",
+    {
+      "signatures": [
+        "clear(self): None",
+        "pop(self, pos: int | None = None, /): Any",
+        "remove(self, value: Any): None"
+      ],
+      "colour": "SEQUENCES"
+    }
+  ]
+};
+
+BlockMirror.LIBRARIES['builtin math'] = {
+  "__colour": "MATH",
+  "__toolbox": false,
+  "": [
+    "abs(x: Any, /): Any",
+    "bin(x: Any, /): str",
+    "hash(object, /): int",
+    "hex(int, /): str",
+    "min(iterable, *, key=None): Any",
+    "max(iterable, *, key=None): Any",
+    "oct(int, /): str",
+    "pow(base, exp, mod=None): Any",
+    "round(number: float | int, ndigits: int | None = None): float | int // round(___)",
+    "sum(iterable, /, start: float | int = 0): float | int",
+    "divmod(a: float | int, b: float | int): tuple[int, float]"
+  ],
+  "class numbers.Number": [],
+  "class numbers.Complex(numbers.Number)": [
+    "conjugate(self): numbers.Complex"
+  ],
+  "class numbers.Real(numbers.Complex)": [],
+  "class numbers.Rational(numbers.Real)": [],
+  "class numbers.Integral(numbers.Rational)": [],
+  "class complex(numbers.Complex)": [
+    "__init__(self, real=0, /, imag=0): "
+  ],
+  "class float(numbers.Real)": [
+    "__init__(self, value: float | str = 0.0, /): None",
+    "as_integer_ratio(self): tuple[int, int]",
+    "fromhex(cls, string: str): float // fromhex(___)",
+    "hex(): str",
+    "is_integer(self): bool"
+  ],
+  "class int(numbers.Integral)": [
+    "__init__(self, value: int | str = 0, /, base: int = 10): None",
+    "as_integer_ratio(self): tuple[int, int]",
+    "bit_length(self): int",
+    "from_bytes(cls, bytes, byteorder: str = \"big\", *, signed: bool = False): int // from_bytes(___)",
+    "to_bytes(self, length: int = 1, byteorder: str =\"big\", *, signed: bool = False): bytes",
+    "is_integer(self): bool"
+  ]
+};
+
+BlockMirror.LIBRARIES['builtin oo'] = {
+  "__colour": "OO",
+  "__toolbox": false,
+  "": [
+    "callable(object: Any, /): bool",
+    "classmethod(method, /): Any",
+    "getattr(object, name: str): Any",
+    "hasattr(object, name: str, /): bool",
+    "isinstance(object, classinfo, /): bool",
+    "issubclass(object, classinfo, /): bool",
+    "setattr(object, name, value, /): None",
+    "staticmethod(method, /): Any",
+    {
+      "signatures": [
+        "all(iterable): bool",
+        "any(iterable): bool"
+      ],
+      "colour": "LOGIC"
+    }
+  ],
+  "class bool": [
+    {
+      "signature": "__init__(self, object: Any = False, /): None",
+      "colour": "LOGIC"
+    }
+  ],
+  "class object": [
+    {
+      "signatures": [
+        "__enter__(self): Any",
+        "__exit__(self, exc_type, exc_value, traceback): None"
+      ],
+      "color": "CONTROL"
+    },
+    {
+      "signature": "__iter__(self): iterator",
+      "color": "SEQUENCES"
+    },
+    {
+      "signatures": [
+        "__lt__(self, other): bool",
+        "__le__(self, other): bool",
+        "__eq__(self, other): bool",
+        "__ne__(self, other): bool",
+        "__gt__(self, other): bool",
+        "__ge__(self, other): bool"
+      ],
+      "color": "LOGIC"
+    }
+  ],
+  "class property": [
+    "__init__(self, fget=None, fset=None, fdel=None, doc=None): None"
+  ],
+  "class super": [
+    "__init__(self, type, object_or_type=None, /): None"
+  ],
+  "class type": [
+    "mro(): Any",
+    "__subclasses__(): None"
+  ]
+};
+
+BlockMirror.LIBRARIES['builtin python'] = {
+  "__colour": "PYTHON",
+  "__toolbox": false,
+  "": [
+    "breakpoint(*args, **kws): None",
+    "compile(source, filename, mode, flags: int = 0, dont_inherit: bool = False, optimize: int = -1)",
+    "dir(object = None): list",
+    "eval(source, /, globals: dict | None = None, locals=None): Any",
+    "exec(source, /, globals: dict | None = None, locals=None, *, closure=None): None",
+    "help(request = None): Any",
+    "id(object, /): int",
+    "__import__(name, globals=None, locals=None, fromlist=(), level: int = 0)"
+  ],
+  "class memoryview": [
+    "__init__(self, object): None",
+    "tobytes(self, order: str = \"C\"): bytes",
+    "tolist(self): list",
+    "release(self): None",
+    "cast(self, format: str, shape: list[int] | None = None, /): list"
+  ]
+};
+
+BlockMirror.LIBRARIES['builtin sequences'] = {
+  "__colour": "SEQUENCES",
+  "__toolbox": false,
+  "": [
+    "enumerate(iterable, start: int = 0): iterator",
+    "filter(function, iterable): iterator",
+    "iter(object, sentinel = ___): iterator",
+    "len(s): int",
+    "map(function, iterable, *iterables): iterator",
+    "next(iterator, default = ___): Any",
+    "reversed(seq): iterator",
+    "sorted(iterable, /, *, key = None, reverse: boolean = False): list",
+    "zip(*iterables, strict: boolean = False): iterator"
+  ],
+  "class bytes": [
+    {
+      "signatures": [
+        "__init__(self, source, encoding = None, errors = None): None",
+        "decode(encoding: str = \"utf-8\", errors: str = \"strict\"): str"
+      ],
+      "colour": "TEXT"
+    },
+    {
+      "signature": "fromhex(cls, string: str, /): bytes",
+      "colour": "MATH"
+    }
+  ],
+  "class iterator": [
+    "__next__(self): Any"
+  ],
+  "class range": [
+    "__init__(self, startOrStop: int, stop: int | None = None, step: int = 1, /): None"
+  ],
+  "class slice": [
+    "__init__(self, startOrStop: int, stop: int | None = None, step:int | None = None, /): None"
+  ]
+}
+;
+
+BlockMirror.LIBRARIES['builtin set'] = {
+  "__colour": "SET",
+  "__toolbox": false,
+  "class collections.abc.Set(collections.abc.Collection)": [
+    "isdisjoint(self, other, /): bool",
+    "issubset(self, other, /): bool",
+    "issuperset(self, other, /): bool"
+  ],
+  "class collections.abc.MutableSet(collections.abc.Set)": [
+  ],
+  "class set(collections.abc.MutableSet)": [
+    "__init__(self, iterable = None, /): None",
+    "add(self, elem, /): None",
+    "difference(self, *others, /): set",
+    "difference_update(self, *others, /): None",
+    "discard(self, elem, /): None",
+    "intersection(self, *others, /): set",
+    "intersection_update(self, *others, /): None",
+    "symmetric_difference(self, others, /): set",
+    "symmetric_difference_update(self, others, /): None",
+    "union(self, *others, /): set",
+    "update(self, *others, /): None"
+  ],
+  "class frozenset(collections.abc.Set)": [
+    {
+      "signature": "__init__(self, iterable = None, /): None",
+      "colour": "SEQUENCES"
+    }
+  ]
+};
+
+BlockMirror.LIBRARIES['builtin text'] = {
+  "__colour": "TEXT",
+  "__toolbox": false,
+  "": [
+    "ascii(object: Any, /): str",
+    "chr(i: int, /): str",
+    "format(value: Any, format_spec=''): Any",
+    "ord(c: str, /): int",
+    "repr(object: Any, /): str"
+  ],
+  "class bytearray": [
+    "__init__(self, source = None, encoding = None, errors = None, /): None"
+  ],
+  "class str": [
+    "__init__(self, object: str = '', encoding: str = 'utf-8', errors: str = 'strict'): None // str(___)",
+    "capitalize(self): str",
+    "casefold(self): str",
+    "center(self, width: int, fillchar: str = \" \", /): str",
+    "count(self, sub, start: int | None = None, end: int | None = None, /): int",
+    "encode(self, encoding: str = \"utf-8\", errors: str = \"strict\"): str",
+    "endswith(self, suffix, start: int | None = None, end: int | None = None, /): bool",
+    "expandtabs(self, tabsize: int = 8): self",
+    "find(self, sub, start: int | None = None, end: int | None = None, /): int",
+    "format(self, *args, **kwargs): str",
+    "format_map(self, mapping, /): str",
+    "index(self, sub, start: int | None = None, end: int | None = None, /): int",
+    "isalnum(self): bool",
+    "isalpha(self): bool",
+    "isdecimal(self): bool",
+    "isdigit(self): bool",
+    "isidentifier(self): bool",
+    "islower(self): bool",
+    "isnumeric(self): bool",
+    "isprintable(self): bool",
+    "isspace(self): bool",
+    "istitle(self): bool",
+    "isupper(self): bool",
+    "join(self, iterable): str",
+    "ljust(self, width: int, fillchar: str = \" \", /): str",
+    "lower(self): str",
+    "lstrip(self, chars: str | None = None, /): str",
+    "maketrans(self, x, y: str | None = None, z: str | None = None, /): str",
+    "partition(self, sep: str, /): tuple[str, str, str]",
+    "replace(self, old: str, new: str, count: int = -1, /): str",
+    "rfind(self, sub, start: int | None = None, end: int | None = None, /): int",
+    "rindex(self, sub, start: int | None = None, end: int | None = None, /): int",
+    "rjust(self, width: int, fillchar: str = \" \", /): str",
+    "rpartition(self, sep: str, /): tuple[str, str, str]",
+    "rsplit(self, sep: str | None = None, maxsplit: int = -1): list[str]",
+    "rstrip(self, chars: str | None = None): str",
+    "split(self, sep: str | None = None, maxsplit: int = -1): list[str]",
+    "splitlines(self, keepends: bool = False): list[str]",
+    "startswith(self, prefix, start: int | None = None, end: int | None = None, /): bool",
+    "strip(self, chars: str | None = None): str",
+    "swapcase(self): str",
+    "title(self): str",
+    "translate(self, table): str",
+    "upper(self): str",
+    "zfill(self, width: int): str"
+  ]
+};
+
+BlockMirror.LIBRARIES['builtin tuple'] = {
+  "__colour": "TUPLE",
+  "__toolbox": false,
+  "class tuple": [
+    "__init__(self, iterable = None, /): None"
+  ]
+}
+;
+
+BlockMirror.LIBRARIES['builtin variables'] = {
+  "__colour": "VARIABLES",
+  "__toolbox": false,
+  "": [
+    "delattr(object, name: str, /): None",
+    "globals(): dict",
+    "locals(): dict",
+    "vars(object = None, /): dict"
+  ]
+}
+;

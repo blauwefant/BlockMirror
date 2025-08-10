@@ -1,7 +1,12 @@
 const path = require('path');
+const fs = require('fs')
 const MergeIntoSingleFilePlugin = require('webpack-merge-and-include-globally');
 const Uglify = require("uglify-js");
 const babel = require("@babel/core");
+python = {}
+python.pythonGenerator = {}
+python.pythonGenerator.blank = '_'
+const blockMirrorLibraries = require('./src/libraries.js');
 
 // Blockly
 const JS_BLOCKLY_FILES = [
@@ -140,7 +145,20 @@ const config = {
             },
             transform: {
                 "skulpt_parser.js":babelify,
-                "block_mirror.js":babelify
+                "block_mirror.js": code => {
+                    let result = babelify(code)
+                    let librariesDir = path.resolve(__dirname, 'src/libraries/')
+
+                    fs.readdirSync(librariesDir, {recursive: true}).forEach(file => {
+                        if (file.endsWith(".json")) {
+                            let libraryName = file.substring(0, file.length -5).replace('/', ' ');
+                            let libraryValue = fs.readFileSync(path.resolve(librariesDir, file), 'utf8')
+                            result += "\nBlockMirror.LIBRARIES['" + libraryName + "'] = " + libraryValue + ";\n"
+                        }
+                    });
+
+                    return result
+                }
             }
         })
     ]
