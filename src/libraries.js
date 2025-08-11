@@ -40,6 +40,7 @@ class PythonModule {
           code,
           comment,
           inputObject?.colour ?? inputObject?.color,
+          inputObject?.custom
       );
 
       for (let alias of member.aliases) {
@@ -414,7 +415,7 @@ class PythonFunction {
     return signature.includes("(");
   }
 
-  constructor(pythonModule, signature, comment, colour) {
+  constructor(pythonModule, signature, comment, colour, custom) {
     this.pythonModule = pythonModule;
     let indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
     this.typeHint =
@@ -438,6 +439,19 @@ class PythonFunction {
     this.parameters = new PythonParameters(signature, comment ?? "");
     this.fullName = pythonModule.fullName === "" ? this.name : (pythonModule.fullName + "." + this.name);
     this.isAlias = false;
+    this.colour = _resolve_colour(colour) ?? pythonModule.library.colour;
+
+    if (custom) {
+      let customResult = globalThis;
+      for (let item of custom.split('.')) {
+        customResult = customResult[item];
+      }
+      this.custom = customResult;
+    } else {
+      this.custom = null;
+    }
+
+    this.argumentOffset = 0
 
     this.aliases = aliases.map((value) => {
       // Should be better, but does not seem to preserve methods in the current toolchain:
@@ -447,15 +461,14 @@ class PythonFunction {
         pythonModule,
         value + signature.substring(signature.indexOf("(")),
         comment,
+        colour,
+        custom
       );
       result.premessage = this.premessage;
       result.message = this.message;
       result.isAlias = true;
       return result;
     });
-
-    this.colour = _resolve_colour(colour) ?? pythonModule.library.colour;
-    this.argumentOffset = 0
   }
 
   toPythonSource() {
@@ -552,6 +565,7 @@ class PythonClass {
             code,
             comment,
             inputObject?.colour ?? inputObject?.color,
+            inputObject?.custom
         );
         this.colour = member.colour;
       } else {
@@ -560,6 +574,7 @@ class PythonClass {
             code,
             comment,
             inputObject?.colour ?? inputObject?.color,
+            inputObject?.custom
         );
 
         for (let alias of member.aliases) {
@@ -618,6 +633,7 @@ class PythonClass {
         "__init__()",
         "",
         null,
+        null
     ));
 
     for (let input of members) {
@@ -774,8 +790,8 @@ class PythonAttribute {
 }
 
 class PythonMethod extends PythonFunction {
-  constructor(pythonClass, signature, comment, colour) {
-    super(pythonClass.module, signature, comment, colour);
+  constructor(pythonClass, signature, comment, colour, custom) {
+    super(pythonClass.module, signature, comment, colour, custom);
     this.pythonClass = pythonClass;
     this.fullName = pythonClass.fullName + "." + this.name;
 
@@ -852,8 +868,8 @@ class PythonConstructorMethod extends PythonMethod {
     return /^__init__\(\s*self\s*[,)]\s*/.test(signature);
   }
 
-  constructor(pythonClass, signature, comment, colour) {
-    super(pythonClass, signature, comment, colour);
+  constructor(pythonClass, signature, comment, colour, custom) {
+    super(pythonClass, signature, comment, colour, custom);
     this.typeHint = pythonClass.fullName;
 
     if ((comment ?? "").trim() === "") {
