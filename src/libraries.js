@@ -415,6 +415,10 @@ class PythonFunction {
     return signature.includes("(");
   }
 
+  static extractName(signature) {
+    return signature.split(/[( ]/, 1)[0];
+  }
+
   constructor(pythonModule, signature, comment, colour, custom) {
     this.pythonModule = pythonModule;
     let indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
@@ -422,29 +426,29 @@ class PythonFunction {
         indexOfTypeHint < 0
             ? ""
             : signature.substring(indexOfTypeHint + 1).trim();
-    let names = signature.substring(0, signature.indexOf("("));
-    const [name, ...aliases] = names.split(" ");
-    this.name = name;
+    let aliases
+    [this.name, ...aliases] = signature.split("(", 1)[0].split(" ");
 
     if ((comment ?? "").trim() === "") {
       this.premessage = "";
       this.message = this.name;
     } else {
-      let indexOfOpening = comment.indexOf("(");
-      let beforeOpening =
-          indexOfOpening === -1 ? comment : comment.substring(0, indexOfOpening);
-      [this.premessage, this.message] = splitPremessageMessage(beforeOpening);
+      [this.premessage, this.message] = splitPremessageMessage(comment.split("(", 1)[0]);
     }
-
     this.parameters = new PythonParameters(signature, comment ?? "");
     this.fullName = pythonModule.fullName === "" ? this.name : (pythonModule.fullName + "." + this.name);
-    this.isAlias = false;
+    this.isAliasOf = null;
     this.colour = _resolve_colour(colour) ?? pythonModule.library.colour;
 
     if (custom) {
       let customResult = globalThis;
       for (let item of custom.split('.')) {
         customResult = customResult[item];
+
+        if (!customResult) {
+          console.warn("Could not find custom " + custom + " for " + this.fullName)
+          break
+        }
       }
       this.custom = customResult;
     } else {
@@ -466,7 +470,7 @@ class PythonFunction {
       );
       result.premessage = this.premessage;
       result.message = this.message;
-      result.isAlias = true;
+      result.isAliasOf = this;
       return result;
     });
   }
@@ -525,18 +529,13 @@ class PythonFunction {
     let pythonSource = this.toPythonSource();
     let result = textToBlocks.convertSource("toolbox.py", pythonSource);
     let blockElement = result.rawXml.children[0];
-
-    // if (!!this.typeHint) {
-    //   blockElement.setAttribute("returns", this.typeHint);
-    // }
-    //
-    // // TODO tooltip does not seem to show up
+    // TODO tooltip does not seem to show up
     // blockElement.setAttribute("tooltip", pythonSource);
     return blockElement;
   }
 
   toToolbox(textToBlocks) {
-    if (this.isAlias) {
+    if (this.isAliasOf) {
       return "";
     }
 
@@ -708,14 +707,9 @@ class PythonAttribute {
 
   constructor(pythonClassOrModule, signature, comment, colour) {
     this.pythonClassOrModule = pythonClassOrModule;
-    let indexOfTypeHint = signature.lastIndexOf(":");
-    this.typeHint =
-      indexOfTypeHint < 0
-        ? ""
-        : signature.substring(indexOfTypeHint + 1).trim();
-    this.name = signature
-      .substring(0, indexOfTypeHint || signature.length)
-      .trim();
+    let [attributeName, typeHint] = signature.split(":", 2)
+    this.name = attributeName.trim()
+    this.typeHint = (typeHint || "").trim()
     this.colour = _resolve_colour(colour) ?? pythonClassOrModule.colour;
 
     if ((comment ?? "").trim() === "") {
@@ -764,17 +758,6 @@ class PythonAttribute {
       );
       blockElement = result.rawXml.children[0];
     }
-
-
-    // for (let index = blockElement.children.length - 1; index >= 0; index--) {
-    //   let child = blockElement.children[index];
-    //
-    //   if (child.localName === "value") {
-    //     child.innerHTML = "";
-    //     // TODO type check, but only possible with JSON, not XML
-    //     // child.setAttribute("check", this.pythonClass.fullName)
-    //   }
-    // }
 
     if (!!this.typeHint) {
       blockElement.setAttribute("output", this.typeHint);
@@ -850,14 +833,6 @@ class PythonMethod extends PythonFunction {
       } finally {
         textToBlocks.variables = originalVariables
       }
-
-      // TODO this can probably eventually be done cleaner
-      // if (!!this.pythonClass.requiresImport) {
-      //   blockElement.children['FUNC'].setAttribute(
-      //     "module",
-      //     this.pythonClass.requiresImport,
-      //   );
-      // }
 
       return blockElement
     }
@@ -1047,5 +1022,5 @@ class Libraries extends Map {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = {Libraries, Library, PythonModule, PythonClass, PythonFunction, PythonAttribute};
+  module.exports = {Libraries, Library, PythonModule, PythonClass, PythonFunction, PythonMethod, PythonConstructorMethod, PythonAttribute};
 }

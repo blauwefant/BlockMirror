@@ -27,7 +27,7 @@
   "class float(numbers.Real)": [
     "__init__(self, value: float | str = 0.0, /): None",
     "as_integer_ratio(self): tuple[int, int]",
-    "fromhex(cls, string: str): float // fromhex(___)",
+    "fromhex(cls, string: str): float // {}.fromhex(___)",
     "hex(): str",
     "is_integer(self): bool"
   ],
@@ -35,7 +35,7 @@
     "__init__(self, value: int | str = 0, /, base: int = 10): None",
     "as_integer_ratio(self): tuple[int, int]",
     "bit_length(self): int",
-    "from_bytes(cls, bytes, byteorder: str = \"big\", *, signed: bool = False): int // from_bytes(___)",
+    "from_bytes(cls, bytes, byteorder: str = \"big\", *, signed: bool = False): int // {}.from_bytes(___)",
     "to_bytes(self, length: int = 1, byteorder: str =\"big\", *, signed: bool = False): bytes",
     "is_integer(self): bool"
   ]

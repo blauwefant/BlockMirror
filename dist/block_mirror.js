@@ -2425,26 +2425,23 @@ var PythonFunction = /*#__PURE__*/function () {
     this.pythonModule = pythonModule;
     var indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
     this.typeHint = indexOfTypeHint < 0 ? "" : signature.substring(indexOfTypeHint + 1).trim();
-    var names = signature.substring(0, signature.indexOf("("));
-    var _names$split = names.split(" "),
-      _names$split2 = _toArray(_names$split),
-      name = _names$split2[0],
-      aliases = _names$split2.slice(1);
-    this.name = name;
+    var aliases;
+    var _signature$split$0$sp = signature.split("(", 1)[0].split(" ");
+    var _signature$split$0$sp2 = _toArray(_signature$split$0$sp);
+    this.name = _signature$split$0$sp2[0];
+    aliases = _signature$split$0$sp2.slice(1);
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
       this.premessage = "";
       this.message = this.name;
     } else {
-      var indexOfOpening = comment.indexOf("(");
-      var beforeOpening = indexOfOpening === -1 ? comment : comment.substring(0, indexOfOpening);
-      var _splitPremessageMessa = splitPremessageMessage(beforeOpening);
+      var _splitPremessageMessa = splitPremessageMessage(comment.split("(", 1)[0]);
       var _splitPremessageMessa2 = _slicedToArray(_splitPremessageMessa, 2);
       this.premessage = _splitPremessageMessa2[0];
       this.message = _splitPremessageMessa2[1];
     }
     this.parameters = new PythonParameters(signature, comment !== null && comment !== void 0 ? comment : "");
     this.fullName = pythonModule.fullName === "" ? this.name : pythonModule.fullName + "." + this.name;
-    this.isAlias = false;
+    this.isAliasOf = null;
     this.colour = (_resolve_colour2 = _resolve_colour(colour)) !== null && _resolve_colour2 !== void 0 ? _resolve_colour2 : pythonModule.library.colour;
     if (custom) {
       var customResult = globalThis;
@@ -2454,6 +2451,10 @@ var PythonFunction = /*#__PURE__*/function () {
         for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
           var item = _step14.value;
           customResult = customResult[item];
+          if (!customResult) {
+            console.warn("Could not find custom " + custom + " for " + this.fullName);
+            break;
+          }
         }
       } catch (err) {
         _iterator14.e(err);
@@ -2472,7 +2473,7 @@ var PythonFunction = /*#__PURE__*/function () {
       var result = new PythonFunction(pythonModule, value + signature.substring(signature.indexOf("(")), comment, colour, custom);
       result.premessage = _this9.premessage;
       result.message = _this9.message;
-      result.isAlias = true;
+      result.isAliasOf = _this9;
       return result;
     });
   }
@@ -2527,19 +2528,14 @@ var PythonFunction = /*#__PURE__*/function () {
       var pythonSource = this.toPythonSource();
       var result = textToBlocks.convertSource("toolbox.py", pythonSource);
       var blockElement = result.rawXml.children[0];
-
-      // if (!!this.typeHint) {
-      //   blockElement.setAttribute("returns", this.typeHint);
-      // }
-      //
-      // // TODO tooltip does not seem to show up
+      // TODO tooltip does not seem to show up
       // blockElement.setAttribute("tooltip", pythonSource);
       return blockElement;
     }
   }, {
     key: "toToolbox",
     value: function toToolbox(textToBlocks) {
-      if (this.isAlias) {
+      if (this.isAliasOf) {
         return "";
       }
       var toolboxBlock = this.toToolboxBlock(textToBlocks);
@@ -2550,6 +2546,11 @@ var PythonFunction = /*#__PURE__*/function () {
     key: "isA",
     value: function isA(signature) {
       return signature.includes("(");
+    }
+  }, {
+    key: "extractName",
+    value: function extractName(signature) {
+      return signature.split(/[( ]/, 1)[0];
     }
   }]);
 }();
@@ -2714,9 +2715,12 @@ var PythonAttribute = /*#__PURE__*/function () {
     var _resolve_colour3;
     _classCallCheck(this, PythonAttribute);
     this.pythonClassOrModule = pythonClassOrModule;
-    var indexOfTypeHint = signature.lastIndexOf(":");
-    this.typeHint = indexOfTypeHint < 0 ? "" : signature.substring(indexOfTypeHint + 1).trim();
-    this.name = signature.substring(0, indexOfTypeHint || signature.length).trim();
+    var _signature$split7 = signature.split(":", 2),
+      _signature$split8 = _slicedToArray(_signature$split7, 2),
+      attributeName = _signature$split8[0],
+      typeHint = _signature$split8[1];
+    this.name = attributeName.trim();
+    this.typeHint = (typeHint || "").trim();
     this.colour = (_resolve_colour3 = _resolve_colour(colour)) !== null && _resolve_colour3 !== void 0 ? _resolve_colour3 : pythonClassOrModule.colour;
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
       if (pythonClassOrModule instanceof PythonClass) {
@@ -2765,17 +2769,6 @@ var PythonAttribute = /*#__PURE__*/function () {
         var _result = textToBlocks.convertSource("toolbox.py", this.toPythonSource());
         blockElement = _result.rawXml.children[0];
       }
-
-      // for (let index = blockElement.children.length - 1; index >= 0; index--) {
-      //   let child = blockElement.children[index];
-      //
-      //   if (child.localName === "value") {
-      //     child.innerHTML = "";
-      //     // TODO type check, but only possible with JSON, not XML
-      //     // child.setAttribute("check", this.pythonClass.fullName)
-      //   }
-      // }
-
       if (!!this.typeHint) {
         blockElement.setAttribute("output", this.typeHint);
       }
@@ -2843,15 +2836,6 @@ var PythonMethod = /*#__PURE__*/function (_PythonFunction) {
       } finally {
         textToBlocks.variables = originalVariables;
       }
-
-      // TODO this can probably eventually be done cleaner
-      // if (!!this.pythonClass.requiresImport) {
-      //   blockElement.children['FUNC'].setAttribute(
-      //     "module",
-      //     this.pythonClass.requiresImport,
-      //   );
-      // }
-
       return blockElement;
     }
   }]);
@@ -3104,6 +3088,8 @@ if (typeof module !== 'undefined') {
     PythonModule: PythonModule,
     PythonClass: PythonClass,
     PythonFunction: PythonFunction,
+    PythonMethod: PythonMethod,
+    PythonConstructorMethod: PythonConstructorMethod,
     PythonAttribute: PythonAttribute
   };
 }
@@ -8709,7 +8695,7 @@ BlockMirror.LIBRARIES['builtin math'] = {
   "class float(numbers.Real)": [
     "__init__(self, value: float | str = 0.0, /): None",
     "as_integer_ratio(self): tuple[int, int]",
-    "fromhex(cls, string: str): float // fromhex(___)",
+    "fromhex(cls, string: str): float // {}.fromhex(___)",
     "hex(): str",
     "is_integer(self): bool"
   ],
@@ -8717,7 +8703,7 @@ BlockMirror.LIBRARIES['builtin math'] = {
     "__init__(self, value: int | str = 0, /, base: int = 10): None",
     "as_integer_ratio(self): tuple[int, int]",
     "bit_length(self): int",
-    "from_bytes(cls, bytes, byteorder: str = \"big\", *, signed: bool = False): int // from_bytes(___)",
+    "from_bytes(cls, bytes, byteorder: str = \"big\", *, signed: bool = False): int // {}.from_bytes(___)",
     "to_bytes(self, length: int = 1, byteorder: str =\"big\", *, signed: bool = False): bytes",
     "is_integer(self): bool"
   ]
