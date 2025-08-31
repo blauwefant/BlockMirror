@@ -6422,8 +6422,8 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   var isMethod = false;
   var import_ = null;
   var premessage = "";
-  var message = "";
-  var name = "";
+  var message;
+  var name;
   var caller = null;
   var colour = BlockMirrorTextToBlocks.COLOR.FUNCTIONS;
   var returns = 'Any';
@@ -6479,6 +6479,9 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
           name = fromLibrary.name;
         } else {
           name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
+          if (message === fromLibrary.name) {
+            message = name;
+          }
         }
         message = name;
       }

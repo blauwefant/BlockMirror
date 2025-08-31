@@ -538,6 +538,10 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                     name = fromLibrary.name;
                 } else {
                     name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
+
+                    if (message === fromLibrary.name) {
+                        message = name;
+                    }
                 }
 
                 message = name
