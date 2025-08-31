@@ -4,7 +4,7 @@
 
 Blockly.Blocks['ast_Call'] = {
     /**
-     * Block for calling a procedure with no return value.
+     * Block for calling a procedure
      * @this Blockly.Block
      */
     init: function () {
@@ -26,7 +26,7 @@ Blockly.Blocks['ast_Call'] = {
         this.name_ = null;
         this.message_ = "function";
         this.premessage_ = "";
-        this.module_ = "";
+        this.import_ = "";
         this.fromLibrary_ = null;
         this.updateShape_();
     },
@@ -273,7 +273,7 @@ Blockly.Blocks['ast_Call'] = {
         container.setAttribute('method', this.isMethod_);
         container.setAttribute('message', this.message_);
         container.setAttribute('premessage', this.premessage_);
-        container.setAttribute('module', this.module_);
+        container.setAttribute('import', this.import_);
         container.setAttribute('fromlibrary', this.fromLibrary_);
         container.setAttribute('colour', this.givenColour_);
         for (var i = 0; i < this.arguments_.length; i++) {
@@ -290,14 +290,16 @@ Blockly.Blocks['ast_Call'] = {
      */
     domToMutation: function (xmlElement) {
         this.name_ = xmlElement.getAttribute('name');
-        this.name_ = this.name_ === '*' ? null : this.name_;
+        if (this.name_ === '*') {
+            this.name_ = null;
+        }
         this.argumentCount_ = parseInt(xmlElement.getAttribute('arguments'), 10);
         this.showParameterNames_ = "true" === xmlElement.getAttribute('parameters');
         this.returns_ = xmlElement.getAttribute('returns');
         this.isMethod_ = "true" === xmlElement.getAttribute('method');
         this.message_ = xmlElement.getAttribute('message');
         this.premessage_ = xmlElement.getAttribute('premessage');
-        this.module_ = xmlElement.getAttribute('module');
+        this.import_ = xmlElement.getAttribute('import');
         this.fromLibrary_ = xmlElement.getAttribute('fromlibrary');
         this.givenColour_ = parseInt(xmlElement.getAttribute('colour'), 10);
 
@@ -388,8 +390,8 @@ Blockly.Blocks['ast_Call'] = {
 };
 
 python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
-    if (block.module_) {
-        let [type, alias] = block.module_.split(' as ', 2)
+    if (block.import_) {
+        let [type, alias] = block.import_.split(' as ', 2)
 
         if (type && !python.pythonGenerator.imports.hasType(type)) {
             let name = alias ?? type;
@@ -401,15 +403,16 @@ python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
     if (block.isMethod_) {
         let caller = python.pythonGenerator.valueToCode(block, 'FUNC', python.Order.FUNCTION_CALL) ||
             python.pythonGenerator.blank;
-        funcName = caller + this.name_
         let funcInputTargetBlock = block.getInputTargetBlock('FUNC')
 
         if (funcInputTargetBlock?.returns_) {
             fromLibrary = generator.libraries.resolve(funcInputTargetBlock.returns_ + this.name_)
+            funcName = caller + this.name_
         } else {
             let resolvedCaller = python.pythonGenerator.variables.getSingleType(caller) ?? caller
             resolvedCaller = python.pythonGenerator.imports.getType(resolvedCaller) ?? resolvedCaller
             fromLibrary = generator.libraries.resolve(resolvedCaller + this.name_)
+            funcName = resolvedCaller + this.name_
         }
     } else {
         funcName = this.name_;
@@ -466,33 +469,15 @@ python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
     return code + "\n";
 };
 
-//                              messageBefore, message, name
-// function call: print() -> "print" ([message]) ; print
-// Module function: plt.show() -> "show plot" ([plot]) ; plt.show
-// Method call: "test".title() -> "make" [str] "title case" () ; .title ; isMethod = true
-
-// let replaceTagName = function(element, tagName) {
-//     let replacementElement = document.createElement(tagName);
-//
-//     for (let i = 0, l = element.attributes.length; i < l; ++i) {
-//         let nodeName = element.attributes.item(i).nodeName;
-//         let nodeValue = element.attributes.item(i).nodeValue;
-//         replacementElement.setAttribute(nodeName, nodeValue);
-//     }
-//
-//     replacementElement.innerHTML = element.innerHTML;
-//     element.parentNode.replaceChild(replacementElement, element);
-// };
-
 BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     let func = node.func;
     let args = node.args;
     let keywords = node.keywords;
     let isMethod = false;
-    let module = null;
+    let import_ = null;
     let premessage = "";
-    let message = "";
-    let name = "";
+    let message;
+    let name;
     let caller = null;
     let colour = BlockMirrorTextToBlocks.COLOR.FUNCTIONS;
     let returns = 'Any';
@@ -522,9 +507,9 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         if (fromLibrary instanceof PythonFunction) {
             if (fromLibrary instanceof PythonMethod && !(fromLibrary instanceof PythonConstructorMethod) && !(fromLibrary.classmethod || fromLibrary.staticmethod)) {
                 // Regular instance method, no import needed
-                module = ""
+                import_ = ""
             } else {
-                module = fromLibrary.pythonClass?.requiresImport ?? fromLibrary.pythonModule.requiresImport
+                import_ = fromLibrary.pythonClass?.requiresImport ?? fromLibrary.pythonModule.requiresImport
             }
 
             name = fromLibrary.name;
@@ -554,6 +539,8 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                 } else {
                     name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
                 }
+
+                message = name
             }
         } else {
             throw new TypeError("Unexpected type from library: " + fromLibrary.constructor.name + " for " + func)
@@ -584,7 +571,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         "@message": message,
         "@premessage": premessage,
         "@colour": colour,
-        "@module": module ?? "",
+        "@import": import_ ?? "",
         "@fromlibrary": fromLibrary?.fullName ?? ""
     };
     // Handle arguments

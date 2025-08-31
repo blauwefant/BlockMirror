@@ -101,4 +101,9 @@ Below is the annotated structure of a library.
 
 ### turtle
 
-- Skipped some.
+- `towards`: Support a pair/vector.
+- `distance`: Support a pair/vector.
+- Tuples cannot yet be passed as individual arguments instead.
+- Skipped some: pen, color, Filling, Visibility, Appearance and most that come after this
+- `setup`: Support startx, starty arguments.
+

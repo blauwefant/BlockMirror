@@ -18,7 +18,12 @@ class PythonModule {
         return "";
       }
 
-      signature = signature.substr(6);
+      signature = signature.substring(6).split('(', 1)[0];
+      let lastIndexOfDot = signature.lastIndexOf('.')
+
+      if (lastIndexOfDot !== -1) {
+        return signature.substring(0, lastIndexOfDot);
+      }
     }
 
     let moduleName = signature.split(/\.([A-Z][^.]*)\.?.+$/, 1)[0];
@@ -91,16 +96,10 @@ class PythonModule {
   toToolbox(textToBlocks) {
     let result = "";
 
-    let originalImports = textToBlocks.imports
-    try {
-      textToBlocks.imports = new TypeRegistry()
-      textToBlocks.imports.set(this.fullName, this.name)
-      for (let value of this.members.values()) {
-        result += value.toToolbox(textToBlocks) + "<sep></sep>";
-      }
-    } finally {
-      textToBlocks.imports = originalImports
+    for (let value of this.members.values()) {
+      result += value.toToolbox(textToBlocks) + "<sep></sep>";
     }
+
     return result;
   }
 
@@ -117,7 +116,7 @@ class PythonModule {
       memberName = name;
     }
 
-    let indexOfDot = memberName.indexOf(".");
+    let indexOfDot = memberName.lastIndexOf(".");
 
     if (indexOfDot === -1) {
       return this.members.get(memberName);
@@ -476,10 +475,8 @@ class PythonFunction {
   }
 
   toPythonSource() {
-    let modulePrefix =
-      this.pythonModule.fullName === "" ? "" : this.pythonModule.name + ".";
     return (
-      modulePrefix +
+      this.pythonModule.fullName + "." +
       this.name +
       "(" +
       this.parameters.toPythonSource() +
@@ -593,7 +590,7 @@ class PythonClass {
   }
 
   constructor(pythonModule, signature, comment, members) {
-    this.module = pythonModule;
+    this.pythonModule = pythonModule;
     let endOfSimpleName = signature.indexOf("(")
 
     if (endOfSimpleName === -1) {
@@ -657,16 +654,8 @@ class PythonClass {
   toToolbox(textToBlocks) {
     let result = "";
 
-    let originalImports = textToBlocks.imports
-    try {
-      textToBlocks.imports = new TypeRegistry()
-      textToBlocks.imports.set(this.fullName, this.name)
-
-      for (const member of this.members.values()) {
-        result += member.toToolbox(textToBlocks);
-      }
-    } finally {
-      textToBlocks.imports = originalImports
+    for (const member of this.members.values()) {
+      result += member.toToolbox(textToBlocks);
     }
 
     return result;
@@ -693,7 +682,7 @@ class PythonClass {
     );
 
     if (!result && this.baseClass !== "") {
-      result = this.module.library.libraries.resolve(this.baseClass + "." + memberName);
+      result = this.pythonModule.library.libraries.resolve(this.baseClass + "." + memberName);
     }
 
     return result
@@ -706,18 +695,20 @@ class PythonAttribute {
   }
 
   constructor(pythonClassOrModule, signature, comment, colour) {
-    this.pythonClassOrModule = pythonClassOrModule;
+    if (pythonClassOrModule instanceof PythonClass) {
+        this.pythonClass = pythonClassOrModule
+        this.pythonModule = pythonClassOrModule.pythonModule
+    } else {
+        this.pythonClass = null
+        this.pythonModule = pythonClassOrModule
+    }
     let [attributeName, typeHint] = signature.split(":", 2)
     this.name = attributeName.trim()
     this.typeHint = (typeHint || "").trim()
     this.colour = _resolve_colour(colour) ?? pythonClassOrModule.colour;
 
     if ((comment ?? "").trim() === "") {
-      if (pythonClassOrModule instanceof PythonClass) {
-        this.premessage = pythonClassOrModule.name;
-      } else {
-        this.premessage = ""
-      }
+      this.premessage = this.pythonClass == null ? "" : this.pythonClass.name;
       this.message = "."
       this.postmessage = ""
     } else {
@@ -726,10 +717,11 @@ class PythonAttribute {
   }
 
   toPythonSource() {
-    if (this.pythonClassOrModule instanceof PythonClass) {
-      return python.pythonGenerator.blank + "." + this.name;
+    if (this.pythonClass == null) {
+      return this.pythonModule.fullName + "." + this.name;
     }
-    return this.pythonClassOrModule.name + "." + this.name;
+
+    return python.pythonGenerator.blank + "." + this.name;
   }
 
   toString() {
@@ -737,27 +729,11 @@ class PythonAttribute {
   }
 
   toToolboxBlock(textToBlocks) {
-    let blockElement
-    if (this.pythonClassOrModule instanceof PythonClass) {
-      let originalVariables = textToBlocks.variables
-      try {
-        textToBlocks.variables = new TypesRegistry()
-        textToBlocks.variables.add(this.pythonClassOrModule.fullName, python.pythonGenerator.blank)
-        let result = textToBlocks.convertSource(
-            "toolbox.py",
-            this.toPythonSource(),
-        );
-        blockElement = result.rawXml.children[0];
-      } finally {
-        textToBlocks.variables = originalVariables
-      }
-    } else {
-      let result = textToBlocks.convertSource(
-          "toolbox.py",
-          this.toPythonSource(),
-      );
-      blockElement = result.rawXml.children[0];
-    }
+    let result = textToBlocks.convertSource(
+      "toolbox.py",
+      this.toPythonSource(),
+    );
+    let blockElement = result.rawXml.children[0];
 
     if (!!this.typeHint) {
       blockElement.setAttribute("output", this.typeHint);
@@ -774,7 +750,7 @@ class PythonAttribute {
 
 class PythonMethod extends PythonFunction {
   constructor(pythonClass, signature, comment, colour, custom) {
-    super(pythonClass.module, signature, comment, colour, custom);
+    super(pythonClass.pythonModule, signature, comment, colour, custom);
     this.pythonClass = pythonClass;
     this.fullName = pythonClass.fullName + "." + this.name;
 

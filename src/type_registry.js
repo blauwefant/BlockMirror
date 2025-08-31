@@ -102,8 +102,10 @@ class TypesRegistry {
     let types = this._name_to_types.get(name);
     this._name_to_types.delete(name);
 
-    for (let type of types) {
-      this._type_to_names.delete(type);
+    if (types !== undefined) {
+      for (let type of types) {
+        this._type_to_names.delete(type);
+      }
     }
   }
 
@@ -111,8 +113,10 @@ class TypesRegistry {
     let names = this._type_to_names.get(type);
     this._type_to_names.delete(type);
 
-    for (let name of names) {
-      this._name_to_types.delete(name);
+    if (names !== undefined) {
+      for (let name of names) {
+        this._name_to_types.delete(name);
+      }
     }
   }
 

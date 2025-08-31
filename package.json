@@ -40,6 +40,6 @@
   },
   "dependencies": {
     "@blockly/field-multilineinput": "^6.0.2",
-    "blockly": "^12.2.0"
+    "blockly": "^12.3.0"
   }
 }
