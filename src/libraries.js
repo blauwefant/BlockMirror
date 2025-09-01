@@ -768,11 +768,28 @@ class PythonAttribute {
   }
 
   toToolboxBlock(textToBlocks) {
-    let result = textToBlocks.convertSource(
-      "toolbox.py",
-      this.toPythonSource(),
-    );
-    let blockElement = result.rawXml.children[0];
+    let blockElement
+
+    if (this.pythonClass !== null) {
+      let originalVariables = textToBlocks.variables
+      try {
+        textToBlocks.variables = new TypesRegistry()
+        textToBlocks.variables.add(this.pythonClass.fullName, python.pythonGenerator.blank)
+        let result = textToBlocks.convertSource(
+          "toolbox.py",
+          this.toPythonSource(),
+        );
+        blockElement = result.rawXml.children[0];
+      } finally {
+        textToBlocks.variables = originalVariables
+      }
+    } else {
+      let result = textToBlocks.convertSource(
+         "toolbox.py",
+         this.toPythonSource(),
+      );
+      blockElement = result.rawXml.children[0];
+    }
 
     if (!!this.typeHint) {
       blockElement.setAttribute("output", this.typeHint);

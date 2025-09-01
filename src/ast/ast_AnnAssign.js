@@ -196,12 +196,17 @@ BlockMirrorTextToBlocks.prototype['ast_AnnAssign'] = function (node, parent) {
         values['TARGET'] = this.convert(target, node);
         let annotationElement = this.convert(annotation, node);
         values['ANNOTATION'] = annotationElement
-
-        let variableType = annotationElement.getAttribute('type') === "ast_NameConstantNone" ? "None" : annotationElement.childNodes[0]?.textContent;
-        let variableName = values['TARGET'].childNodes[0].textContent;
+        let variableType = annotationElement.getAttribute('type') === "ast_NameConstantNone" ? "None" : annotationElement.childNodes[1]?.textContent;
 
         if (variableType) {
-            this.variables.add(variableType, variableName)
+          let fullVariableType = this.imports.getType(variableType);
+
+          if (Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank) {
+            this.variables.add(fullVariableType, python.pythonGenerator.blank)
+          } else {
+            let variableName = values['TARGET'].childNodes[0].textContent;
+            this.variables.add(fullVariableType, variableName)
+          }
         }
 
         return BlockMirrorTextToBlocks.create_block("ast_AnnAssignFull", node.lineno, {},

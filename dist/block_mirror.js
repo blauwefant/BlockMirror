@@ -1143,6 +1143,13 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
     }
     var body = (category.blocks || []).map(function (code) {
       var result = _this7.blockMirror.textToBlocks.convertSource('toolbox.py', code);
+      if (result.rawXml.firstElementChild.getAttribute('type') === 'ast_AnnAssignFull') {
+        // In case the first line only specifies the class the attribute is defined on.
+        var nextElements = result.rawXml.getElementsByTagName("next");
+        if (nextElements.length > 0) {
+          return nextElements.item(0).innerHTML.toString();
+        }
+      }
       return result.rawXml.innerHTML.toString();
     }).join("\n");
     var footer = "</category>";
@@ -2790,8 +2797,21 @@ var PythonAttribute = /*#__PURE__*/function () {
   }, {
     key: "toToolboxBlock",
     value: function toToolboxBlock(textToBlocks) {
-      var result = textToBlocks.convertSource("toolbox.py", this.toPythonSource());
-      var blockElement = result.rawXml.children[0];
+      var blockElement;
+      if (this.pythonClass !== null) {
+        var originalVariables = textToBlocks.variables;
+        try {
+          textToBlocks.variables = new TypesRegistry();
+          textToBlocks.variables.add(this.pythonClass.fullName, python.pythonGenerator.blank);
+          var result = textToBlocks.convertSource("toolbox.py", this.toPythonSource());
+          blockElement = result.rawXml.children[0];
+        } finally {
+          textToBlocks.variables = originalVariables;
+        }
+      } else {
+        var _result = textToBlocks.convertSource("toolbox.py", this.toPythonSource());
+        blockElement = _result.rawXml.children[0];
+      }
       if (!!this.typeHint) {
         blockElement.setAttribute("output", this.typeHint);
       }
@@ -4063,10 +4083,15 @@ BlockMirrorTextToBlocks.prototype['ast_AnnAssign'] = function (node, parent) {
     values['TARGET'] = this.convert(target, node);
     var annotationElement = this.convert(annotation, node);
     values['ANNOTATION'] = annotationElement;
-    var variableType = annotationElement.getAttribute('type') === "ast_NameConstantNone" ? "None" : (_annotationElement$ch = annotationElement.childNodes[0]) === null || _annotationElement$ch === void 0 ? void 0 : _annotationElement$ch.textContent;
-    var _variableName = values['TARGET'].childNodes[0].textContent;
+    var variableType = annotationElement.getAttribute('type') === "ast_NameConstantNone" ? "None" : (_annotationElement$ch = annotationElement.childNodes[1]) === null || _annotationElement$ch === void 0 ? void 0 : _annotationElement$ch.textContent;
     if (variableType) {
-      this.variables.add(variableType, _variableName);
+      var fullVariableType = this.imports.getType(variableType);
+      if (Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank) {
+        this.variables.add(fullVariableType, python.pythonGenerator.blank);
+      } else {
+        var _variableName = values['TARGET'].childNodes[0].textContent;
+        this.variables.add(fullVariableType, _variableName);
+      }
     }
     return BlockMirrorTextToBlocks.create_block("ast_AnnAssignFull", node.lineno, {}, values, {
       "inline": "true"
@@ -5940,12 +5965,11 @@ python.pythonGenerator.forBlock['ast_Attribute'] = function (block, generator) {
   return code + "\n";
 };
 python.pythonGenerator.forBlock['ast_AttributeFull'] = function (block, generator) {
-  var _python$pythonGenerat, _python$pythonGenerat2;
+  var _python$pythonGenerat;
   _handle_attribute_imports(block);
   // Text value.
   var value = python.pythonGenerator.valueToCode(block, 'VALUE', python.Order.NONE) || python.pythonGenerator.blank;
-  var resolvedValue = (_python$pythonGenerat = python.pythonGenerator.variables.getSingleType(value)) !== null && _python$pythonGenerat !== void 0 ? _python$pythonGenerat : value;
-  resolvedValue = (_python$pythonGenerat2 = python.pythonGenerator.imports.getType(resolvedValue)) !== null && _python$pythonGenerat2 !== void 0 ? _python$pythonGenerat2 : resolvedValue;
+  var resolvedValue = (_python$pythonGenerat = python.pythonGenerator.imports.getType(value)) !== null && _python$pythonGenerat !== void 0 ? _python$pythonGenerat : value;
   var attr = block.getFieldValue('ATTR');
   var code = resolvedValue + "." + attr;
   if (block.outputConnection && block.outputConnection.targetBlock()) {
@@ -6405,9 +6429,9 @@ python.pythonGenerator.forBlock['ast_Call'] = function (block, generator) {
       fromLibrary = generator.libraries.resolve(funcInputTargetBlock.returns_ + this.name_);
       funcName = caller + this.name_;
     } else {
-      var _python$pythonGenerat3, _python$pythonGenerat4;
-      var resolvedCaller = (_python$pythonGenerat3 = python.pythonGenerator.variables.getSingleType(caller)) !== null && _python$pythonGenerat3 !== void 0 ? _python$pythonGenerat3 : caller;
-      resolvedCaller = (_python$pythonGenerat4 = python.pythonGenerator.imports.getType(resolvedCaller)) !== null && _python$pythonGenerat4 !== void 0 ? _python$pythonGenerat4 : resolvedCaller;
+      var _python$pythonGenerat2, _python$pythonGenerat3;
+      var resolvedCaller = (_python$pythonGenerat2 = python.pythonGenerator.variables.getSingleType(caller)) !== null && _python$pythonGenerat2 !== void 0 ? _python$pythonGenerat2 : caller;
+      resolvedCaller = (_python$pythonGenerat3 = python.pythonGenerator.imports.getType(resolvedCaller)) !== null && _python$pythonGenerat3 !== void 0 ? _python$pythonGenerat3 : resolvedCaller;
       fromLibrary = generator.libraries.resolve(resolvedCaller + this.name_);
       funcName = resolvedCaller + this.name_;
     }

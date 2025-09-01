@@ -131,6 +131,15 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
         }
         let body = (category.blocks || []).map((code) => {
             let result = this.blockMirror.textToBlocks.convertSource('toolbox.py', code);
+
+            if (result.rawXml.firstElementChild.getAttribute('type') === 'ast_AnnAssignFull') {
+              // In case the first line only specifies the class the attribute is defined on.
+              let nextElements = result.rawXml.getElementsByTagName("next");
+
+              if (nextElements.length > 0) {
+                  return nextElements.item(0).innerHTML.toString();
+              }
+            }
             return result.rawXml.innerHTML.toString();
         }).join("\n");
         let footer = "</category>";

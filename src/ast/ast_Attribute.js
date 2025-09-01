@@ -106,8 +106,7 @@ python.pythonGenerator.forBlock['ast_AttributeFull'] = function(block, generator
     _handle_attribute_imports(block);
     // Text value.
     var value = python.pythonGenerator.valueToCode(block, 'VALUE', python.Order.NONE) || python.pythonGenerator.blank;
-    let resolvedValue = python.pythonGenerator.variables.getSingleType(value) ?? value
-    resolvedValue = python.pythonGenerator.imports.getType(resolvedValue) ?? resolvedValue
+    var resolvedValue = python.pythonGenerator.imports.getType(value) ?? value
 
     var attr = block.getFieldValue('ATTR');
     let code = resolvedValue + "." + attr;
