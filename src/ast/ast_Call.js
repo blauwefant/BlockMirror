@@ -518,10 +518,12 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             returns = fromLibrary.typeHint
 
             if (fromLibrary instanceof PythonConstructorMethod) {
+                // For constructor methods, the caller is fixed.
+                isMethod = false;
                 name = fromLibrary.pythonClass.name
                 returns = fromLibrary.pythonClass.fullName
             } else if (fromLibrary instanceof PythonMethod) {
-                // For static and class methods, the caller is fixed
+                // For static and class methods, the caller is fixed.
                 isMethod = !fromLibrary.staticmethod && !fromLibrary.classmethod
 
                 if (isMethod) {
@@ -531,7 +533,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                     name = fromLibrary.pythonClass.name + "." + fromLibrary.name;
                 }
             } else {
-                // For functions, the caller is fixed
+                // For functions, the caller is fixed.
                 isMethod = false;
 
                 if (fromLibrary.pythonModule.name === "") {
@@ -539,12 +541,11 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                 } else {
                     name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
 
-                    if (message === fromLibrary.name) {
-                        message = name;
-                    }
                 }
 
-                message = name
+                if (message === fromLibrary.name) {
+                    message = name;
+                }
             }
         } else {
             throw new TypeError("Unexpected type from library: " + fromLibrary.constructor.name + " for " + func)

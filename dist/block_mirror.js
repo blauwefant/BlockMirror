@@ -1953,6 +1953,8 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function (node) {
   }
   return null;
 };
+var __BLANK = "___"; // Mirrors python.pythonGenerator.blank
+
 function _resolve_colour(colour) {
   if (typeof colour === "string" && typeof BlockMirrorTextToBlocks === "function") {
     return BlockMirrorTextToBlocks.COLOR[colour];
@@ -2103,19 +2105,19 @@ var PythonModule = /*#__PURE__*/function () {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
       typeRegistry.set(this.fullName, this.name);
-      var _iterator10 = _createForOfIteratorHelper(this.members.values()),
-        _step10;
+      var _iterator0 = _createForOfIteratorHelper(this.members.values()),
+        _step0;
       try {
-        for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
-          var member = _step10.value;
+        for (_iterator0.s(); !(_step0 = _iterator0.n()).done;) {
+          var member = _step0.value;
           if (member instanceof PythonClass) {
             typeRegistry.set(member.fullName, member.name);
           }
         }
       } catch (err) {
-        _iterator10.e(err);
+        _iterator0.e(err);
       } finally {
-        _iterator10.f();
+        _iterator0.f();
       }
     }
   }], [{
@@ -2127,14 +2129,9 @@ var PythonModule = /*#__PURE__*/function () {
     key: "extractName",
     value: function extractName(signature) {
       if (signature.startsWith('class ')) {
-        if (!signature.includes('.')) {
-          return "";
-        }
         signature = signature.substring(6).split('(', 1)[0];
         var lastIndexOfDot = signature.lastIndexOf('.');
-        if (lastIndexOfDot !== -1) {
-          return signature.substring(0, lastIndexOfDot);
-        }
+        return lastIndexOfDot === -1 ? null : signature.substring(0, lastIndexOfDot);
       }
       var moduleName = signature.split(/\.([A-Z][^.]*)\.?.+$/, 1)[0];
       if (PythonModule.isA(moduleName)) {
@@ -2168,7 +2165,7 @@ var PythonParameter = /*#__PURE__*/function () {
     var _parameter$split = parameter.split("=", 2),
       _parameter$split2 = _slicedToArray(_parameter$split, 2),
       nameAndTypeHint = _parameter$split2[0],
-      defaultValue = _parameter$split2[1];
+      _defaultValue = _parameter$split2[1];
     var _nameAndTypeHint$spli = nameAndTypeHint.split(":", 2),
       _nameAndTypeHint$spli2 = _slicedToArray(_nameAndTypeHint$spli, 2),
       name = _nameAndTypeHint$spli2[0],
@@ -2177,7 +2174,7 @@ var PythonParameter = /*#__PURE__*/function () {
     this.typeHint = (typeHint !== null && typeHint !== void 0 ? typeHint : "").trim();
 
     // Convert double quotes to single quotes for default string values
-    this.defaultValue = (defaultValue !== null && defaultValue !== void 0 ? defaultValue : "").trim().replace(/^"([^"]*)"$/, "'$1'");
+    this.defaultValue = (_defaultValue !== null && _defaultValue !== void 0 ? _defaultValue : "").trim().replace(/^"([^"]*)"$/, "'$1'");
     this.preferKeyword = this.positional && this.keyword;
     if (arg.includes("=")) {
       var _arg$split = arg.split("=", 2),
@@ -2193,7 +2190,7 @@ var PythonParameter = /*#__PURE__*/function () {
         this.preferKeyword = false;
       }
     }
-    if (this.value === python.pythonGenerator.blank) {
+    if (this.value === this.__BLANK) {
       // For consistency
       this.value = "";
     }
@@ -2207,7 +2204,7 @@ var PythonParameter = /*#__PURE__*/function () {
       var processedValue = this.value;
       if (this.value === "") {
         if (this.defaultValue === "" && !(this.variableLength && this.positional)) {
-          processedValue = python.pythonGenerator.blank;
+          processedValue = __BLANK;
         } else {
           processedValue = this.defaultValue;
         }
@@ -2222,37 +2219,37 @@ var PythonParameter = /*#__PURE__*/function () {
     key: "applyShadow",
     value: function applyShadow(argBlock) {
       if (argBlock) {
-        var shouldShadow = _assertClassBrand(_PythonParameter_brand, this, _shouldShadow).call(this, argBlock);
+        var shouldShadow = _assertClassBrand(_PythonParameter_brand, this, _shouldShadow).call(this, argBlock, this.defaultValue);
         if (argBlock instanceof HTMLElement) {
           // Blockly XML
-          var _iterator11 = _createForOfIteratorHelper(_toConsumableArray(argBlock.getElementsByTagName(shouldShadow ? 'block' : 'shadow')).reverse()),
-            _step11;
+          var _iterator1 = _createForOfIteratorHelper(_toConsumableArray(argBlock.getElementsByTagName(shouldShadow ? 'block' : 'shadow')).reverse()),
+            _step1;
           try {
-            for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
-              var childElement = _step11.value;
+            for (_iterator1.s(); !(_step1 = _iterator1.n()).done;) {
+              var childElement = _step1.value;
               _assertClassBrand(_PythonParameter_brand, this, _replaceTagName).call(this, childElement, shouldShadow ? 'shadow' : 'block');
             }
           } catch (err) {
-            _iterator11.e(err);
+            _iterator1.e(err);
           } finally {
-            _iterator11.f();
+            _iterator1.f();
           }
         } else if (argBlock.shadow !== shouldShadow) {
           // Blockly block
           argBlock.shadow = shouldShadow;
           argBlock.setStyle(argBlock.getStyleName()); // Re-apply the style
-          var _iterator12 = _createForOfIteratorHelper(argBlock.getChildren()),
-            _step12;
+          var _iterator10 = _createForOfIteratorHelper(argBlock.getChildren()),
+            _step10;
           try {
-            for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
-              var child = _step12.value;
+            for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
+              var child = _step10.value;
               argBlock.shadow = shouldShadow;
               argBlock.setStyle(argBlock.getStyleName()); // Re-apply the style
             }
           } catch (err) {
-            _iterator12.e(err);
+            _iterator10.e(err);
           } finally {
-            _iterator12.f();
+            _iterator10.f();
           }
         }
       }
@@ -2272,42 +2269,59 @@ function _replaceTagName(element, tagName) {
   replacementElement.innerHTML = element.innerHTML;
   element.parentNode.replaceChild(replacementElement, element);
 }
-function _matchesDefaultValue(type, value) {
-  if (this.defaultValue === "") {
+function _matchesDefaultValue(type, value, defaultValue) {
+  if (defaultValue === "") {
     return value === "";
   }
   switch (type) {
     case "ast_NameConstantBoolean":
-      return this.defaultValue === value || this.defaultValue === "True" && value === "TRUE" || this.defaultValue === "False" && value === "FALSE";
+      return defaultValue === value || defaultValue === "True" && value === "TRUE" || defaultValue === "False" && value === "FALSE";
     case "ast_NameConstantNone":
-      return this.defaultValue === "None";
+      return defaultValue === "None";
+    case "ast_Num":
+    case "ast_UnaryOpUSub":
+      return parseFloat(defaultValue) === parseFloat(value);
+    case "ast_Tuple":
+      break;
     case "ast_Name":
     case "ast_Str":
     case "ast_StrChar":
-      return this.defaultValue === value;
-    case "ast_Num":
-    case "ast_UnaryOpUSub":
-      return parseFloat(this.defaultValue) === parseFloat(value);
   }
-  return false;
+  return defaultValue === value;
 }
-function _shouldShadow(argBlock) {
-  if (this.defaultValue === '') {
+function _shouldShadow(argBlock, defaultValue) {
+  if (defaultValue === '') {
     return false;
   } else if (argBlock instanceof HTMLElement) {
     // Blockly XML
     var blockElement = argBlock.firstElementChild;
     var blockType = blockElement.getAttribute("type");
+    if (blockType === "ast_Tuple") {
+      var defaultValueParts = defaultValue.substring(1, defaultValue.length - 1).split(', ');
+      var valueChildren = _toConsumableArray(blockElement.children).filter(function (child) {
+        return child.localName === 'value';
+      });
+      if (defaultValueParts.length !== valueChildren.length) {
+        return false;
+      }
+      for (var i = 0; i < defaultValueParts.length; i++) {
+        if (!_assertClassBrand(_PythonParameter_brand, this, _shouldShadow).call(this, valueChildren[i], defaultValueParts[i])) {
+          return false;
+        }
+      }
+      return true;
+    }
     var value = blockElement.textContent;
     if (blockType === "ast_UnaryOpUSub") {
       value = "-" + value;
     } else if (blockType === "ast_Str" || blockType === "ast_StrChar") {
       value = "'" + value.replace("'", "\'").replace('\n', '\\n') + "'";
     }
-    return _assertClassBrand(_PythonParameter_brand, this, _matchesDefaultValue).call(this, blockType, value);
+    return _assertClassBrand(_PythonParameter_brand, this, _matchesDefaultValue).call(this, blockType, value, defaultValue);
   } else {
     // Blockly block
-    return _assertClassBrand(_PythonParameter_brand, this, _matchesDefaultValue).call(this, argBlock.type, python.pythonGenerator.descrub_(python.pythonGenerator.blockToCode(argBlock)[0]));
+    var _value3 = python.pythonGenerator.descrub_(python.pythonGenerator.blockToCode(argBlock)[0]);
+    return _assertClassBrand(_PythonParameter_brand, this, _matchesDefaultValue).call(this, argBlock.type, _value3, defaultValue);
   }
 }
 var PythonParameters = /*#__PURE__*/function (_Array) {
@@ -2315,25 +2329,21 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
     var _this8;
     _classCallCheck(this, PythonParameters);
     _this8 = _callSuper(this, PythonParameters);
-    var parameters = signature.substring(signature.lastIndexOf("(") + 1, signature.lastIndexOf(")")).trim();
+    var parameters = signature.substring(signature.indexOf("(") + 1, signature.lastIndexOf(")")).trim();
     if (parameters !== "") {
-      var args = comment.substring(comment.lastIndexOf("(") + 1, comment.lastIndexOf(")"));
-      var argParts = args.split(/(?<!\[[^\]]*),/).map(function (value) {
-        return value.trim();
-      });
-      var parameterParts = parameters.split(/(?<!\[[^\]]*),/).map(function (value) {
-        return value.trim();
-      });
+      var args = comment.substring(comment.indexOf("(") + 1, comment.lastIndexOf(")"));
+      var argParts = splitParameters(args);
+      var parameterParts = splitParameters(parameters);
 
       // PEP 570 Python Positional-Only Parameters
       var positional = true;
       var keyword = !parameterParts.includes("/");
       var argIndex = 0;
-      var _iterator13 = _createForOfIteratorHelper(parameterParts),
-        _step13;
+      var _iterator11 = _createForOfIteratorHelper(parameterParts),
+        _step11;
       try {
-        for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
-          var _parameter = _step13.value;
+        for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
+          var _parameter = _step11.value;
           if (_parameter === "/") {
             keyword = true;
           } else if (_parameter === "*") {
@@ -2354,9 +2364,9 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
 
         // Any parameter before *args should not be addressable by keyword
       } catch (err) {
-        _iterator13.e(err);
+        _iterator11.e(err);
       } finally {
-        _iterator13.f();
+        _iterator11.f();
       }
       var positionalOnly = false;
       for (var i = _this8.length - 1; i >= 0; i--) {
@@ -2395,6 +2405,37 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
     }
   }]);
 }(/*#__PURE__*/_wrapNativeSuper(Array));
+function splitParameters(input) {
+  var result = [];
+  var openParentheses = 0;
+  var item = '';
+  var _iterator12 = _createForOfIteratorHelper(input),
+    _step12;
+  try {
+    for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
+      var _char = _step12.value;
+      if (_char == ',' && openParentheses === 0) {
+        result.push(item.trim());
+        item = '';
+        continue;
+      } else if (_char == '(') {
+        openParentheses++;
+      } else if (_char == ')') {
+        openParentheses--;
+      }
+      item += _char;
+    }
+  } catch (err) {
+    _iterator12.e(err);
+  } finally {
+    _iterator12.f();
+  }
+  item = item.trim();
+  if (item !== '') {
+    result.push(item);
+  }
+  return result;
+}
 function splitPremessageMessage(toSplit) {
   var _toSplit$trim$split = toSplit.trim().split("{}", 2),
     _toSplit$trim$split2 = _slicedToArray(_toSplit$trim$split, 2),
@@ -2446,11 +2487,11 @@ var PythonFunction = /*#__PURE__*/function () {
     this.colour = (_resolve_colour2 = _resolve_colour(colour)) !== null && _resolve_colour2 !== void 0 ? _resolve_colour2 : pythonModule.library.colour;
     if (custom) {
       var customResult = globalThis;
-      var _iterator14 = _createForOfIteratorHelper(custom.split('.')),
-        _step14;
+      var _iterator13 = _createForOfIteratorHelper(custom.split('.')),
+        _step13;
       try {
-        for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
-          var item = _step14.value;
+        for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
+          var item = _step13.value;
           customResult = customResult[item];
           if (!customResult) {
             console.warn("Could not find custom " + custom + " for " + this.fullName);
@@ -2458,9 +2499,9 @@ var PythonFunction = /*#__PURE__*/function () {
           }
         }
       } catch (err) {
-        _iterator14.e(err);
+        _iterator13.e(err);
       } finally {
-        _iterator14.f();
+        _iterator13.f();
       }
       this.custom = customResult;
     } else {
@@ -2585,24 +2626,24 @@ var PythonClass = /*#__PURE__*/function () {
 
     // Default constructor
     this.members.set("__init__", new PythonConstructorMethod(this, "__init__()", "", null, null));
-    var _iterator15 = _createForOfIteratorHelper(members),
-      _step15;
+    var _iterator14 = _createForOfIteratorHelper(members),
+      _step14;
     try {
-      for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
-        var input = _step15.value;
+      for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
+        var input = _step14.value;
         if (_typeof(input) === "object") {
           if (input.signatures) {
-            var _iterator16 = _createForOfIteratorHelper(input.signatures),
-              _step16;
+            var _iterator15 = _createForOfIteratorHelper(input.signatures),
+              _step15;
             try {
-              for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
-                var _signature2 = _step16.value;
+              for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
+                var _signature2 = _step15.value;
                 this.addMember(_signature2, input);
               }
             } catch (err) {
-              _iterator16.e(err);
+              _iterator15.e(err);
             } finally {
-              _iterator16.f();
+              _iterator15.f();
             }
           } else {
             this.addMember(input.signature, input);
@@ -2612,9 +2653,9 @@ var PythonClass = /*#__PURE__*/function () {
         }
       }
     } catch (err) {
-      _iterator15.e(err);
+      _iterator14.e(err);
     } finally {
-      _iterator15.f();
+      _iterator14.f();
     }
   }
   return _createClass(PythonClass, [{
@@ -2633,17 +2674,17 @@ var PythonClass = /*#__PURE__*/function () {
         } else {
           var _inputObject$colour4;
           member = new PythonMethod(this, code, comment, (_inputObject$colour4 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour4 !== void 0 ? _inputObject$colour4 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
-          var _iterator17 = _createForOfIteratorHelper(member.aliases),
-            _step17;
+          var _iterator16 = _createForOfIteratorHelper(member.aliases),
+            _step16;
           try {
-            for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
-              var alias = _step17.value;
+            for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
+              var alias = _step16.value;
               this.members.set(alias.name, alias);
             }
           } catch (err) {
-            _iterator17.e(err);
+            _iterator16.e(err);
           } finally {
-            _iterator17.f();
+            _iterator16.f();
           }
         }
       } else {
@@ -2661,17 +2702,17 @@ var PythonClass = /*#__PURE__*/function () {
     key: "toToolbox",
     value: function toToolbox(textToBlocks) {
       var result = "";
-      var _iterator18 = _createForOfIteratorHelper(this.members.values()),
-        _step18;
+      var _iterator17 = _createForOfIteratorHelper(this.members.values()),
+        _step17;
       try {
-        for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
-          var member = _step18.value;
+        for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
+          var member = _step17.value;
           result += member.toToolbox(textToBlocks);
         }
       } catch (err) {
-        _iterator18.e(err);
+        _iterator17.e(err);
       } finally {
-        _iterator18.f();
+        _iterator17.f();
       }
       return result;
     }
@@ -2739,7 +2780,7 @@ var PythonAttribute = /*#__PURE__*/function () {
       if (this.pythonClass == null) {
         return this.pythonModule.fullName + "." + this.name;
       }
-      return python.pythonGenerator.blank + "." + this.name;
+      return __BLANK + "." + this.name;
     }
   }, {
     key: "toString",
@@ -2770,32 +2811,32 @@ var PythonAttribute = /*#__PURE__*/function () {
 }();
 var PythonMethod = /*#__PURE__*/function (_PythonFunction) {
   function PythonMethod(pythonClass, signature, comment, colour, custom) {
-    var _this10;
+    var _this0;
     _classCallCheck(this, PythonMethod);
-    _this10 = _callSuper(this, PythonMethod, [pythonClass.pythonModule, signature, comment, colour, custom]);
-    _this10.pythonClass = pythonClass;
-    _this10.fullName = pythonClass.fullName + "." + _this10.name;
+    _this0 = _callSuper(this, PythonMethod, [pythonClass.pythonModule, signature, comment, colour, custom]);
+    _this0.pythonClass = pythonClass;
+    _this0.fullName = pythonClass.fullName + "." + _this0.name;
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
-      _this10.message = "." + _this10.name;
+      _this0.message = "." + _this0.name;
     }
-    if (_this10.parameters.length === 0) {
-      _this10.staticmethod = true;
-      _this10.classmethod = false;
-    } else if (_this10.parameters[0].name === 'self') {
-      _this10.staticmethod = false;
-      _this10.classmethod = false;
-    } else if (_this10.parameters[0].name === 'cls') {
-      _this10.staticmethod = false;
-      _this10.classmethod = true;
+    if (_this0.parameters.length === 0) {
+      _this0.staticmethod = true;
+      _this0.classmethod = false;
+    } else if (_this0.parameters[0].name === 'self') {
+      _this0.staticmethod = false;
+      _this0.classmethod = false;
+    } else if (_this0.parameters[0].name === 'cls') {
+      _this0.staticmethod = false;
+      _this0.classmethod = true;
     } else {
-      _this10.staticmethod = true;
-      _this10.classmethod = false;
+      _this0.staticmethod = true;
+      _this0.classmethod = false;
     }
-    if (_this10.premessage === "" && !(_this10.classmethod || _this10.staticmethod)) {
-      _this10.premessage = pythonClass.name;
+    if (_this0.premessage === "" && !(_this0.classmethod || _this0.staticmethod)) {
+      _this0.premessage = pythonClass.name;
     }
-    _this10.argumentOffset = _this10.staticmethod ? 0 : 1;
-    return _this10;
+    _this0.argumentOffset = _this0.staticmethod ? 0 : 1;
+    return _this0;
   }
   _inherits(PythonMethod, _PythonFunction);
   return _createClass(PythonMethod, [{
@@ -2804,7 +2845,7 @@ var PythonMethod = /*#__PURE__*/function (_PythonFunction) {
       if (this.staticmethod || this.classmethod) {
         return this.pythonClass.fullName + "." + this.name + "(" + this.parameters.toPythonSource() + ")";
       }
-      return python.pythonGenerator.blank + "." + this.name + "(" + this.parameters.toPythonSource() + ")";
+      return __BLANK + "." + this.name + "(" + this.parameters.toPythonSource() + ")";
     }
   }, {
     key: "toToolboxBlock",
@@ -2813,7 +2854,7 @@ var PythonMethod = /*#__PURE__*/function (_PythonFunction) {
       var blockElement;
       try {
         textToBlocks.variables = new TypesRegistry();
-        textToBlocks.variables.add(this.pythonClass.fullName, python.pythonGenerator.blank);
+        textToBlocks.variables.add(this.pythonClass.fullName, __BLANK);
         blockElement = _superPropGet(PythonMethod, "toToolboxBlock", this, 3)([textToBlocks]);
       } finally {
         textToBlocks.variables = originalVariables;
@@ -2824,14 +2865,14 @@ var PythonMethod = /*#__PURE__*/function (_PythonFunction) {
 }(PythonFunction);
 var PythonConstructorMethod = /*#__PURE__*/function (_PythonMethod) {
   function PythonConstructorMethod(pythonClass, signature, comment, colour, custom) {
-    var _this11;
+    var _this1;
     _classCallCheck(this, PythonConstructorMethod);
-    _this11 = _callSuper(this, PythonConstructorMethod, [pythonClass, signature, comment, colour, custom]);
-    _this11.typeHint = pythonClass.fullName;
+    _this1 = _callSuper(this, PythonConstructorMethod, [pythonClass, signature, comment, colour, custom]);
+    _this1.typeHint = pythonClass.fullName;
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
-      _this11.message = _this11.pythonClass.name;
+      _this1.message = _this1.pythonClass.name;
     }
-    return _this11;
+    return _this1;
   }
   _inherits(PythonConstructorMethod, _PythonMethod);
   return _createClass(PythonConstructorMethod, [{
@@ -2882,12 +2923,13 @@ var Library = /*#__PURE__*/function () {
       }
     }
     for (var _i5 = 0, _classes = classes; _i5 < _classes.length; _i5++) {
+      var _PythonModule$extract;
       var classDef = _classes[_i5];
       var _classDef$split = classDef.split("//", 2),
         _classDef$split2 = _slicedToArray(_classDef$split, 2),
         signature = _classDef$split2[0],
         _comment = _classDef$split2[1];
-      var moduleName = PythonModule.extractName(signature);
+      var moduleName = (_PythonModule$extract = PythonModule.extractName(signature)) !== null && _PythonModule$extract !== void 0 ? _PythonModule$extract : "";
       var pythonModule = this.modules.get(moduleName);
       if (!pythonModule) {
         pythonModule = new PythonModule(this, moduleName);
@@ -2904,30 +2946,30 @@ var Library = /*#__PURE__*/function () {
         return this.toolbox;
       }
       if (imports) {
-        var _iterator19 = _createForOfIteratorHelper(imports.types()),
-          _step19;
+        var _iterator18 = _createForOfIteratorHelper(imports.types()),
+          _step18;
         try {
-          for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
-            var importedType = _step19.value;
-            var _iterator20 = _createForOfIteratorHelper(this.modules.values()),
-              _step20;
+          for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
+            var importedType = _step18.value;
+            var _iterator19 = _createForOfIteratorHelper(this.modules.values()),
+              _step19;
             try {
-              for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
-                var _module2 = _step20.value;
+              for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
+                var _module2 = _step19.value;
                 if (_module2.resolve(importedType) !== null) {
                   return true;
                 }
               }
             } catch (err) {
-              _iterator20.e(err);
+              _iterator19.e(err);
             } finally {
-              _iterator20.f();
+              _iterator19.f();
             }
           }
         } catch (err) {
-          _iterator19.e(err);
+          _iterator18.e(err);
         } finally {
-          _iterator19.f();
+          _iterator18.f();
         }
         return false;
       }
@@ -2940,17 +2982,17 @@ var Library = /*#__PURE__*/function () {
         return "";
       }
       var categoryXml = "<category name=\"".concat(this.name, "\">"); // TODO color
-      var _iterator21 = _createForOfIteratorHelper(this.modules.values()),
-        _step21;
+      var _iterator20 = _createForOfIteratorHelper(this.modules.values()),
+        _step20;
       try {
-        for (_iterator21.s(); !(_step21 = _iterator21.n()).done;) {
-          var _module3 = _step21.value;
+        for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
+          var _module3 = _step20.value;
           categoryXml += _module3.toToolbox(textToBlocks);
         }
       } catch (err) {
-        _iterator21.e(err);
+        _iterator20.e(err);
       } finally {
-        _iterator21.f();
+        _iterator20.f();
       }
       categoryXml += "</category>";
       return categoryXml;
@@ -2958,60 +3000,60 @@ var Library = /*#__PURE__*/function () {
   }, {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
-      var _iterator22 = _createForOfIteratorHelper(this.modules.values()),
-        _step22;
+      var _iterator21 = _createForOfIteratorHelper(this.modules.values()),
+        _step21;
       try {
-        for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
-          var _module4 = _step22.value;
+        for (_iterator21.s(); !(_step21 = _iterator21.n()).done;) {
+          var _module4 = _step21.value;
           if (_module4.fullName === "") {
             continue;
           }
           _module4.registerImports(typeRegistry);
         }
       } catch (err) {
-        _iterator22.e(err);
+        _iterator21.e(err);
       } finally {
-        _iterator22.f();
+        _iterator21.f();
       }
     }
   }]);
 }();
 var Libraries = /*#__PURE__*/function (_Map) {
   function Libraries(librariesConfiguration) {
-    var _this12;
+    var _this10;
     _classCallCheck(this, Libraries);
-    _this12 = _callSuper(this, Libraries);
-    _this12.defaultColor = _resolve_colour("FUNCTIONS");
+    _this10 = _callSuper(this, Libraries);
+    _this10.defaultColor = _resolve_colour("FUNCTIONS");
     for (var name in librariesConfiguration) {
-      _this12.set(name, new Library(name, librariesConfiguration[name], _this12));
+      _this10.set(name, new Library(name, librariesConfiguration[name], _this10));
     }
-    return _this12;
+    return _this10;
   }
   _inherits(Libraries, _Map);
   return _createClass(Libraries, [{
     key: "findModulesByName",
     value: function findModulesByName(moduleName) {
-      return this.values().map(function (library) {
+      return Array.from(this.values()).map(function (library) {
         return library.modules.get(moduleName);
       }).filter(function (module) {
         return module;
-      }).toArray();
+      });
     }
   }, {
     key: "toToolbox",
     value: function toToolbox(textToBlocks) {
       var result = "";
-      var _iterator23 = _createForOfIteratorHelper(this.values()),
-        _step23;
+      var _iterator22 = _createForOfIteratorHelper(this.values()),
+        _step22;
       try {
-        for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
-          var library = _step23.value;
+        for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
+          var library = _step22.value;
           result += library.toToolbox(textToBlocks);
         }
       } catch (err) {
-        _iterator23.e(err);
+        _iterator22.e(err);
       } finally {
-        _iterator23.f();
+        _iterator22.f();
       }
       return result;
     }
@@ -3028,37 +3070,37 @@ var Libraries = /*#__PURE__*/function (_Map) {
         // Might not contain a module name, check the built-ins
         foundModules = this.findModulesByName('');
       }
-      var _iterator24 = _createForOfIteratorHelper(foundModules),
-        _step24;
+      var _iterator23 = _createForOfIteratorHelper(foundModules),
+        _step23;
       try {
-        for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
-          var foundModule = _step24.value;
+        for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
+          var foundModule = _step23.value;
           var found = foundModule.resolve(fullName);
           if (found) {
             return found;
           }
         }
       } catch (err) {
-        _iterator24.e(err);
+        _iterator23.e(err);
       } finally {
-        _iterator24.f();
+        _iterator23.f();
       }
       return null;
     }
   }, {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
-      var _iterator25 = _createForOfIteratorHelper(this.values()),
-        _step25;
+      var _iterator24 = _createForOfIteratorHelper(this.values()),
+        _step24;
       try {
-        for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
-          var library = _step25.value;
+        for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
+          var library = _step24.value;
           library.registerImports(typeRegistry);
         }
       } catch (err) {
-        _iterator25.e(err);
+        _iterator24.e(err);
       } finally {
-        _iterator25.f();
+        _iterator24.f();
       }
     }
   }]);
@@ -3067,12 +3109,14 @@ if (typeof module !== 'undefined') {
   module.exports = {
     Libraries: Libraries,
     Library: Library,
-    PythonModule: PythonModule,
+    PythonAttribute: PythonAttribute,
     PythonClass: PythonClass,
+    PythonConstructorMethod: PythonConstructorMethod,
     PythonFunction: PythonFunction,
     PythonMethod: PythonMethod,
-    PythonConstructorMethod: PythonConstructorMethod,
-    PythonAttribute: PythonAttribute
+    PythonModule: PythonModule,
+    PythonParameter: PythonParameter,
+    PythonParameters: PythonParameters
   };
 }
 BlockMirrorTextToBlocks['ast_Image'] = function (node, parent, bmttb) {
@@ -4377,11 +4421,11 @@ python.pythonGenerator.forBlock['ast_Expr'] = function (block, generator) {
   var order = python.Order.NONE;
 
   // Generate more optimal parentheses:
-  var _iterator26 = _createForOfIteratorHelper(block.getChildren()),
-    _step26;
+  var _iterator25 = _createForOfIteratorHelper(block.getChildren()),
+    _step25;
   try {
-    for (_iterator26.s(); !(_step26 = _iterator26.n()).done;) {
-      var childBlock = _step26.value;
+    for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
+      var childBlock = _step25.value;
       if (childBlock.type === 'ast_Expr') {
         // Nothing to do
       } else if (childBlock.type === 'ast_Call') {
@@ -4391,9 +4435,9 @@ python.pythonGenerator.forBlock['ast_Expr'] = function (block, generator) {
       }
     }
   } catch (err) {
-    _iterator26.e(err);
+    _iterator25.e(err);
   } finally {
-    _iterator26.f();
+    _iterator25.f();
   }
   var value = python.pythonGenerator.valueToCode(block, 'VALUE', order) || python.pythonGenerator.blank;
   // TODO: Assemble JavaScript into code variable.
@@ -5718,7 +5762,7 @@ python.pythonGenerator.forBlock["ast_JoinedStr"] = function (block, generator) {
   return [code, python.Order.ATOMIC];
 };
 BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
-  var _this13 = this;
+  var _this11 = this;
   var values = node.values;
   var elements = {};
   values.forEach(function (v, i) {
@@ -5726,8 +5770,8 @@ BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
       console.log(v);
       if (!v.conversion && !v.format_spec) {
         elements["ADD" + i] = BlockMirrorTextToBlocks.create_block("ast_FormattedValue", v.lineno, {}, {
-          "VALUE": _this13.convert(v.value, node)
-        }, _this13.LOCKED_BLOCK);
+          "VALUE": _this11.convert(v.value, node)
+        }, _this11.LOCKED_BLOCK);
       } else {
         var format_spec = v.format_spec ? chompExclamation(v.format_spec.values[0].s.v) : "";
         // Can there ever be a non-1 length format_spec?
@@ -5735,14 +5779,14 @@ BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
           "FORMAT_SPEC": format_spec,
           "CONVERSION": v.conversion
         }, {
-          "VALUE": _this13.convert(v.value, node)
-        }, _this13.LOCKED_BLOCK);
+          "VALUE": _this11.convert(v.value, node)
+        }, _this11.LOCKED_BLOCK);
       }
     } else if (v._astname === "Str") {
       var text = Sk.ffi.remapToJs(v.s);
       elements["ADD" + i] = BlockMirrorTextToBlocks.create_block("ast_JoinedStrStr", v.lineno, {
         "TEXT": text
-      }, {}, _this13.LOCKED_BLOCK);
+      }, {}, _this11.LOCKED_BLOCK);
     }
   });
   return BlockMirrorTextToBlocks.create_block("ast_JoinedStr", node.lineno, {}, elements, {
@@ -6461,10 +6505,12 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
       message = fromLibrary.message;
       returns = fromLibrary.typeHint;
       if (fromLibrary instanceof PythonConstructorMethod) {
+        // For constructor methods, the caller is fixed.
+        isMethod = false;
         name = fromLibrary.pythonClass.name;
         returns = fromLibrary.pythonClass.fullName;
       } else if (fromLibrary instanceof PythonMethod) {
-        // For static and class methods, the caller is fixed
+        // For static and class methods, the caller is fixed.
         isMethod = !fromLibrary.staticmethod && !fromLibrary.classmethod;
         if (isMethod) {
           caller = func.value;
@@ -6473,17 +6519,16 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
           name = fromLibrary.pythonClass.name + "." + fromLibrary.name;
         }
       } else {
-        // For functions, the caller is fixed
+        // For functions, the caller is fixed.
         isMethod = false;
         if (fromLibrary.pythonModule.name === "") {
           name = fromLibrary.name;
         } else {
           name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
-          if (message === fromLibrary.name) {
-            message = name;
-          }
         }
-        message = name;
+        if (message === fromLibrary.name) {
+          message = name;
+        }
       }
     } else {
       throw new TypeError("Unexpected type from library: " + fromLibrary.constructor.name + " for " + func);
@@ -7496,16 +7541,16 @@ Blockly.Blocks['ast_FunctionDef'] = {
     this.parametersCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var _i10 = 0; _i10 < this.parametersCount_; _i10++) {
+    for (var _i0 = 0; _i0 < this.parametersCount_; _i0++) {
       var _connections$_i;
-      (_connections$_i = connections[_i10]) === null || _connections$_i === void 0 || _connections$_i.reconnect(this, 'PARAMETER' + _i10);
-      if (!connections[_i10]) {
-        var createName = 'ast_Function' + blockTypes[_i10].substring('ast_FunctionMutant'.length);
+      (_connections$_i = connections[_i0]) === null || _connections$_i === void 0 || _connections$_i.reconnect(this, 'PARAMETER' + _i0);
+      if (!connections[_i0]) {
+        var createName = 'ast_Function' + blockTypes[_i0].substring('ast_FunctionMutant'.length);
         var _itemBlock4 = this.workspace.newBlock(createName);
         _itemBlock4.setDeletable(false);
         _itemBlock4.setMovable(false);
         _itemBlock4.initSvg();
-        this.getInput('PARAMETER' + _i10).connection.connect(_itemBlock4.outputConnection);
+        this.getInput('PARAMETER' + _i0).connection.connect(_itemBlock4.outputConnection);
         _itemBlock4.render();
         //this.get(itemBlock, 'ADD'+i)
       }
@@ -7560,8 +7605,8 @@ python.pythonGenerator.forBlock['ast_FunctionDef'] = function (block, generator)
   }
   // Parameters
   var parameters = new Array(block.parametersCount_);
-  for (var _i11 = 0; _i11 < block.parametersCount_; _i11++) {
-    parameters[_i11] = python.pythonGenerator.valueToCode(block, 'PARAMETER' + _i11, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i1 = 0; _i1 < block.parametersCount_; _i1++) {
+    parameters[_i1] = python.pythonGenerator.valueToCode(block, 'PARAMETER' + _i1, python.Order.NONE) || python.pythonGenerator.blank;
   }
   // Return annotation
   var returns = "";
@@ -7618,14 +7663,14 @@ BlockMirrorTextToBlocks.prototype.parseArgs = function (args, values, lineno, no
   }
   // keyword arguments that must be referenced by name
   if (kwonlyargs !== null) {
-    for (var _i12 = 0; _i12 < kwonlyargs.length; _i12++) {
+    for (var _i10 = 0; _i10 < kwonlyargs.length; _i10++) {
       var _childValues = {};
       var _type = 'ast_FunctionParameter';
-      if (kw_defaults[_i12]) {
-        _childValues['DEFAULT'] = this.convert(kw_defaults[_i12], node);
+      if (kw_defaults[_i10]) {
+        _childValues['DEFAULT'] = this.convert(kw_defaults[_i10], node);
         _type += "Default";
       }
-      values['PARAMETER' + totalArgs] = this.parseArg(kwonlyargs[_i12], _type, lineno, _childValues, node);
+      values['PARAMETER' + totalArgs] = this.parseArg(kwonlyargs[_i10], _type, lineno, _childValues, node);
       totalArgs += 1;
     }
   }
@@ -8085,16 +8130,16 @@ Blockly.Blocks['ast_ClassDef'] = {
       }
       this.moveInputBefore('DECORATOR' + i, 'BODY');
     }
-    for (var _i13 = 0; _i13 < this.bases_; _i13++) {
-      var _input = this.appendValueInput("BASE" + _i13).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT);
-      if (_i13 === 0) {
+    for (var _i11 = 0; _i11 < this.bases_; _i11++) {
+      var _input = this.appendValueInput("BASE" + _i11).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT);
+      if (_i11 === 0) {
         _input.appendField("inherits from");
       }
-      this.moveInputBefore('BASE' + _i13, 'BODY');
+      this.moveInputBefore('BASE' + _i11, 'BODY');
     }
-    for (var _i14 = 0; _i14 < this.keywords_; _i14++) {
-      this.appendValueInput("KEYWORDVALUE" + _i14).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT).appendField(new Blockly.FieldTextInput("metaclass"), "KEYWORDNAME" + _i14).appendField("=");
-      this.moveInputBefore('KEYWORDVALUE' + _i14, 'BODY');
+    for (var _i12 = 0; _i12 < this.keywords_; _i12++) {
+      this.appendValueInput("KEYWORDVALUE" + _i12).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT).appendField(new Blockly.FieldTextInput("metaclass"), "KEYWORDNAME" + _i12).appendField("=");
+      this.moveInputBefore('KEYWORDVALUE' + _i12, 'BODY');
     }
   },
   /**
@@ -8132,18 +8177,18 @@ python.pythonGenerator.forBlock['ast_ClassDef'] = function (block, generator) {
   }
   // Bases
   var bases = new Array(block.bases_);
-  for (var _i15 = 0; _i15 < block.bases_; _i15++) {
-    bases[_i15] = python.pythonGenerator.valueToCode(block, 'BASE' + _i15, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i13 = 0; _i13 < block.bases_; _i13++) {
+    bases[_i13] = python.pythonGenerator.valueToCode(block, 'BASE' + _i13, python.Order.NONE) || python.pythonGenerator.blank;
   }
   // Keywords
   var keywords = new Array(block.keywords_);
-  for (var _i16 = 0; _i16 < block.keywords_; _i16++) {
-    var _name2 = block.getFieldValue('KEYWORDNAME' + _i16);
-    var value = python.pythonGenerator.valueToCode(block, 'KEYWORDVALUE' + _i16, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i14 = 0; _i14 < block.keywords_; _i14++) {
+    var _name2 = block.getFieldValue('KEYWORDNAME' + _i14);
+    var value = python.pythonGenerator.valueToCode(block, 'KEYWORDVALUE' + _i14, python.Order.NONE) || python.pythonGenerator.blank;
     if (_name2 == '**') {
-      keywords[_i16] = '**' + value;
+      keywords[_i14] = '**' + value;
     } else {
-      keywords[_i16] = _name2 + '=' + value;
+      keywords[_i14] = _name2 + '=' + value;
     }
   }
   // Body:
@@ -8169,18 +8214,18 @@ BlockMirrorTextToBlocks.prototype['ast_ClassDef'] = function (node, parent) {
     }
   }
   if (bases !== null) {
-    for (var _i17 = 0; _i17 < bases.length; _i17++) {
-      values['BASE' + _i17] = this.convert(bases[_i17], node);
+    for (var _i15 = 0; _i15 < bases.length; _i15++) {
+      values['BASE' + _i15] = this.convert(bases[_i15], node);
     }
   }
   if (keywords !== null) {
-    for (var _i18 = 0; _i18 < keywords.length; _i18++) {
-      values['KEYWORDVALUE' + _i18] = this.convert(keywords[_i18].value, node);
-      var arg = keywords[_i18].arg;
+    for (var _i16 = 0; _i16 < keywords.length; _i16++) {
+      values['KEYWORDVALUE' + _i16] = this.convert(keywords[_i16].value, node);
+      var arg = keywords[_i16].arg;
       if (arg === null) {
-        fields['KEYWORDNAME' + _i18] = "**";
+        fields['KEYWORDNAME' + _i16] = "**";
       } else {
-        fields['KEYWORDNAME' + _i18] = Sk.ffi.remapToJs(arg);
+        fields['KEYWORDNAME' + _i16] = Sk.ffi.remapToJs(arg);
       }
     }
   }

@@ -1,3 +1,5 @@
+const __BLANK = "___" // Mirrors python.pythonGenerator.blank
+
 function _resolve_colour(colour) {
   if (typeof colour === "string" && typeof BlockMirrorTextToBlocks === "function") {
     return BlockMirrorTextToBlocks.COLOR[colour]
@@ -14,16 +16,9 @@ class PythonModule {
 
   static extractName(signature) {
     if (signature.startsWith('class ')) {
-      if (!signature.includes('.')) {
-        return "";
-      }
-
       signature = signature.substring(6).split('(', 1)[0];
       let lastIndexOfDot = signature.lastIndexOf('.')
-
-      if (lastIndexOfDot !== -1) {
-        return signature.substring(0, lastIndexOfDot);
-      }
+      return lastIndexOfDot === -1 ? null : signature.substring(0, lastIndexOfDot);
     }
 
     let moduleName = signature.split(/\.([A-Z][^.]*)\.?.+$/, 1)[0];
@@ -197,7 +192,7 @@ class PythonParameter {
       }
     }
 
-    if (this.value === python.pythonGenerator.blank) {
+    if (this.value === this.__BLANK) {
       // For consistency
       this.value = ""
     }
@@ -212,7 +207,7 @@ class PythonParameter {
 
     if (this.value === "") {
       if (this.defaultValue === "" && !(this.variableLength && this.positional)) {
-        processedValue = python.pythonGenerator.blank;
+        processedValue = __BLANK;
       } else {
         processedValue = this.defaultValue
       }
@@ -242,34 +237,53 @@ class PythonParameter {
     element.parentNode.replaceChild(replacementElement, element);
   };
 
-  #matchesDefaultValue(type, value) {
-    if (this.defaultValue === "") {
+  #matchesDefaultValue(type, value, defaultValue) {
+    if (defaultValue === "") {
       return value === ""
     }
 
     switch (type) {
       case "ast_NameConstantBoolean":
-        return this.defaultValue === value || this.defaultValue === "True" && value === "TRUE" || this.defaultValue === "False" && value === "FALSE"
+        return defaultValue === value || defaultValue === "True" && value === "TRUE" || defaultValue === "False" && value === "FALSE"
       case "ast_NameConstantNone":
-        return this.defaultValue === "None"
+        return defaultValue === "None"
+      case "ast_Num":
+      case "ast_UnaryOpUSub":
+        return parseFloat(defaultValue) === parseFloat(value)
+      case "ast_Tuple":
+          break
       case "ast_Name":
       case "ast_Str":
       case "ast_StrChar":
-        return this.defaultValue === value
-      case "ast_Num":
-      case "ast_UnaryOpUSub":
-        return parseFloat(this.defaultValue) === parseFloat(value)
     }
-    return false
+    return defaultValue === value
   }
 
-  #shouldShadow(argBlock) {
-    if (this.defaultValue === '') {
+  #shouldShadow(argBlock, defaultValue) {
+    if (defaultValue === '') {
       return false
     } else if (argBlock instanceof HTMLElement) {
       // Blockly XML
       let blockElement = argBlock.firstElementChild;
       let blockType = blockElement.getAttribute("type")
+
+      if (blockType === "ast_Tuple") {
+        let defaultValueParts = defaultValue.substring(1, defaultValue.length -1).split(', ')
+        let valueChildren = [...blockElement.children].filter(child => child.localName === 'value')
+
+        if (defaultValueParts.length !== valueChildren.length) {
+          return false
+        }
+
+        for (let i = 0; i < defaultValueParts.length; i++) {
+          if (!this.#shouldShadow(valueChildren[i], defaultValueParts[i])) {
+            return false
+          }
+        }
+
+        return true
+      }
+
       let value = blockElement.textContent
 
       if (blockType === "ast_UnaryOpUSub") {
@@ -278,16 +292,17 @@ class PythonParameter {
         value = "'" + value.replace("'", "\'").replace('\n', '\\n') + "'"
       }
 
-      return this.#matchesDefaultValue(blockType, value)
+      return this.#matchesDefaultValue(blockType, value, defaultValue)
     } else {
       // Blockly block
-      return this.#matchesDefaultValue(argBlock.type, python.pythonGenerator.descrub_(python.pythonGenerator.blockToCode(argBlock)[0]))
+      let value = python.pythonGenerator.descrub_(python.pythonGenerator.blockToCode(argBlock)[0])
+      return this.#matchesDefaultValue(argBlock.type, value, defaultValue)
     }
   }
 
   applyShadow(argBlock) {
     if (argBlock) {
-      let shouldShadow = this.#shouldShadow(argBlock)
+      let shouldShadow = this.#shouldShadow(argBlock, this.defaultValue)
 
       if (argBlock instanceof HTMLElement) {
         // Blockly XML
@@ -309,23 +324,21 @@ class PythonParameter {
 }
 
 class PythonParameters extends Array {
+
+
   constructor(signature, comment) {
     super();
     const parameters = signature
-      .substring(signature.lastIndexOf("(") + 1, signature.lastIndexOf(")"))
+      .substring(signature.indexOf("(") + 1, signature.lastIndexOf(")"))
       .trim();
 
     if (parameters !== "") {
       const args = comment.substring(
-        comment.lastIndexOf("(") + 1,
+        comment.indexOf("(") + 1,
         comment.lastIndexOf(")"),
       );
-      const argParts = args.split(/(?<!\[[^\]]*),/).map((value) => {
-        return value.trim();
-      });
-      const parameterParts = parameters.split(/(?<!\[[^\]]*),/).map((value) => {
-        return value.trim();
-      });
+      const argParts = splitParameters(args);
+      const parameterParts = splitParameters(parameters);
 
       // PEP 570 Python Positional-Only Parameters
       let positional = true;
@@ -387,6 +400,32 @@ class PythonParameters extends Array {
   findByKeyword(keyword) {
     return this.values().find((value) => value.name === keyword);
   }
+}
+
+function splitParameters(input) {
+  let result = []
+  let openParentheses = 0
+  let item = ''
+
+  for (let char of input) {
+    if (char == ',' && openParentheses === 0) {
+      result.push(item.trim())
+      item = ''
+      continue
+    } else if (char == '(') {
+      openParentheses++;
+    } else if (char == ')') {
+      openParentheses--;
+    }
+    item += char;
+  }
+
+  item = item.trim()
+
+  if (item !== '') {
+    result.push(item)
+  }
+  return result;
 }
 
 function splitPremessageMessage(toSplit) {
@@ -721,7 +760,7 @@ class PythonAttribute {
       return this.pythonModule.fullName + "." + this.name;
     }
 
-    return python.pythonGenerator.blank + "." + this.name;
+    return __BLANK + "." + this.name;
   }
 
   toString() {
@@ -790,7 +829,7 @@ class PythonMethod extends PythonFunction {
       );
     }
     return (
-        python.pythonGenerator.blank +
+        __BLANK +
         "." +
         this.name +
         "(" +
@@ -804,7 +843,7 @@ class PythonMethod extends PythonFunction {
       let blockElement
       try {
         textToBlocks.variables = new TypesRegistry()
-        textToBlocks.variables.add(this.pythonClass.fullName, python.pythonGenerator.blank)
+        textToBlocks.variables.add(this.pythonClass.fullName, __BLANK)
         blockElement = super.toToolboxBlock(textToBlocks);
       } finally {
         textToBlocks.variables = originalVariables
@@ -878,7 +917,7 @@ class Library {
 
     for (let classDef of classes) {
       const [signature, comment] = classDef.split("//", 2);
-      let moduleName = PythonModule.extractName(signature);
+      let moduleName = PythonModule.extractName(signature) ?? "";
       let pythonModule = this.modules.get(moduleName);
 
       if (!pythonModule) {
@@ -952,9 +991,9 @@ class Libraries extends Map {
   }
 
   findModulesByName(moduleName) {
-    return this.values()
+    return  Array.from(this.values())
       .map((library) => library.modules.get(moduleName))
-      .filter((module) => module).toArray();
+      .filter((module) => module);
   }
 
   toToolbox(textToBlocks) {
@@ -998,5 +1037,16 @@ class Libraries extends Map {
 }
 
 if (typeof module !== 'undefined') {
-  module.exports = {Libraries, Library, PythonModule, PythonClass, PythonFunction, PythonMethod, PythonConstructorMethod, PythonAttribute};
+  module.exports = {
+      Libraries,
+      Library,
+      PythonAttribute,
+      PythonClass,
+      PythonConstructorMethod,
+      PythonFunction,
+      PythonMethod,
+      PythonModule,
+      PythonParameter,
+      PythonParameters,
+  };
 }
