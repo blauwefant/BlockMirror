@@ -869,7 +869,7 @@ class PythonConstructorMethod extends PythonMethod {
 
   toPythonSource() {
     return (
-      this.pythonClass.name +
+      this.pythonClass.fullName +
       "(" +
       this.parameters.toPythonSource() +
       ")"

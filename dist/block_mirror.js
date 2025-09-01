@@ -2878,7 +2878,7 @@ var PythonConstructorMethod = /*#__PURE__*/function (_PythonMethod) {
   return _createClass(PythonConstructorMethod, [{
     key: "toPythonSource",
     value: function toPythonSource() {
-      return this.pythonClass.name + "(" + this.parameters.toPythonSource() + ")";
+      return this.pythonClass.fullName + "(" + this.parameters.toPythonSource() + ")";
     }
   }], [{
     key: "isA",
