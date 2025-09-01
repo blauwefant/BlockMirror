@@ -138,7 +138,10 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
         mutations["@message"] = fromLibrary.message
         mutations["@postmessage"] = fromLibrary.postmessage
         mutations["@returns"] = fromLibrary.typeHint ?? returns
-        mutations["@import"] = fromLibrary.pythonClass?.requiresImport ?? fromLibrary.pythonModule.requiresImport ?? ""
+
+        if (fromLibrary.pythonClass === null) {
+          mutations["@import"] = fromLibrary.pythonModule.requiresImport ?? ""
+        }
     } else if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
         if (fromLibrary.requiresImport) {
             mutations["@import"] = fromLibrary.requiresImport

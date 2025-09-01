@@ -125,8 +125,12 @@ var TypesRegistry = /*#__PURE__*/function () {
     value: function add(type, name) {
       var types = this._name_to_types.get(name) || [];
       var names = this._type_to_names.get(name) || [];
-      names.push(name);
-      types.push(type);
+      if (!names.includes(name)) {
+        names.push(name);
+      }
+      if (!types.includes(type)) {
+        types.push(type);
+      }
       this._name_to_types.set(name, types);
       this._type_to_names.set(type, names);
     }
@@ -1169,12 +1173,15 @@ BlockMirrorBlockEditor.prototype.makeToolbox = function () {
   if (typeof toolbox !== "string") {
     var textToBlocks = this.blockMirror.textToBlocks;
     var originalImports = textToBlocks.imports;
+    var originalVariables = textToBlocks.variables;
     try {
       textToBlocks.imports = new TypeRegistry();
+      textToBlocks.variables = new TypesRegistry();
       this.blockMirror.libraries.registerImports(textToBlocks.imports);
       toolbox = this.toolboxPythonToBlocks(toolbox);
     } finally {
       textToBlocks.imports = originalImports;
+      textToBlocks.variables = originalVariables;
     }
   }
   // TODO: Fix Hack, this should be configurable by instance rather than by class
@@ -2750,7 +2757,7 @@ var PythonClass = /*#__PURE__*/function () {
       return signature.startsWith("class ");
     }
   }]);
-}();
+}(); // TODO static attributes
 var PythonAttribute = /*#__PURE__*/function () {
   function PythonAttribute(pythonClassOrModule, signature, comment, colour) {
     var _resolve_colour3;
@@ -5991,12 +5998,15 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
   var fromLibrary = this.resolveFromLibrary(node);
   var alias = null;
   if (fromLibrary instanceof PythonAttribute) {
-    var _fromLibrary$typeHint, _ref6, _fromLibrary$pythonCl, _fromLibrary$pythonCl2;
+    var _fromLibrary$typeHint;
     mutations["@premessage"] = fromLibrary.premessage;
     mutations["@message"] = fromLibrary.message;
     mutations["@postmessage"] = fromLibrary.postmessage;
     mutations["@returns"] = (_fromLibrary$typeHint = fromLibrary.typeHint) !== null && _fromLibrary$typeHint !== void 0 ? _fromLibrary$typeHint : returns;
-    mutations["@import"] = (_ref6 = (_fromLibrary$pythonCl = (_fromLibrary$pythonCl2 = fromLibrary.pythonClass) === null || _fromLibrary$pythonCl2 === void 0 ? void 0 : _fromLibrary$pythonCl2.requiresImport) !== null && _fromLibrary$pythonCl !== void 0 ? _fromLibrary$pythonCl : fromLibrary.pythonModule.requiresImport) !== null && _ref6 !== void 0 ? _ref6 : "";
+    if (fromLibrary.pythonClass === null) {
+      var _fromLibrary$pythonMo;
+      mutations["@import"] = (_fromLibrary$pythonMo = fromLibrary.pythonModule.requiresImport) !== null && _fromLibrary$pythonMo !== void 0 ? _fromLibrary$pythonMo : "";
+    }
   } else if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
     if (fromLibrary.requiresImport) {
       mutations["@import"] = fromLibrary.requiresImport;
@@ -6521,8 +6531,8 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         // Regular instance method, no import needed
         import_ = "";
       } else {
-        var _fromLibrary$pythonCl3, _fromLibrary$pythonCl4;
-        import_ = (_fromLibrary$pythonCl3 = (_fromLibrary$pythonCl4 = fromLibrary.pythonClass) === null || _fromLibrary$pythonCl4 === void 0 ? void 0 : _fromLibrary$pythonCl4.requiresImport) !== null && _fromLibrary$pythonCl3 !== void 0 ? _fromLibrary$pythonCl3 : fromLibrary.pythonModule.requiresImport;
+        var _fromLibrary$pythonCl, _fromLibrary$pythonCl2;
+        import_ = (_fromLibrary$pythonCl = (_fromLibrary$pythonCl2 = fromLibrary.pythonClass) === null || _fromLibrary$pythonCl2 === void 0 ? void 0 : _fromLibrary$pythonCl2.requiresImport) !== null && _fromLibrary$pythonCl !== void 0 ? _fromLibrary$pythonCl : fromLibrary.pythonModule.requiresImport;
       }
       name = fromLibrary.name;
       premessage = fromLibrary.premessage;

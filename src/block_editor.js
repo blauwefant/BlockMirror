@@ -160,12 +160,15 @@ BlockMirrorBlockEditor.prototype.makeToolbox = function () {
     if (typeof toolbox !== "string") {
         let textToBlocks = this.blockMirror.textToBlocks
         let originalImports = textToBlocks.imports
+        let originalVariables = textToBlocks.variables
         try {
-            textToBlocks.imports = new TypeRegistry()
-            this.blockMirror.libraries.registerImports(textToBlocks.imports)
-            toolbox = this.toolboxPythonToBlocks(toolbox);
+          textToBlocks.imports = new TypeRegistry()
+          textToBlocks.variables = new TypesRegistry()
+          this.blockMirror.libraries.registerImports(textToBlocks.imports)
+          toolbox = this.toolboxPythonToBlocks(toolbox);
         } finally {
-            textToBlocks.imports = originalImports
+          textToBlocks.imports = originalImports
+          textToBlocks.variables = originalVariables
         }
     }
     // TODO: Fix Hack, this should be configurable by instance rather than by class

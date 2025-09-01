@@ -728,6 +728,7 @@ class PythonClass {
   }
 }
 
+// TODO static class attributes
 class PythonAttribute {
   static isA(signature) {
     return !signature.includes("(");

@@ -74,8 +74,12 @@ class TypesRegistry {
   add(type, name) {
     let types = this._name_to_types.get(name) || []
     let names = this._type_to_names.get(name) || []
-    names.push(name);
-    types.push(type);
+    if (!names.includes(name)) {
+      names.push(name);
+    }
+    if (!types.includes(type)) {
+      types.push(type);
+    }
     this._name_to_types.set(name, types);
     this._type_to_names.set(type, names);
   }
