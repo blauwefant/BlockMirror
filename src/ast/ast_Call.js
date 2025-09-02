@@ -548,7 +548,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                 }
             }
         } else {
-            throw new TypeError("Unexpected type from library: " + fromLibrary.constructor.name + " for " + func)
+            throw new TypeError("Unexpected type from library: " + fromLibrary.constructor.name + " for " + this.getAsModule(func.value))
         }
     }
 

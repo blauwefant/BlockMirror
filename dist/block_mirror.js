@@ -1146,15 +1146,22 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
       header += ">";
     }
     var body = (category.blocks || []).map(function (code) {
-      var result = _this7.blockMirror.textToBlocks.convertSource('toolbox.py', code);
-      if (result.rawXml.firstElementChild.getAttribute('type') === 'ast_AnnAssignFull') {
-        // In case the first line only specifies the class the attribute is defined on.
-        var nextElements = result.rawXml.getElementsByTagName("next");
-        if (nextElements.length > 0) {
-          return nextElements.item(0).innerHTML.toString();
+      var textToBlocks = _this7.blockMirror.textToBlocks;
+      var originalVariables = textToBlocks.variables;
+      try {
+        textToBlocks.variables = new TypesRegistry();
+        var result = _this7.blockMirror.textToBlocks.convertSource('toolbox.py', code);
+        if (result.rawXml.firstElementChild.getAttribute('type') === 'ast_AnnAssignFull') {
+          // In case the first line only specifies the class the attribute is defined on.
+          var nextElements = result.rawXml.getElementsByTagName("next");
+          if (nextElements.length > 0) {
+            return nextElements.item(0).innerHTML.toString();
+          }
         }
+        return result.rawXml.innerHTML.toString();
+      } finally {
+        textToBlocks.variables = originalVariables;
       }
-      return result.rawXml.innerHTML.toString();
     }).join("\n");
     var footer = "</category>";
     if (category['hideGettersSetters']) {
@@ -2077,7 +2084,7 @@ var PythonModule = /*#__PURE__*/function () {
   }, {
     key: "resolve",
     value: function resolve(name) {
-      var _this$members$get;
+      var _member2;
       if (name === this.fullName) {
         return this;
       }
@@ -2098,9 +2105,9 @@ var PythonModule = /*#__PURE__*/function () {
           _step9;
         try {
           for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
-            var member = _step9.value;
-            if (member instanceof PythonClass) {
-              var result = member.resolve(methodName);
+            var _member = _step9.value;
+            if (_member instanceof PythonClass) {
+              var result = _member.resolve(methodName);
               if (result) {
                 return result;
               }
@@ -2113,7 +2120,14 @@ var PythonModule = /*#__PURE__*/function () {
         }
         return null;
       }
-      return (_this$members$get = this.members.get(memberName.substring(0, indexOfDot))) === null || _this$members$get === void 0 ? void 0 : _this$members$get.resolve(memberName.substring(indexOfDot + 1));
+      var member = this.members.get(memberName.substring(0, indexOfDot));
+      if (member instanceof PythonAttribute) {
+        if (member.typeHint === "") {
+          return null;
+        }
+        member = this.library.libraries.resolve(member.typeHint);
+      }
+      return (_member2 = member) === null || _member2 === void 0 ? void 0 : _member2.resolve(memberName.substring(indexOfDot + 1));
     }
   }, {
     key: "registerImports",
@@ -2757,7 +2771,7 @@ var PythonClass = /*#__PURE__*/function () {
       return signature.startsWith("class ");
     }
   }]);
-}(); // TODO static attributes
+}(); // TODO static class attributes
 var PythonAttribute = /*#__PURE__*/function () {
   function PythonAttribute(pythonClassOrModule, signature, comment, colour) {
     var _resolve_colour3;
@@ -2792,6 +2806,9 @@ var PythonAttribute = /*#__PURE__*/function () {
     key: "toPythonSource",
     value: function toPythonSource() {
       if (this.pythonClass == null) {
+        if (this.pythonModule.fullName === "") {
+          return this.name;
+        }
         return this.pythonModule.fullName + "." + this.name;
       }
       return __BLANK + "." + this.name;
@@ -6565,7 +6582,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         }
       }
     } else {
-      throw new TypeError("Unexpected type from library: " + fromLibrary.constructor.name + " for " + func);
+      throw new TypeError("Unexpected type from library: " + fromLibrary.constructor.name + " for " + this.getAsModule(func.value));
     }
   }
   if (fromLibrary) {

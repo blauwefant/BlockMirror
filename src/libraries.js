@@ -134,9 +134,16 @@ class PythonModule {
       return null;
     }
 
-    return this.members.get(memberName.substring(0, indexOfDot))?.resolve(
-      memberName.substring(indexOfDot + 1),
-    );
+    let member = this.members.get(memberName.substring(0, indexOfDot))
+
+    if (member instanceof PythonAttribute) {
+      if (member.typeHint === "") {
+        return null;
+      }
+      member = this.library.libraries.resolve(member.typeHint);
+    }
+
+    return member?.resolve(memberName.substring(indexOfDot + 1));
   }
 
   registerImports(typeRegistry) {
@@ -758,6 +765,9 @@ class PythonAttribute {
 
   toPythonSource() {
     if (this.pythonClass == null) {
+      if (this.pythonModule.fullName === "") {
+          return this.name
+      }
       return this.pythonModule.fullName + "." + this.name;
     }
 

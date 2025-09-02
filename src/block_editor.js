@@ -130,6 +130,10 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
             header += ">";
         }
         let body = (category.blocks || []).map((code) => {
+          let textToBlocks = this.blockMirror.textToBlocks;
+          let originalVariables = textToBlocks.variables;
+          try {
+            textToBlocks.variables = new TypesRegistry()
             let result = this.blockMirror.textToBlocks.convertSource('toolbox.py', code);
 
             if (result.rawXml.firstElementChild.getAttribute('type') === 'ast_AnnAssignFull') {
@@ -137,10 +141,13 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
               let nextElements = result.rawXml.getElementsByTagName("next");
 
               if (nextElements.length > 0) {
-                  return nextElements.item(0).innerHTML.toString();
+                return nextElements.item(0).innerHTML.toString();
               }
             }
             return result.rawXml.innerHTML.toString();
+          } finally {
+            textToBlocks.variables = originalVariables
+          }
         }).join("\n");
         let footer = "</category>";
         if (category['hideGettersSetters']) {
