@@ -53,6 +53,10 @@ class PythonModule {
           comment,
           inputObject?.colour ?? inputObject?.color,
       );
+
+      for (let alias of member.aliases) {
+        this.members.set(alias.name, alias);
+      }
     }
 
     this.members.set(member.name, member);
@@ -472,6 +476,7 @@ class PythonFunction {
             ? ""
             : signature.substring(indexOfTypeHint + 1).trim();
     let aliases
+    this.name = null;
     [this.name, ...aliases] = signature.split("(", 1)[0].split(" ");
 
     if ((comment ?? "").trim() === "") {
@@ -482,7 +487,6 @@ class PythonFunction {
     }
     this.parameters = new PythonParameters(signature, comment ?? "");
     this.fullName = pythonModule.fullName === "" ? this.name : (pythonModule.fullName + "." + this.name);
-    this.isAliasOf = null;
     this.colour = _resolve_colour(colour) ?? pythonModule.library.colour;
 
     if (custom) {
@@ -501,23 +505,30 @@ class PythonFunction {
     }
 
     this.argumentOffset = 0
+    this.isAliasOf = null;
 
     this.aliases = aliases.map((value) => {
-      // Should be better, but does not seem to preserve methods in the current toolchain:
-      // let result = structuredClone(this)
-      // result.name = value
-      let result = new PythonFunction(
-        pythonModule,
-        value + signature.substring(signature.indexOf("(")),
-        comment,
-        colour,
-        custom
-      );
-      result.premessage = this.premessage;
-      result.message = this.message;
-      result.isAliasOf = this;
-      return result;
+        let result = this.cloneWithSignature(value + signature.substring(signature.indexOf("(")));
+        result.isAliasOf = this;
+        result.typeHint = this.typeHint;
+        result.colour = this.colour;
+        result.premessage = this.premessage;
+        result.message = this.message;
+        result.parameters = this.parameters;
+        result.custom = this.custom;
+        result.argumentOffset = this.argumentOffset;
+        return result
     });
+  }
+
+  cloneWithSignature(signature) {
+    return new PythonFunction(
+      this.pythonModule,
+      signature,
+      null,
+      null,
+      null
+    );
   }
 
   toPythonSource() {
@@ -630,6 +641,10 @@ class PythonClass {
           comment,
           inputObject?.colour ?? inputObject?.color,
       );
+
+      for (let alias of member.aliases) {
+        this.members.set(alias.name, alias);
+      }
     }
 
     this.members.set(member.name, member);
@@ -749,8 +764,11 @@ class PythonAttribute {
         this.pythonClass = null
         this.pythonModule = pythonClassOrModule
     }
-    let [attributeName, typeHint] = signature.split(":", 2)
-    this.name = attributeName.trim()
+    let [names, typeHint] = signature.trim().split(":", 2)
+    this.names = names.split(" ")
+    let name, aliases
+    [name, ...aliases] = this.names
+    this.name = name.trim()
     this.typeHint = (typeHint || "").trim()
     this.colour = _resolve_colour(colour) ?? pythonClassOrModule.colour;
 
@@ -761,6 +779,12 @@ class PythonAttribute {
     } else {
       [this.premessage, this.message, this.postmessage] = splitPremessageMessagePostmessage(comment);
     }
+
+    this.aliases = aliases.map((value) => {
+      let result = new PythonAttribute(pythonClassOrModule, value + ':' + this.typeHint, comment, colour);
+      result.names = this.names
+      return result
+    });
   }
 
   toPythonSource() {
@@ -844,9 +868,27 @@ class PythonMethod extends PythonFunction {
     }
 
     this.argumentOffset = this.staticmethod ? 0 : 1
+
+    for (let alias of this.aliases) {
+      alias.message = this.message;
+      alias.premessage = this.premessage;
+      alias.argumentOffset = this.argumentOffset;
+      alias.classmethod = this.classmethod;
+      alias.staticmethod = this.staticmethod;
+    }
   }
 
-  toPythonSource() {
+    cloneWithSignature(signature) {
+      return new PythonMethod(
+        this.pythonClass,
+        signature,
+        null,
+        null,
+        null
+      );
+    }
+
+    toPythonSource() {
     if (this.staticmethod || this.classmethod) {
       return (
           this.pythonClass.fullName + "." +
@@ -893,6 +935,20 @@ class PythonConstructorMethod extends PythonMethod {
     if ((comment ?? "").trim() === "") {
       this.message = this.pythonClass.name
     }
+    for (let alias of this.aliases) {
+      alias.message = this.message;
+      alias.typeHint = this.typeHint;
+    }
+  }
+
+  cloneWithSignature(signature) {
+   return new PythonConstructorMethod(
+     this.pythonClass,
+     signature,
+     null,
+     null,
+     null
+    );
   }
 
   toPythonSource() {
