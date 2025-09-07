@@ -182,8 +182,11 @@ class PythonParameter {
       this.variableLength = false;
     }
     let [nameAndTypeHint, defaultValue] = parameter.split("=", 2);
-    let [name, typeHint] = nameAndTypeHint.split(":", 2);
-    this.name = name.trim();
+    let [names, typeHint] = nameAndTypeHint.split(":", 2);
+    this.name = null;
+    this.aliases = null;
+    this.names = names.split(' ');
+    [this.name, ...this.aliases] = this.names;
     this.typeHint = (typeHint ?? "").trim();
 
     // Convert double quotes to single quotes for default string values
@@ -233,19 +236,21 @@ class PythonParameter {
 
   #replaceTagName(element, tagName) {
     if (element.tagName === tagName) {
-      return
+      return element
     }
 
     let replacementElement = document.createElement(tagName);
 
     for (let i = 0, l = element.attributes.length; i < l; ++i) {
-      let nodeName = element.attributes.item(i).nodeName;
-      let nodeValue = element.attributes.item(i).nodeValue;
+      let attr = element.attributes.item(i)
+      let nodeName = attr.nodeName;
+      let nodeValue = attr.nodeValue;
       replacementElement.setAttribute(nodeName, nodeValue);
     }
 
     replacementElement.innerHTML = element.innerHTML;
     element.parentNode.replaceChild(replacementElement, element);
+    return replacementElement
   };
 
   #matchesDefaultValue(type, value, defaultValue) {
@@ -293,6 +298,16 @@ class PythonParameter {
         }
 
         return true
+      } else if (blockType === "ast_Attribute") {
+        let valueElement = [...blockElement.getElementsByTagName('value')].filter(child => child.getAttribute('name') === 'VALUE')[0]
+        let attrElement = [...blockElement.getElementsByTagName('field')].filter(child => child.getAttribute('name') === 'ATTR')[0]
+        let importAttr = valueElement.getElementsByTagName('mutation')[0].getAttribute('import')
+
+        if (importAttr) {
+          let fullName = importAttr.split(' as ', 1)[0];
+          let attrName = attrElement.textContent;
+          return defaultValue === fullName + '.' + attrName;
+        }
       }
 
       let value = blockElement.textContent
@@ -311,14 +326,21 @@ class PythonParameter {
     }
   }
 
-  applyShadow(argBlock) {
+  applyShadow(argBlock, shouldShadow=null) {
     if (argBlock) {
-      let shouldShadow = this.#shouldShadow(argBlock, this.defaultValue)
+      if (shouldShadow == null) {
+        shouldShadow = this.#shouldShadow(argBlock, this.defaultValue)
+      }
 
       if (argBlock instanceof HTMLElement) {
         // Blockly XML
-        for (let childElement of [...argBlock.getElementsByTagName(shouldShadow ? 'block' : 'shadow')].reverse()) {
-          this.#replaceTagName(childElement, shouldShadow ? 'shadow' : 'block')
+        for (let childElement of argBlock.children) {
+          if (childElement.tagName === (shouldShadow ? 'BLOCK' : 'SHADOW')) {
+            let replacementElement = this.#replaceTagName(childElement, shouldShadow ? 'SHADOW' : 'BLOCK')
+            this.applyShadow(replacementElement, shouldShadow)
+          } else {
+            this.applyShadow(childElement, shouldShadow)
+          }
         }
       } else if (argBlock.shadow !== shouldShadow) {
         // Blockly block
@@ -326,8 +348,7 @@ class PythonParameter {
         argBlock.setStyle(argBlock.getStyleName()) // Re-apply the style
 
         for (let child of argBlock.getChildren()) {
-          argBlock.shadow = shouldShadow
-          argBlock.setStyle(argBlock.getStyleName()) // Re-apply the style
+          this.applyShadow(child, shouldShadow)
         }
       }
     }
@@ -335,7 +356,6 @@ class PythonParameter {
 }
 
 class PythonParameters extends Array {
-
 
   constructor(signature, comment) {
     super();
@@ -486,8 +506,8 @@ class PythonFunction {
       [this.premessage, this.message] = splitPremessageMessage(comment.split("(", 1)[0]);
     }
     this.parameters = new PythonParameters(signature, comment ?? "");
-    this.fullName = pythonModule.fullName === "" ? this.name : (pythonModule.fullName + "." + this.name);
-    this.colour = _resolve_colour(colour) ?? pythonModule.library.colour;
+    this.fullName = pythonModule?.fullName === "" ? this.name : (pythonModule?.fullName + "." + this.name);
+    this.colour = _resolve_colour(colour) ?? pythonModule?.library?.colour;
 
     if (custom) {
       let customResult = globalThis;
@@ -560,7 +580,8 @@ class PythonFunction {
         let mutation = mutationElement.children[i].getAttribute('name')
 
         if (mutation.startsWith('KEYWORD:')) {
-          this.parameters.findByKeyword(mutation.substring(8))?.applyShadow(valueElement);
+          let keywords = mutation.substring(8).split(' ')
+          this.parameters.findByKeyword(keywords[0])?.applyShadow(valueElement);
         } else {
           this.parameters[i + this.argumentOffset]?.applyShadow(valueElement);
         }
@@ -571,7 +592,8 @@ class PythonFunction {
         let argBlock = block.getInputTargetBlock('ARG' + i);
 
         if (mutation.startsWith('KEYWORD:')) {
-          this.parameters.findByKeyword(mutation.substring(8))?.applyShadow(argBlock);
+          let keywords = mutation.substring(8).split(' ')
+          this.parameters.findByKeyword(keywords[0])?.applyShadow(argBlock);
         } else {
           this.parameters[i + this.argumentOffset]?.applyShadow(argBlock);
         }
@@ -841,9 +863,9 @@ class PythonAttribute {
 
 class PythonMethod extends PythonFunction {
   constructor(pythonClass, signature, comment, colour, custom) {
-    super(pythonClass.pythonModule, signature, comment, colour, custom);
+    super(pythonClass?.pythonModule, signature, comment, colour, custom);
     this.pythonClass = pythonClass;
-    this.fullName = pythonClass.fullName + "." + this.name;
+    this.fullName = pythonClass?.fullName + "." + this.name;
 
     if ((comment ?? "").trim() === "") {
       this.message = "." + this.name;
@@ -864,12 +886,13 @@ class PythonMethod extends PythonFunction {
     }
 
     if (this.premessage === "" && !(this.classmethod || this.staticmethod)) {
-      this.premessage = pythonClass.name;
+      this.premessage = pythonClass?.name;
     }
 
     this.argumentOffset = this.staticmethod ? 0 : 1
 
     for (let alias of this.aliases) {
+      alias.pythonClass = this.pythonClass;
       alias.message = this.message;
       alias.premessage = this.premessage;
       alias.argumentOffset = this.argumentOffset;
@@ -880,7 +903,7 @@ class PythonMethod extends PythonFunction {
 
     cloneWithSignature(signature) {
       return new PythonMethod(
-        this.pythonClass,
+        null,
         signature,
         null,
         null,
@@ -933,8 +956,9 @@ class PythonConstructorMethod extends PythonMethod {
     this.typeHint = pythonClass.fullName;
 
     if ((comment ?? "").trim() === "") {
-      this.message = this.pythonClass.name
+      this.message = pythonClass?.name
     }
+
     for (let alias of this.aliases) {
       alias.message = this.message;
       alias.typeHint = this.typeHint;
@@ -943,7 +967,7 @@ class PythonConstructorMethod extends PythonMethod {
 
   cloneWithSignature(signature) {
    return new PythonConstructorMethod(
-     this.pythonClass,
+     null,
      signature,
      null,
      null,

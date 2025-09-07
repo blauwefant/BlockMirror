@@ -28,7 +28,6 @@ Blockly.Blocks['ast_Call'] = {
         this.premessage_ = "";
         this.import_ = "";
         this.fromLibrary_ = null;
-        this.updateShape_();
     },
 
     /**
@@ -156,6 +155,79 @@ Blockly.Blocks['ast_Call'] = {
         }
         return true;
     },
+    //defType_: 'procedures_defnoreturn',
+    parseArgument_: function (argument) {
+        if (argument.startsWith('KWARGS:')) {
+            // KWARG
+            return "unpack";
+        } else if (argument.startsWith('KEYWORD:')) {
+            let keywords = argument.substring(8);
+            return keywords + "=";
+        } else {
+            if (this.showParameterNames_) {
+                if (argument.startsWith("KNOWN_ARG:")) {
+                    return argument.substring(10) + "=";
+                }
+            }
+        }
+        return "";
+    },
+    updateShapeForArguments() {
+        // Process arguments
+        let drawnArgumentCount = this.getDrawnArgumentCount_();
+        for (let i = 0; i < drawnArgumentCount; i++) {
+            let argument = this.arguments_[i];
+            let argumentName = this.parseArgument_(argument);
+            let argumentNames = []
+            let postfix = ''
+
+            if (argumentName.endsWith('=')) {
+                argumentNames = argumentName.substring(0, argumentName.length - 1).split(' ');
+                argumentName = argumentNames[0];
+                postfix = '='
+            }
+
+            if (i === 0) {
+                argumentName = this.message_ + "\ (" + argumentName;
+            }
+            let field = this.getField('ARGNAME' + i);
+            let postfixField = this.getField('ARGPOSTFIX' + i);
+            if (field) {
+                if (argumentNames.length > 1) {
+                    if (field instanceof Blockly.FieldLabel) {
+                        field = new Blockly.FieldDropdown(argumentNames.map(item => [item, item]));
+                        let input = input.getInput('ARG' + i)
+                        input.removeField('ARGNAME' + i);
+                        input.insertFieldAt(0, field);
+                    } else {
+                        field.setOptions(argumentNames.map(item => [item, item]));
+                    }
+                } else if (!(field instanceof Blockly.FieldLabel)) {
+                    field = new Blockly.FieldLabel(argumentName);
+                    let input = input.getInput('ARG' + i)
+                    input.removeField('ARGNAME' + i);
+                    input.insertFieldAt(0, field);
+                }
+                field.setValue(argumentName, false);
+            } else {
+                // Add new input.
+                // For now, this assumes the function definition does not change.
+                if (argumentNames.length > 1) {
+                    field = new Blockly.FieldDropdown(argumentNames.map(item => [item, item]))
+                } else {
+                    field = new Blockly.FieldLabel(argumentName);
+                }
+                postfixField = new Blockly.FieldLabel(postfix);
+                this.appendValueInput('ARG' + i)
+                    .setAlign(Blockly.inputs.Align.RIGHT)
+                    .appendField(field, 'ARGNAME' + i)
+                    .appendField(postfixField, 'ARGPOSTFIX' + i)
+                    .init();
+            }
+            field.setVisible(!!argumentName);
+            postfixField.setVisible(!!postfix);
+        }
+    },
     /**
      * Modify this block to have the correct number of arguments.
      * @private
@@ -188,39 +260,8 @@ Blockly.Blocks['ast_Call'] = {
         } else if (message) {
             this.removeInput('MESSAGE_AREA');
         }
-        // Process arguments
-        let i;
-        for (i = 0; i < drawnArgumentCount; i++) {
-            let argument = this.arguments_[i];
-            let argumentName = this.parseArgument_(argument);
-            if (i === 0) {
-                argumentName = this.message_ + "\ (" + argumentName;
-            }
-            let field = this.getField('ARGNAME' + i);
-            if (field) {
-                // Ensure argument name is up to date.
-                // The argument name field is deterministic based on the mutation,
-                // no need to fire a change event.
-                Blockly.Events.disable();
-                try {
-                    field.setValue(argumentName);
-                } finally {
-                    Blockly.Events.enable();
-                }
-            } else {
-                // Add new input.
-                field = new Blockly.FieldLabel(argumentName);
-                this.appendValueInput('ARG' + i)
-                    .setAlign(Blockly.inputs.Align.RIGHT)
-                    .appendField(field, 'ARGNAME' + i)
-                    .init();
-            }
-            if (argumentName) {
-                field.setVisible(true);
-            } else {
-                field.setVisible(false);
-            }
-        }
+        this.updateShapeForArguments();
+        let i = drawnArgumentCount;
 
         // Closing parentheses
         if (!this.getInput('CLOSE_PAREN')) {
@@ -368,22 +409,6 @@ Blockly.Blocks['ast_Call'] = {
         });
     },
 
-    //defType_: 'procedures_defnoreturn',
-    parseArgument_: function (argument) {
-        if (argument.startsWith('KWARGS:')) {
-            // KWARG
-            return "unpack";
-        } else if (argument.startsWith('KEYWORD:')) {
-            return argument.substring(8) + "=";
-        } else {
-            if (this.showParameterNames_) {
-                if (argument.startsWith("KNOWN_ARG:")) {
-                    return argument.substring(10) + "=";
-                }
-            }
-        }
-        return "";
-    },
     getDrawnArgumentCount_: function () {
         return Math.min(this.argumentCount_, this.arguments_.length);
     }
@@ -452,7 +477,8 @@ python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
         if (argument.startsWith('KWARGS:')) {
             args.push("**" + value);
         } else if (argument.startsWith('KEYWORD:')) {
-            let keyword = argument.substring(8)
+            let keywords = argument.substring(8)
+            let keyword = keywords.split(' ', 1)[0]
             args.push(keyword + "=" + value);
         } else {
             args.push(value);
@@ -602,6 +628,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         }
     }
     let foundKeywords = new Set();
+    let overallIBeforeKeywords = overallI;
     if (keywords !== null) {
         for (let i = 0; i < keywords.length; i += 1, overallI += 1) {
             let keyword = keywords[i];
@@ -613,13 +640,23 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             } else {
                 argumentsNormal["ARG" + overallI] = this.convert(value, node);
                 let keywordName = Sk.ffi.remapToJs(arg)
+
+                if (fromLibrary instanceof PythonFunction) {
+                    let parameter = fromLibrary.parameters.findByKeyword(keywordName)
+
+                    if (parameter?.names.length > 1) {
+                        let names = [...parameter.names].filter(item => item !== keywordName)
+                        keywordName = keywordName + ' ' + parameter.names.join(' ');
+                        names.forEach(foundKeywords.add, foundKeywords);
+                    }
+                }
                 argumentsMutation["KEYWORD:" + keywordName] = null;
                 foundKeywords.add(keywordName)
             }
         }
     }
     if (fromLibrary instanceof PythonFunction) {
-        for (let i = overallI - foundKeywords.size; i < fromLibrary.parameters.length - fromLibrary.argumentOffset; i += 1) {
+        for (let i = overallIBeforeKeywords; i < fromLibrary.parameters.length - fromLibrary.argumentOffset; i += 1) {
             let pythonParameter = fromLibrary.parameters[i + fromLibrary.argumentOffset]
             if (!(pythonParameter.keyword || pythonParameter.preferKeyword) || foundKeywords.has(pythonParameter.name)) {
                 continue
@@ -632,7 +669,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             if (pythonParameter.defaultValue !== "") {
                 argumentsNormal["ARG" + overallI] = this.convertSource("keywordDefaultValue.py", "\n".repeat(node.lineno - 1) + "k=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE'].children[0]
             }
-            argumentsMutation["KEYWORD:" + pythonParameter.name] = null
+            argumentsMutation["KEYWORD:" + pythonParameter.names.join(' ')] = null
             overallI += 1
         }
     }

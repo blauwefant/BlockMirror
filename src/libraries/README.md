@@ -2,7 +2,9 @@
 
 The .json files under the libraries directory describe the default collection of libraries for BlockMirror.
 
-Library metadata is prefixed with __. 
+## Structure
+
+Library metadata is prefixed with __.
 
 Member signatures can be defined as strings or as JSON objects with additional metadata.
 
@@ -51,6 +53,17 @@ Below is the annotated structure of a library.
         ...
     }
 
+
+## Aliases
+
+Aliases can be indicated by adding multiple space separated names.
+
+Aliases may be used for:
+- explicitly added function and method aliases (not considered very 'pythonic' but used in various libraries, such as Turtle)
+- class or module attributes, belonging to the same Enum class or otherwise similar and related
+- mutually exclusive keyword arguments
+
+Aliases only indicate a logical relation, runtime behavior may or may not differ, depending on the implementation.
 
 ## Implementation notes
 
