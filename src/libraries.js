@@ -436,10 +436,11 @@ class PythonParameters extends Array {
 function splitParameters(input) {
   let result = []
   let openParentheses = 0
+  let openBrackets = 0
   let item = ''
 
   for (let char of input) {
-    if (char == ',' && openParentheses === 0) {
+    if (char == ',' && openParentheses === 0 && openBrackets === 0) {
       result.push(item.trim())
       item = ''
       continue
@@ -447,6 +448,10 @@ function splitParameters(input) {
       openParentheses++;
     } else if (char == ')') {
       openParentheses--;
+    } else if (char == '[') {
+      openBrackets++;
+    } else if (char == ']') {
+      openBrackets--;
     }
     item += char;
   }

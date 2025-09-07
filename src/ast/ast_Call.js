@@ -581,7 +581,11 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     if (fromLibrary) {
         if (fromLibrary.custom) {
             try {
-                return fromLibrary.custom(node, parent, this)
+                let result = fromLibrary.custom(node, parent, this)
+
+                if (result !== null && result !== undefined) {
+                  return result
+                }
             } catch (e) {
                 console.error(e);
                 // We tried to be fancy and failed, better fall back to default behavior!

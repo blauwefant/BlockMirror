@@ -1,5 +1,5 @@
-BlockMirrorTextToBlocks['ast_Image'] = function (node, parent, bmttb) {
-    if (!bmttb.blockMirror.configuration.imageMode) {
+BlockMirrorTextToBlocks['ast_Image'] = function (node, parent, textToBlocks) {
+    if (!textToBlocks.blockMirror.configuration.imageMode) {
         throw "Not using image constructor";
     }
     if (node.args.length !== 1) {

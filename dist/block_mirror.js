@@ -2475,13 +2475,14 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
 function splitParameters(input) {
   var result = [];
   var openParentheses = 0;
+  var openBrackets = 0;
   var item = '';
   var _iterator13 = _createForOfIteratorHelper(input),
     _step13;
   try {
     for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
       var _char = _step13.value;
-      if (_char == ',' && openParentheses === 0) {
+      if (_char == ',' && openParentheses === 0 && openBrackets === 0) {
         result.push(item.trim());
         item = '';
         continue;
@@ -2489,6 +2490,10 @@ function splitParameters(input) {
         openParentheses++;
       } else if (_char == ')') {
         openParentheses--;
+      } else if (_char == '[') {
+        openBrackets++;
+      } else if (_char == ']') {
+        openBrackets--;
       }
       item += _char;
     }
@@ -3276,8 +3281,8 @@ if (typeof module !== 'undefined') {
     PythonParameters: PythonParameters
   };
 }
-BlockMirrorTextToBlocks['ast_Image'] = function (node, parent, bmttb) {
-  if (!bmttb.blockMirror.configuration.imageMode) {
+BlockMirrorTextToBlocks['ast_Image'] = function (node, parent, textToBlocks) {
+  if (!textToBlocks.blockMirror.configuration.imageMode) {
     throw "Not using image constructor";
   }
   if (node.args.length !== 1) {
@@ -6729,7 +6734,10 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   if (fromLibrary) {
     if (fromLibrary.custom) {
       try {
-        return fromLibrary.custom(node, parent, this);
+        var result = fromLibrary.custom(node, parent, this);
+        if (result !== null && result !== undefined) {
+          return result;
+        }
       } catch (e) {
         console.error(e);
         // We tried to be fancy and failed, better fall back to default behavior!
@@ -8839,14 +8847,14 @@ BlockMirror.LIBRARIES['turtle'] = {
         "setheading seth(angle: float): None // set turtle's heading to(270)",
         "home(): None // move turtle to origin",
         "circle(radius: float, extent: float | None = None, steps: int | None=None): None // move the turtle in a circle",
-        "dot(size: float | None = None, color: string | tuple[float, float, float] | None=None): None // turtle draws a dot(0, )",
+        "dot(size: float | None = None, color: string | tuple[float, float, float] | None=None): None // turtle draws a dot(0)",
         "stamp(): Any // stamp a copy of the turtle shape",
         "clearstamp(stampid: int): None // delete stamp with id",
         "clearstamps(n: int | None = None): None // delete all stamps",
         "undo(): None // undo last turtle action",
         "speed(speed: int | None = None): int | None // set or get turtle speed",
 
-        "position pos(): (float, float) // get turtle's position",
+        "position pos(): tuple[float, float] // get turtle's position",
         "towards(x: float, y: float): float // get the angle from the turtle to the point",
         "xcor(): float // get turtle's x position",
         "ycor(): float // get turtle's y position",
