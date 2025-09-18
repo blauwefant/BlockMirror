@@ -21,7 +21,7 @@ class PythonModule {
       return lastIndexOfDot === -1 ? null : signature.substring(0, lastIndexOfDot);
     }
 
-    let moduleName = signature.split(/\.([A-Z][^.]*)\.?.+$/, 1)[0];
+    let moduleName = signature.split(/\.(_?[A-Z][^.]*)\.?.+$/, 1)[0];
 
     if (PythonModule.isA(moduleName)) {
       return moduleName;
@@ -34,7 +34,9 @@ class PythonModule {
     const [code, comment] = signature.split("//", 2);
     let member;
 
-    if (PythonFunction.isA(code)) {
+    if (PythonTypeAliasType.isA(code)) {
+      member = new PythonTypeAliasType(this, code, comment, inputObject?.fieldFactory)
+    } else if (PythonFunction.isA(code)) {
       member = new PythonFunction(
           this,
           code,
@@ -64,7 +66,9 @@ class PythonModule {
 
   constructor(library, signature, comment, members) {
     this.library = library;
-    [this.fullName, this.name] = signature.split(" as ", 2);
+    let fullName
+    [fullName, this.name] = signature.split(" as ", 2);
+    this.fullName = fullName.trim()
     if (!this.name) {
       this.name = this.fullName.substring(this.fullName.lastIndexOf(".") + 1);
     }
@@ -96,7 +100,11 @@ class PythonModule {
     let result = "";
 
     for (let value of this.members.values()) {
-      result += value.toToolbox(textToBlocks) + "<sep></sep>";
+      let resultItem = value.toToolbox(textToBlocks)
+
+      if (resultItem) {
+        result += resultItem +"<sep></sep>";
+      }
     }
 
     return result;
@@ -141,10 +149,10 @@ class PythonModule {
     let member = this.members.get(memberName.substring(0, indexOfDot))
 
     if (member instanceof PythonAttribute) {
-      if (member.typeHint === "") {
+      if (member.typeHint === null) {
         return null;
       }
-      member = this.library.libraries.resolve(member.typeHint);
+      member = this.library.libraries.resolve(member.typeHint.toString());
     }
 
     return member?.resolve(memberName.substring(indexOfDot + 1));
@@ -161,8 +169,159 @@ class PythonModule {
   }
 }
 
+class PythonTypeHint {
+  constructor(libraries, signature) {
+    let unionTypes = splitParameters(signature, '|');
+
+    if (unionTypes.length >= 2) {
+      this.value = "typing.Union"
+      this.typeParams = unionTypes
+    } else if (signature.trim().endsWith("]")) {
+      let [value, typeParams] = signature.split("[", 2);
+      this.value = value.trim()
+      this.typeParams = splitParameters(typeParams.substring(0, value.length - 1))
+    } else {
+      this.value = signature.trim()
+      this.typeParams = []
+    }
+
+    this.libraries = libraries;
+    this._referencedTypeAliases = null;
+    this._flattened = null;
+  }
+
+  referencedTypeAliases() {
+      if (this._referencedTypeAliases == null) {
+          this._referencedTypeAliases = []
+
+          if (this.isUnion() || this.isOptional()) {
+              for (let typeParam of this.typeParams) {
+                  let resolved = this.libraries.resolve(typeParam)
+
+                  if (resolved instanceof PythonTypeAliasType) {
+                      this._referencedTypeAliases.push(resolved)
+                  }
+              }
+          } else {
+              let resolved = this.libraries.resolve(this.value)
+
+              if (resolved instanceof PythonTypeAliasType) {
+                  this._referencedTypeAliases.push(resolved)
+              }
+          }
+      }
+
+      return this._referencedTypeAliases;
+  }
+
+  /**
+   * Without type alias types.
+   */
+  flattened() {
+    if (this._flattened == null) {
+        let referencedTypeAliases = this.referencedTypeAliases()
+
+        if (referencedTypeAliases.length) {
+            if (this.isUnion() || this.isOptional()) {
+                this._flattened = new PythonTypeHint(this.libraries, "")
+                this._flattened.value = this.value
+
+                for (let item of this.typeParams) {
+                    let referencedTypeAlias = referencedTypeAliases.find(alias => alias.fullName === item)
+
+                    if (referencedTypeAlias) {
+                        if (referencedTypeAlias.isUnion()) {
+                            this._flattened.typeParams = this._flattened.typeParams.concat(this._flattened.typeParams, referencedTypeAlias.flattened().typeParams)
+                        } else if (referencedTypeAlias.isOptional()) {
+                            this._flattened.typeParams = this._flattened.typeParams.concat(this._flattened.typeParams, referencedTypeAlias.flattened().typeParams)
+
+                            if (!this._flattened.typeParams.includes("None")) {
+                                this._flattened.typeParams.push("None")
+                            }
+                        } else {
+                            this._flattened.typeParams.push(referencedTypeAlias.flattened().toString())
+                        }
+                    }
+                }
+            } else {
+                this._flattened = referencedTypeAliases[0].flattened()
+            }
+        } else {
+            this._flattened = this
+        }
+    }
+    return this._flattened
+  }
+
+  toToolbox(_textToBlocks) {
+    // Not meant to be used as a toolbox block at this time.
+    return null;
+  }
+
+  toString() {
+    if (this.isUnion()) {
+      return this.typeParams.join(' | ')
+    } else if (this.isOptional()) {
+      return this.typeParams.join(' | ') + " | None";
+    } else if (this.typeParams.length) {
+      return this.value + "[" + this.typeParams.join(', ') + "]";
+    } else {
+      return this.value
+    }
+  }
+
+  isUnion() {
+      return this.value === 'typing.Union'
+  }
+
+  isOptional() {
+      return this.value === 'typing.Optional'
+  }
+}
+
+function _resolveFunction(identifier, fullName) {
+    if (identifier) {
+        let result = globalThis;
+
+        for (let item of identifier.split('.')) {
+            result = result[item];
+
+            if (!result) {
+                console.warn("Could not find function " + identifier + " for " + fullName)
+                break
+            }
+        }
+
+        return result;
+    }
+
+    return null;
+}
+
+class PythonTypeAliasType extends PythonTypeHint {
+
+  static isA(signature) {
+    return signature.startsWith("type ");
+  }
+
+  constructor(pythonModule, signature, comment, fieldFactory) {
+    super(pythonModule.library.libraries, signature.substring(signature.indexOf('=') + 1).trim());
+
+    if (signature.startsWith("type ")) {
+      signature = signature.substring(5);
+    }
+
+    let name = signature.split('=', 1)[0]
+    this.name = name.trim()
+    this.fullName = pythonModule?.fullName === "" ? this.name : (pythonModule?.fullName + "." + this.name);
+    this.comment = comment?.trim() ?? ""
+    this.resolvedFieldFactory = _resolveFunction(fieldFactory, this.fullName);
+    this.fieldFactory = this.resolvedFieldFactory === null ? null : fieldFactory
+  }
+}
+
 class PythonParameter {
-  constructor(parameter, arg, positional, keyword) {
+  constructor(pythonFunction, parameter, arg, positional, keyword) {
     this.positional = positional;
     this.keyword = keyword;
 
@@ -187,7 +346,7 @@ class PythonParameter {
     this.aliases = null;
     this.names = names.split(' ');
     [this.name, ...this.aliases] = this.names;
-    this.typeHint = (typeHint ?? "").trim();
+    this.typeHint = typeHint ? new PythonTypeHint(pythonFunction.pythonModule.library.libraries, typeHint) : null;
 
     // Convert double quotes to single quotes for default string values
     this.defaultValue = (defaultValue ?? "").trim().replace(/^"([^"]*)"$/, "'$1'");
@@ -357,7 +516,7 @@ class PythonParameter {
 
 class PythonParameters extends Array {
 
-  constructor(signature, comment) {
+  constructor(pythonFunction, signature, comment) {
     super();
     const parameters = signature
       .substring(signature.indexOf("(") + 1, signature.lastIndexOf(")"))
@@ -385,6 +544,7 @@ class PythonParameters extends Array {
           let isSelfOrCls = argIndex === 0 && (parameter === "self" || parameter === "cls")
           this.push(
             new PythonParameter(
+              pythonFunction,
               parameter,
           isSelfOrCls ? "" : (argParts[argIndex] ?? ""),
               positional,
@@ -433,24 +593,24 @@ class PythonParameters extends Array {
   }
 }
 
-function splitParameters(input) {
+function splitParameters(input, splitChar=',') {
   let result = []
   let openParentheses = 0
   let openBrackets = 0
   let item = ''
 
   for (let char of input) {
-    if (char == ',' && openParentheses === 0 && openBrackets === 0) {
+    if (char === splitChar && openParentheses === 0 && openBrackets === 0) {
       result.push(item.trim())
       item = ''
       continue
-    } else if (char == '(') {
+    } else if (char === '(') {
       openParentheses++;
-    } else if (char == ')') {
+    } else if (char === ')') {
       openParentheses--;
-    } else if (char == '[') {
+    } else if (char === '[') {
       openBrackets++;
-    } else if (char == ']') {
+    } else if (char === ']') {
       openBrackets--;
     }
     item += char;
@@ -496,10 +656,7 @@ class PythonFunction {
   constructor(pythonModule, signature, comment, colour, custom) {
     this.pythonModule = pythonModule;
     let indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
-    this.typeHint =
-        indexOfTypeHint < 0
-            ? ""
-            : signature.substring(indexOfTypeHint + 1).trim();
+    this.typeHint = indexOfTypeHint < 0 ? null : new PythonTypeHint(pythonModule.library.libraries, signature.substring(indexOfTypeHint + 1));
     let aliases
     this.name = null;
     [this.name, ...aliases] = signature.split("(", 1)[0].split(" ");
@@ -510,25 +667,10 @@ class PythonFunction {
     } else {
       [this.premessage, this.message] = splitPremessageMessage(comment.split("(", 1)[0]);
     }
-    this.parameters = new PythonParameters(signature, comment ?? "");
+    this.parameters = new PythonParameters(this, signature, comment ?? "");
     this.fullName = pythonModule?.fullName === "" ? this.name : (pythonModule?.fullName + "." + this.name);
     this.colour = _resolve_colour(colour) ?? pythonModule?.library?.colour;
-
-    if (custom) {
-      let customResult = globalThis;
-      for (let item of custom.split('.')) {
-        customResult = customResult[item];
-
-        if (!customResult) {
-          console.warn("Could not find custom " + custom + " for " + this.fullName)
-          break
-        }
-      }
-      this.custom = customResult;
-    } else {
-      this.custom = null;
-    }
-
+    this.custom =  _resolveFunction(custom, this.fullName);
     this.argumentOffset = 0
     this.isAliasOf = null;
 
@@ -780,7 +922,7 @@ class PythonClass {
 // TODO static class attributes
 class PythonAttribute {
   static isA(signature) {
-    return !signature.includes("(");
+    return !signature.includes("(") && !signature.startsWith("type ");
   }
 
   constructor(pythonClassOrModule, signature, comment, colour) {
@@ -796,7 +938,7 @@ class PythonAttribute {
     let name, aliases
     [name, ...aliases] = this.names
     this.name = name.trim()
-    this.typeHint = (typeHint || "").trim()
+    this.typeHint = typeHint ? new PythonTypeHint(this.pythonModule.library.libraries, typeHint) : null
     this.colour = _resolve_colour(colour) ?? pythonClassOrModule.colour;
 
     if ((comment ?? "").trim() === "") {
@@ -808,7 +950,7 @@ class PythonAttribute {
     }
 
     this.aliases = aliases.map((value) => {
-      let result = new PythonAttribute(pythonClassOrModule, value + ':' + this.typeHint, comment, colour);
+      let result = new PythonAttribute(pythonClassOrModule, value + ':' + (this.typeHint ?? ""), comment, colour);
       result.names = this.names
       return result
     });
@@ -854,7 +996,7 @@ class PythonAttribute {
     }
 
     if (!!this.typeHint) {
-      blockElement.setAttribute("output", this.typeHint);
+      blockElement.setAttribute("output", this.typeHint.flattened().toString());
     }
     return blockElement;
   }
@@ -958,7 +1100,7 @@ class PythonConstructorMethod extends PythonMethod {
 
   constructor(pythonClass, signature, comment, colour, custom) {
     super(pythonClass, signature, comment, colour, custom);
-    this.typeHint = pythonClass.fullName;
+    this.typeHint = new PythonTypeHint(pythonClass.pythonModule.library.libraries, pythonClass.fullName);
 
     if ((comment ?? "").trim() === "") {
       this.message = pythonClass?.name
@@ -1147,6 +1289,49 @@ class Libraries extends Map {
       library.registerImports(typeRegistry)
     }
   }
+}
+
+function updateBlockFieldFactory(block, pythonTypeNames, render) {
+    let fieldFactoryBefore = block.fieldFactory_;
+    if (block.parentBlock_ === null || block.parentBlock_.fromLibrary_ === "") {
+        block.fieldFactory_ = "";
+    } else {
+        let argInput = block.parentBlock_.inputWithBlock = block.parentBlock_.getInputWithBlock(block)
+        if (argInput) {
+            let argName = argInput.name
+            if (argName.startsWith("ARG")) {
+                let argIndex = Number(argName.substring(3));
+                let typeAliasesForArg = block.parentBlock_.typeAliases[argIndex];
+
+                for (let typeAlias of typeAliasesForArg.split(";")) {
+                    let [types, fieldFactory] = typeAlias.split(":", 2)
+                    let forTypes = types.split(" | ")
+
+                    if (pythonTypeNames.some(pythonTypeName => forTypes.includes(pythonTypeName))) {
+                        block.fieldFactory_ = fieldFactory;
+                        break
+                    }
+                }
+            }
+        }
+    }
+
+    if (block.fieldFactory_ !== fieldFactoryBefore) {
+        block.updateShape_()
+
+        if (render) {
+            block.render();
+        }
+    }
+}
+
+function initBlockDynamicFieldFactory(block, pythonTypeNames) {
+    block.onchange = function(changeEvent) {
+        if (changeEvent instanceof Blockly.Events.BlockMove) {
+            updateBlockFieldFactory(block, pythonTypeNames, false);
+        }
+    }
+    setTimeout(() => { updateBlockFieldFactory(block, pythonTypeNames, true) });
 }
 
 if (typeof module !== 'undefined') {

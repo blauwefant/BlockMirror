@@ -36,6 +36,7 @@ BlockMirrorTextToBlocks.prototype.convertSource = function (filename, python_sou
     let parse, ast = null, symbol_table, error;
     let badChunks = [];
     let originalSource = python_source;
+    this.filename = filename
     this.source = python_source.split("\n");
     let previousLine = 1+this.source.length;
     let startLine = 1;
@@ -471,9 +472,7 @@ BlockMirrorTextToBlocks.create_block = function (type, lineNumber, fields, value
     if (statements !== undefined && Object.keys(statements).length > 0) {
         for (let statement in statements) {
             let statementValue = statements[statement];
-            if (statementValue == null) {
-                continue;
-            } else {
+            if (statementValue != null) {
                 for (let i = 0; i < statementValue.length; i += 1) {
                     // In most cases, you really shouldn't ever have more than
                     //  one statement in this list. I'm not sure Blockly likes
@@ -565,8 +564,7 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function(node) {
         let name = Sk.ffi.remapToJs(node.id);
         let fullTypeName = this.imports.getType(name) ?? name
         return this.blockMirror.libraries.resolve(fullTypeName)
-    }
-    if (node._astname === 'Attribute') {
+    } else if (node._astname === 'Attribute') {
         let caller = node.value;
         let potentialModule = this.getAsModule(caller);
 

@@ -66,7 +66,7 @@ Blockly.Blocks["ast_Tuple"] = {
     // Disconnect any children that don't belong.
     for (var i = 0; i < this.itemCount_; i++) {
       var connection = this.getInput("ADD" + i).connection.targetConnection;
-      if (connection && connections.indexOf(connection) == -1) {
+      if (connection && connections.indexOf(connection) === -1) {
         connection.disconnect();
       }
     }
@@ -175,7 +175,7 @@ python.pythonGenerator.forBlock["ast_Tuple"] = function (block, generator) {
       ) || python.pythonGenerator.blank;
   }
   let requiredComma = "";
-  if (block.itemCount_ == 1) {
+  if (block.itemCount_ === 1) {
     requiredComma = ", ";
   }
   var code = "(" + elements.join(", ") + requiredComma + ")";

@@ -41,6 +41,8 @@
     "yargs": "^15.4.1"
   },
   "dependencies": {
+    "@blockly/field-angle": "^6.0.2",
+    "@blockly/field-colour-hsv-sliders": "^6.0.4",
     "@blockly/field-multilineinput": "^6.0.2",
     "blockly": "^12.3.0"
   }

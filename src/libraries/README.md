@@ -65,6 +65,32 @@ Aliases may be used for:
 
 Aliases only indicate a logical relation, runtime behavior may or may not differ, depending on the implementation.
 
+## Type aliases
+
+This is a separate concept from regular (naming) aliases.
+It is modeled after the Python [type statement](https://docs.python.org/3/reference/simple_stmts.html#type).
+Type aliases are defined directly under modules. Their current primary purpose in a library definition is to attach a field factory function.
+The fieldFactoryFunction should point to a function that takes a Blockly block as its single parameter and which returns a Blockly field.
+If the function returns null or undefined, the default behavior is followed.
+
+For example, to display a color selection field:
+
+    ...
+    "turtle": [
+      {
+        "signature": "type _Color = str | tuple[float, float, float]",
+        "fieldFactory": "BlockMirrorTextToBlocks.turtleColorField"
+      },
+      "pencolor(color: turtle._Color | None = None): turtle._Color | None // set or get the pen color('blue')",
+      ...
+
+Types aliases with names starting with underscore ( _ ) should be considered internal to the library definition.
+
+Custom field factory functions are not yet available for all parameter types. Currently, it is only implemented for:
+- float
+- int
+- str
+
 ## Implementation notes
 
 - `matplotlib.pyplot.bar`: tick_label argument added explicitly.

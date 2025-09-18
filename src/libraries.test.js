@@ -20,10 +20,10 @@ test('constructor with default string tuple values', () => {
     expect(actor_init_params[2].name).toBe('pos');
     expect(actor_init_params[3].name).toBe('anchor');
 
-    expect(actor_init_params[0].typeHint).toBe('');
-    expect(actor_init_params[1].typeHint).toBe('str');
-    expect(actor_init_params[2].typeHint).toBe('tuple(int, int)');
-    expect(actor_init_params[3].typeHint).toBe('tuple(float | str, float | str)');
+    expect(actor_init_params[0].typeHint).toBe(null);
+    expect(actor_init_params[1].typeHint.toString()).toBe('str');
+    expect(actor_init_params[2].typeHint.toString()).toBe('tuple(int, int)');
+    expect(actor_init_params[3].typeHint.toString()).toBe('tuple(float | str, float | str)');
 });
 
 test('builtin class without package', () =>

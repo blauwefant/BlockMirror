@@ -1,12 +1,35 @@
-BlockMirrorTextToBlocks.BLOCKS.push({
-    "type": "ast_Num",
-    "message0": "%1",
-    "args0": [
-        { "type": "field_number", "name": "NUM", "value": 0}
-    ],
-    "output": "Number",
-    "colour": BlockMirrorTextToBlocks.COLOR.MATH
-})
+Blockly.Blocks['ast_Num'] = {
+    init: function () {
+        this.setOutput(true, "Number");
+        this.appendDummyInput('INPUT')
+            .appendField(new Blockly.FieldNumber(0), 'NUM');
+        this.setColour(BlockMirrorTextToBlocks.COLOR.MATH);
+        this.fieldFactory_ = "";
+        // TODO perhaps more numeric types to check, but this handles the most common scenarios.
+        initBlockDynamicFieldFactory(this, ["int", "float"])
+    },
+    updateShape_: function () {
+        let input = this.getInput('INPUT')
+        let field = null
+
+        if (this.fieldFactory_) {
+            let resolvedFieldFactory = _resolveFunction(this.fieldFactory_)
+
+            if (resolvedFieldFactory) {
+                field = resolvedFieldFactory(this)
+            }
+        }
+
+        if (!field) {
+            field = new Blockly.FieldNumber(0);
+        }
+
+        let value = this.getFieldValue('NUM');
+        input.removeField('NUM')
+        input.appendField(field, 'NUM')
+        field.setValue(value, false);
+    },
+};
 
 python.pythonGenerator.forBlock['ast_Num'] = function(block) {
   // Numeric value.

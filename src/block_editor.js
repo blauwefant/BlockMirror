@@ -272,6 +272,26 @@ BlockMirrorBlockEditor.prototype.getCode = function () {
     return python.pythonGenerator.workspaceToCode(this.workspace)
 };
 
+// Simplified workspace cleanup, which can assume there are no immovable blocks.
+BlockMirrorBlockEditor.prototype._cleanUpWorkspace = function() {
+    this.workspace.setResizesEnabled(false);
+    const topBlocks = this.workspace.getTopBlocks(true);
+    const spacerHeight = this.workspace.renderer.getConstants().SPACER_DEFAULT_HEIGHT
+    // Not entirely clear why, but these are the minimum values needed to avoid most unwanted layout changes when dragging.
+    const extraHeight = Math.round(this.workspace.renderer.getConstants().MIN_BLOCK_HEIGHT * 2.5);
+    let cursorY = extraHeight;
+
+    for (const block of topBlocks) {
+        let boundingRect = block.getBoundingRectangle();
+        block.moveBy(-boundingRect.left + spacerHeight, Math.max(0, cursorY - boundingRect.top), ['cleanup']);
+        cursorY =
+            block.getRelativeToSurfaceXY().y +
+            block.getHeightWidth().height +
+            extraHeight;
+    }
+    this.workspace.setResizesEnabled(true);
+}
+
 /**
  * Attempts to update the model for the current code file from the
  * block workspace. Might be prevented if an update event was already
@@ -286,15 +306,15 @@ BlockMirrorBlockEditor.prototype.setCode = function (code, quietly) {
             Blockly.Events.disable();
         }
         try {
+            let minBlockHeight = this.workspace.renderer.getConstants().MIN_BLOCK_HEIGHT
             let xml_code = Blockly.utils.xml.textToDom(result.xml);
-
             // Convert line numbers to y coordinates, to ensure proper ordering
             for (let i = 0, xmlChild; (xmlChild = xml_code.childNodes[i]); i++) {
-                xmlChild.setAttribute('y', (xmlChild.getAttribute('line_number') ?? 1) * 100);
+                xmlChild.setAttribute('y', ((xmlChild.getAttribute('line_number') ?? 1) - 1) * minBlockHeight);
             }
 
             Blockly.Xml.clearWorkspaceAndLoadFromXml(xml_code, this.workspace);
-            this.workspace.cleanUp();
+            this._cleanUpWorkspace();
         } catch (error) {
             console.error(error);
         }

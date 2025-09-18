@@ -132,7 +132,7 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
         mutations["@premessage"] = fromLibrary.premessage
         mutations["@message"] = fromLibrary.message
         mutations["@postmessage"] = fromLibrary.postmessage
-        mutations["@returns"] = fromLibrary.typeHint ?? returns
+        mutations["@returns"] = fromLibrary.typeHint?.flattened().toString() ?? returns
         mutations["@names"] = fromLibrary.names.join(" ")
 
         if (fromLibrary.pythonClass === null) {

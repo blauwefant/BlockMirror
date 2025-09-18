@@ -1,13 +1,35 @@
-BlockMirrorTextToBlocks.BLOCKS.push({
-    "type": "ast_Str",
-    "message0": "%1",
-    "args0": [
-        {"type": "field_input", "name": "TEXT", "value": ''}
-    ],
-    "output": "String",
-    "colour": BlockMirrorTextToBlocks.COLOR.TEXT,
-    "extensions": ["text_quotes"]
-});
+Blockly.Blocks['ast_Str'] = {
+    init: function () {
+        this.setOutput(true, "String");
+        this.appendDummyInput('INPUT')
+            .appendField(new Blockly.FieldTextInput(''), 'TEXT');
+        this.setColour(BlockMirrorTextToBlocks.COLOR.TEXT);
+        this.fieldFactory_ = "";
+        Blockly.Extensions.apply('text_quotes', this);
+        initBlockDynamicFieldFactory(this, ["str"])
+    },
+    updateShape_: function () {
+        let input = this.getInput('INPUT')
+        let field = null
+
+        if (this.fieldFactory_) {
+            let resolvedFieldFactory = _resolveFunction(this.fieldFactory_)
+
+            if (resolvedFieldFactory) {
+                field = resolvedFieldFactory(this)
+            }
+        }
+
+        if (!field) {
+            field = new Blockly.FieldTextInput('');
+        }
+
+        let value = this.getFieldValue('TEXT');
+        input.removeField('TEXT')
+        input.insertFieldAt(1, field, 'TEXT')
+        field.setValue(value, false);
+    },
+};
 
 BlockMirrorTextToBlocks.BLOCKS.push({
     "type": "ast_StrChar",
@@ -21,7 +43,6 @@ BlockMirrorTextToBlocks.BLOCKS.push({
     "colour": BlockMirrorTextToBlocks.COLOR.TEXT,
     "extensions": ["text_quotes"]
 });
-
 
 {
     let multiline_input_type = "field_multilinetext";
@@ -211,6 +232,7 @@ BlockMirrorTextToBlocks.prototype['ast_Str'] = function (node, parent) {
         let dedented = this.dedent(text, this.levelIndex - 1, true);
         return [BlockMirrorTextToBlocks.create_block("ast_StrDocstring", node.lineno, {"TEXT": dedented})];
     } else if (text.indexOf('\n') === -1) {
+        // // TODO implement dropdowns for Literal function arguments
         return BlockMirrorTextToBlocks.create_block("ast_Str", node.lineno, {"TEXT": text});
     } else {
         let dedented = this.dedent(text, this.levelIndex - 1, false);

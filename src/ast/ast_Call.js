@@ -163,12 +163,9 @@ Blockly.Blocks['ast_Call'] = {
         } else if (argument.startsWith('KEYWORD:')) {
             let keywords = argument.substring(8);
             return keywords + "=";
-        } else {
-            if (this.showParameterNames_) {
-                if (argument.startsWith("KNOWN_ARG:")) {
-                    return argument.substring(10) + "=";
-                }
-            }
+        } else if (argument.startsWith("KNOWN_ARG:") && this.showParameterNames_) {
+            // FIXME KNOWN_ARG is not set anywhere?
+            return argument.substring(10) + "=";
         }
         return "";
     },
@@ -321,6 +318,7 @@ Blockly.Blocks['ast_Call'] = {
             var parameter = document.createElement('arg');
             parameter.setAttribute('name', this.arguments_[i]);
             container.appendChild(parameter);
+            parameter.textContent = this.typeAliases[i];
         }
         return container;
     },
@@ -346,10 +344,13 @@ Blockly.Blocks['ast_Call'] = {
 
         var args = [];
         var paramIds = [];
+        this.typeAliases = []
+
         for (var i = 0, childNode; childNode = xmlElement.childNodes[i]; i++) {
             if (childNode.nodeName.toLowerCase() === 'arg') {
                 args.push(childNode.getAttribute('name'));
                 paramIds.push(childNode.getAttribute('paramId'));
+                this.typeAliases.push(childNode.textContent)
             }
         }
         let result = this.setProcedureParameters_(args, paramIds);
@@ -466,7 +467,7 @@ python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
     for (var i = 0; i < block.arguments_.length; i++) {
         let argBlock = block.getInputTargetBlock('ARG' + i)
 
-        if (argBlock && argBlock.shadow) {
+        if (argBlock?.shadow) {
             continue
         }
 
@@ -496,6 +497,22 @@ python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
 };
 
 BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
+    function pythonParameterMutation(pythonParameter) {
+        if (pythonParameter) {
+            let referencedTypeAliases = pythonParameter.typeHint?.referencedTypeAliases()
+
+            if (referencedTypeAliases) {
+                return document.createTextNode(
+                    referencedTypeAliases.filter(item => item.fieldFactory
+                ).map(
+                    item => item + ":" + item.fieldFactory
+                ).join(" "))
+            }
+        }
+
+        return null
+    }
+
     let func = node.func;
     let args = node.args;
     let keywords = node.keywords;
@@ -541,7 +558,9 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             name = fromLibrary.name;
             premessage = fromLibrary.premessage
             message = fromLibrary.message
-            returns = fromLibrary.typeHint
+            if (fromLibrary.typeHint) {
+              returns = fromLibrary.typeHint.flattened().toString()
+            }
 
             if (fromLibrary instanceof PythonConstructorMethod) {
                 // For constructor methods, the caller is fixed.
@@ -613,11 +632,17 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     let overallI = 0;
     if (args !== null) {
         for (let i = 0; i < args.length; i += 1, overallI += 1) {
-            argumentsNormal["ARG" + overallI] = this.convert(args[i], node)
-            argumentsMutation["UNKNOWN_ARG:" + overallI] = null
+            argumentsNormal["ARG" + i] = this.convert(args[i], node)
+            argumentsMutation["UNKNOWN_ARG:" + i] = null
         }
     }
     if (fromLibrary instanceof PythonFunction) {
+        if (args !== null) {
+            for (let i = 0; i < args.length; i += 1) {
+                let pythonParameter = fromLibrary.parameters[i + fromLibrary.argumentOffset]
+                argumentsMutation["UNKNOWN_ARG:" + i] = pythonParameterMutation(pythonParameter)
+            }
+        }
         for (let i = overallI; i < fromLibrary.parameters.length - fromLibrary.argumentOffset; i += 1) {
             let pythonParameter = fromLibrary.parameters[i + fromLibrary.argumentOffset]
             if (pythonParameter.keyword || pythonParameter.preferKeyword) {
@@ -627,7 +652,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             if (pythonParameter.defaultValue !== "") {
                 argumentsNormal["ARG" + i] = this.convertSource("positionalDefaultValue.py", "\n".repeat(node.lineno - 1) + "p=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE']?.children[0]
             }
-            argumentsMutation["UNKNOWN_ARG:" + i] = null
+            argumentsMutation["UNKNOWN_ARG:" + i] = pythonParameterMutation(pythonParameter)
             overallI += 1
         }
     }
@@ -647,15 +672,18 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
 
                 if (fromLibrary instanceof PythonFunction) {
                     let parameter = fromLibrary.parameters.findByKeyword(keywordName)
+                    foundKeywords.add(keywordName);
 
                     if (parameter?.names.length > 1) {
-                        let names = [...parameter.names].filter(item => item !== keywordName)
+                        let aliasNames = [...parameter.names].filter(item => item !== keywordName)
                         keywordName = keywordName + ' ' + parameter.names.join(' ');
-                        names.forEach(foundKeywords.add, foundKeywords);
+                        aliasNames.forEach(foundKeywords.add, foundKeywords);
                     }
+                    argumentsMutation["KEYWORD:" + keywordName] = pythonParameterMutation(parameter)
+                } else {
+                    argumentsMutation["KEYWORD:" + keywordName] = null;
                 }
                 argumentsMutation["KEYWORD:" + keywordName] = null;
-                foundKeywords.add(keywordName)
             }
         }
     }
@@ -673,7 +701,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             if (pythonParameter.defaultValue !== "") {
                 argumentsNormal["ARG" + overallI] = this.convertSource("keywordDefaultValue.py", "\n".repeat(node.lineno - 1) + "k=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE'].children[0]
             }
-            argumentsMutation["KEYWORD:" + pythonParameter.names.join(' ')] = null
+            argumentsMutation["KEYWORD:" + pythonParameter.names.join(' ')] = pythonParameterMutation(pythonParameter)
             overallI += 1
         }
     }
