@@ -28,7 +28,6 @@ python.pythonGenerator.forBlock['ast_NameConstantBoolean'] = function(block, gen
 };
 
 python.pythonGenerator.forBlock['ast_NameConstantNone'] = function(block, generator) {
-    // Boolean values true and false.
     var code = 'None';
     return [code, python.Order.ATOMIC];
 };

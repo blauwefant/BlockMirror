@@ -32,6 +32,8 @@ function BlockMirrorBlockEditor(blockMirror) {
     };
     this.workspace = Blockly.inject(blockMirror.tags.blockEditor,
         blocklyOptions);
+    this.workspace.libraries = blockMirror.libraries;
+    this.workspace.toolbox.flyout.workspace_.libraries = blockMirror.libraries;
     // Configure Blockly
     this.workspace.addChangeListener(this.changed.bind(this));
 

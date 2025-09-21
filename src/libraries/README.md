@@ -70,7 +70,7 @@ Aliases only indicate a logical relation, runtime behavior may or may not differ
 This is a separate concept from regular (naming) aliases.
 It is modeled after the Python [type statement](https://docs.python.org/3/reference/simple_stmts.html#type).
 Type aliases are defined directly under modules. Their current primary purpose in a library definition is to attach a field factory function.
-The fieldFactoryFunction should point to a function that takes a Blockly block as its single parameter and which returns a Blockly field.
+The fieldFactoryFunction should point to a function that takes a Blockly block and field name as its 2 parameters and which returns a Blockly field.
 If the function returns null or undefined, the default behavior is followed.
 
 For example, to display a color selection field:

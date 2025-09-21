@@ -78,27 +78,27 @@ if (typeof FieldAngle === "function") {
             }
         }
     }
-    BlockMirrorTextToBlocks['turtleAngleFieldLeft'] = function (block) {
+    BlockMirrorTextToBlocks['turtleAngleFieldLeft'] = function (block, _fieldName) {
         return _turtleAngleField(block, false)
     }
-    BlockMirrorTextToBlocks['turtleAngleFieldRight'] = function (block) {
+    BlockMirrorTextToBlocks['turtleAngleFieldRight'] = function (block, _fieldName) {
         return _turtleAngleField(block, true)
     }
-    BlockMirrorTextToBlocks['turtleAngleFieldHeading'] = function (block) {
+    BlockMirrorTextToBlocks['turtleAngleFieldHeading'] = function (block, _fieldName) {
         return _turtleAngleField(block, false, 0)
     }
 } else {
-    BlockMirrorTextToBlocks['turtleAngleFieldLeft'] = function (_block) {}
-    BlockMirrorTextToBlocks['turtleAngleFieldRight'] = function (_block) {}
-    BlockMirrorTextToBlocks['turtleAngleFieldHeading'] = function (_block) {}
+    BlockMirrorTextToBlocks['turtleAngleFieldLeft'] = function (_block, _fieldName) {}
+    BlockMirrorTextToBlocks['turtleAngleFieldRight'] = function (_block, _fieldName) {}
+    BlockMirrorTextToBlocks['turtleAngleFieldHeading'] = function (_block, _fieldName) {}
 }
 
 if (typeof FieldColourHsvSliders === "function") {
-    BlockMirrorTextToBlocks['turtleColorField'] = function (block) {
+    BlockMirrorTextToBlocks['turtleColorField'] = function (block, _fieldName) {
         if (block.type === 'ast_Str') {
             return new FieldColourHsvSliders()
         }
     }
 } else {
-    BlockMirrorTextToBlocks['turtleColorField'] = function (_block) {}
+    BlockMirrorTextToBlocks['turtleColorField'] = function (_block, _fieldName) {}
 }

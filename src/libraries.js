@@ -171,15 +171,16 @@ class PythonModule {
 
 class PythonTypeHint {
   constructor(libraries, signature) {
-    let unionTypes = splitParameters(signature, '|');
+    let unionTypes = splitParameters(signature.trim(), '|');
 
     if (unionTypes.length >= 2) {
       this.value = "typing.Union"
       this.typeParams = unionTypes
     } else if (signature.trim().endsWith("]")) {
       let [value, typeParams] = signature.split("[", 2);
+      typeParams = typeParams.trim()
       this.value = value.trim()
-      this.typeParams = splitParameters(typeParams.substring(0, value.length - 1))
+      this.typeParams = splitParameters(typeParams.substring(0, typeParams.length - 1))
     } else {
       this.value = signature.trim()
       this.typeParams = []
@@ -270,6 +271,10 @@ class PythonTypeHint {
     }
   }
 
+  isLiteral() {
+      return this.value === 'typing.Literal'
+  }
+
   isUnion() {
       return this.value === 'typing.Union'
   }
@@ -277,9 +282,24 @@ class PythonTypeHint {
   isOptional() {
       return this.value === 'typing.Optional'
   }
+
+  matches(typeString) {
+      if (this.value === typeString) {
+          return true;
+      } else if (this.isUnion() || this.isOptional()) {
+          return this.typeParams.some(typeParam => typeParam === typeString)
+      } else if (this.flattened() !== this) {
+          return this.flattened().matches(typeString)
+      }
+      return false
+  }
 }
 
 function _resolveFunction(identifier, fullName) {
+    if (typeof identifier === "function") {
+        return identifier;
+    }
+
     if (identifier) {
         let result = globalThis;
 
@@ -322,6 +342,7 @@ class PythonTypeAliasType extends PythonTypeHint {
 
 class PythonParameter {
   constructor(pythonFunction, parameter, arg, positional, keyword) {
+    this.pythonFunction = pythonFunction
     this.positional = positional;
     this.keyword = keyword;
 
@@ -365,7 +386,7 @@ class PythonParameter {
       }
     }
 
-    if (this.value === this.__BLANK) {
+    if (this.value === __BLANK) {
       // For consistency
       this.value = ""
     }
@@ -597,10 +618,16 @@ function splitParameters(input, splitChar=',') {
   let result = []
   let openParentheses = 0
   let openBrackets = 0
+  let doubleQuoted = false;
+  let singleQuoted = false;
   let item = ''
 
   for (let char of input) {
-    if (char === splitChar && openParentheses === 0 && openBrackets === 0) {
+    if (char === '"') {
+      doubleQuoted = !doubleQuoted;
+    } else if (char === "'") {
+      singleQuoted = !singleQuoted;
+    } else if (char === splitChar && openParentheses === 0 && openBrackets === 0 && !doubleQuoted && !singleQuoted) {
       result.push(item.trim())
       item = ''
       continue
@@ -1291,25 +1318,74 @@ class Libraries extends Map {
   }
 }
 
+function unquote(value) {
+    if (value.length >= 2) {
+        let firstChar = value.charAt(0);
+        let lastChar = value.charAt(value.length - 1)
+        if (firstChar === "'" && lastChar === "'" || firstChar === '"' && lastChar === '"') {
+            return value.slice(1, -1)
+        }
+    }
+    return value
+}
+
 function updateBlockFieldFactory(block, pythonTypeNames, render) {
     let fieldFactoryBefore = block.fieldFactory_;
-    if (block.parentBlock_ === null || block.parentBlock_.fromLibrary_ === "") {
-        block.fieldFactory_ = "";
-    } else {
+    block.fieldFactory_ = "";
+
+    if (block.parentBlock_ !== null && block.parentBlock_.fromLibrary_ !== "") {
         let argInput = block.parentBlock_.inputWithBlock = block.parentBlock_.getInputWithBlock(block)
+
         if (argInput) {
             let argName = argInput.name
+
             if (argName.startsWith("ARG")) {
                 let argIndex = Number(argName.substring(3));
-                let typeAliasesForArg = block.parentBlock_.typeAliases[argIndex];
+                let parameterInfoForArg = block.parentBlock_.parameterInfo[argIndex];
+                let [fullFunctionName, parameterKeyword] = parameterInfoForArg.split(" ", 2)
+                let pythonFunction = block.workspace.libraries.resolve(fullFunctionName);
+                let parameter
 
-                for (let typeAlias of typeAliasesForArg.split(";")) {
-                    let [types, fieldFactory] = typeAlias.split(":", 2)
-                    let forTypes = types.split(" | ")
+                if (parameterKeyword) {
+                    parameter = pythonFunction.parameters.findByKeyword(parameterKeyword)
+                } else {
+                    parameter = pythonFunction.parameters[argIndex + pythonFunction.argumentOffset]
+                }
 
-                    if (pythonTypeNames.some(pythonTypeName => forTypes.includes(pythonTypeName))) {
-                        block.fieldFactory_ = fieldFactory;
-                        break
+                let typeHint = parameter.typeHint
+
+                if (typeHint) {
+                    let typeAliases = typeHint.referencedTypeAliases()
+
+                    for (let typeAlias of typeAliases) {
+                        if (pythonTypeNames.some(pythonTypeName => typeAlias.matches(pythonTypeName))) {
+                            block.fieldFactory_ = typeAlias.fieldFactory;
+                            break
+                        }
+                    }
+
+                    // TODO case with Literal[...] | None
+                    if (block.fieldFactory_ === "" && typeHint.flattened().isLiteral()) {
+                        block.fieldFactory_ = function (block, fieldName) {
+                            return new Blockly.FieldDropdown(
+                                () => {
+                                    let result = typeHint.flattened().typeParams.map(
+                                        typeParam => {
+                                            let unquotedTypeParam = unquote(typeParam)
+                                            return [unquotedTypeParam, unquotedTypeParam]
+                                        }
+                                    )
+
+                                    let currentValue = block.getFieldValue(fieldName)
+
+                                    if (!result.some(item => item[1] === currentValue)) {
+                                        result.unshift([currentValue, currentValue]);
+                                    }
+
+                                    return result
+                                }
+                            )
+                        };
                     }
                 }
             }
@@ -1325,7 +1401,7 @@ function updateBlockFieldFactory(block, pythonTypeNames, render) {
     }
 }
 
-function initBlockDynamicFieldFactory(block, pythonTypeNames) {
+function initBlockFieldFactory(block, pythonTypeNames) {
     block.onchange = function(changeEvent) {
         if (changeEvent instanceof Blockly.Events.BlockMove) {
             updateBlockFieldFactory(block, pythonTypeNames, false);

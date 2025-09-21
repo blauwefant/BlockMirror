@@ -6,7 +6,7 @@ Blockly.Blocks['ast_Str'] = {
         this.setColour(BlockMirrorTextToBlocks.COLOR.TEXT);
         this.fieldFactory_ = "";
         Blockly.Extensions.apply('text_quotes', this);
-        initBlockDynamicFieldFactory(this, ["str"])
+        initBlockFieldFactory(this, ["str"])
     },
     updateShape_: function () {
         let input = this.getInput('INPUT')
@@ -16,7 +16,7 @@ Blockly.Blocks['ast_Str'] = {
             let resolvedFieldFactory = _resolveFunction(this.fieldFactory_)
 
             if (resolvedFieldFactory) {
-                field = resolvedFieldFactory(this)
+                field = resolvedFieldFactory(this, 'TEXT')
             }
         }
 
@@ -232,7 +232,6 @@ BlockMirrorTextToBlocks.prototype['ast_Str'] = function (node, parent) {
         let dedented = this.dedent(text, this.levelIndex - 1, true);
         return [BlockMirrorTextToBlocks.create_block("ast_StrDocstring", node.lineno, {"TEXT": dedented})];
     } else if (text.indexOf('\n') === -1) {
-        // // TODO implement dropdowns for Literal function arguments
         return BlockMirrorTextToBlocks.create_block("ast_Str", node.lineno, {"TEXT": text});
     } else {
         let dedented = this.dedent(text, this.levelIndex - 1, false);

@@ -1052,6 +1052,8 @@ function BlockMirrorBlockEditor(blockMirror) {
     renderer: blockMirror.configuration.renderer
   };
   this.workspace = Blockly.inject(blockMirror.tags.blockEditor, blocklyOptions);
+  this.workspace.libraries = blockMirror.libraries;
+  this.workspace.toolbox.flyout.workspace_.libraries = blockMirror.libraries;
   // Configure Blockly
   this.workspace.addChangeListener(this.changed.bind(this));
 
@@ -2214,7 +2216,7 @@ var PythonModule = /*#__PURE__*/function () {
 var PythonTypeHint = /*#__PURE__*/function () {
   function PythonTypeHint(libraries, signature) {
     _classCallCheck(this, PythonTypeHint);
-    var unionTypes = splitParameters(signature, '|');
+    var unionTypes = splitParameters(signature.trim(), '|');
     if (unionTypes.length >= 2) {
       this.value = "typing.Union";
       this.typeParams = unionTypes;
@@ -2223,8 +2225,9 @@ var PythonTypeHint = /*#__PURE__*/function () {
         _signature$split6 = _slicedToArray(_signature$split5, 2),
         value = _signature$split6[0],
         typeParams = _signature$split6[1];
+      typeParams = typeParams.trim();
       this.value = value.trim();
-      this.typeParams = splitParameters(typeParams.substring(0, value.length - 1));
+      this.typeParams = splitParameters(typeParams.substring(0, typeParams.length - 1));
     } else {
       this.value = signature.trim();
       this.typeParams = [];
@@ -2335,6 +2338,11 @@ var PythonTypeHint = /*#__PURE__*/function () {
       }
     }
   }, {
+    key: "isLiteral",
+    value: function isLiteral() {
+      return this.value === 'typing.Literal';
+    }
+  }, {
     key: "isUnion",
     value: function isUnion() {
       return this.value === 'typing.Union';
@@ -2344,9 +2352,26 @@ var PythonTypeHint = /*#__PURE__*/function () {
     value: function isOptional() {
       return this.value === 'typing.Optional';
     }
+  }, {
+    key: "matches",
+    value: function matches(typeString) {
+      if (this.value === typeString) {
+        return true;
+      } else if (this.isUnion() || this.isOptional()) {
+        return this.typeParams.some(function (typeParam) {
+          return typeParam === typeString;
+        });
+      } else if (this.flattened() !== this) {
+        return this.flattened().matches(typeString);
+      }
+      return false;
+    }
   }]);
 }();
 function _resolveFunction(identifier, fullName) {
+  if (typeof identifier === "function") {
+    return identifier;
+  }
   if (identifier) {
     var result = globalThis;
     var _iterator13 = _createForOfIteratorHelper(identifier.split('.')),
@@ -2399,6 +2424,7 @@ var PythonParameter = /*#__PURE__*/function () {
   function PythonParameter(pythonFunction, parameter, arg, positional, keyword) {
     _classCallCheck(this, PythonParameter);
     _classPrivateMethodInitSpec(this, _PythonParameter_brand);
+    this.pythonFunction = pythonFunction;
     this.positional = positional;
     this.keyword = keyword;
     if (parameter.startsWith("*")) {
@@ -2448,7 +2474,7 @@ var PythonParameter = /*#__PURE__*/function () {
         this.preferKeyword = false;
       }
     }
-    if (this.value === this.__BLANK) {
+    if (this.value === __BLANK) {
       // For consistency
       this.value = "";
     }
@@ -2690,13 +2716,19 @@ function splitParameters(input) {
   var result = [];
   var openParentheses = 0;
   var openBrackets = 0;
+  var doubleQuoted = false;
+  var singleQuoted = false;
   var item = '';
   var _iterator17 = _createForOfIteratorHelper(input),
     _step17;
   try {
     for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
       var _char = _step17.value;
-      if (_char === splitChar && openParentheses === 0 && openBrackets === 0) {
+      if (_char === '"') {
+        doubleQuoted = !doubleQuoted;
+      } else if (_char === "'") {
+        singleQuoted = !singleQuoted;
+      } else if (_char === splitChar && openParentheses === 0 && openBrackets === 0 && !doubleQuoted && !singleQuoted) {
         result.push(item.trim());
         item = '';
         continue;
@@ -3461,41 +3493,79 @@ var Libraries = /*#__PURE__*/function (_Map) {
     }
   }]);
 }(/*#__PURE__*/_wrapNativeSuper(Map));
+function unquote(value) {
+  if (value.length >= 2) {
+    var firstChar = value.charAt(0);
+    var lastChar = value.charAt(value.length - 1);
+    if (firstChar === "'" && lastChar === "'" || firstChar === '"' && lastChar === '"') {
+      return value.slice(1, -1);
+    }
+  }
+  return value;
+}
 function updateBlockFieldFactory(block, pythonTypeNames, render) {
   var fieldFactoryBefore = block.fieldFactory_;
-  if (block.parentBlock_ === null || block.parentBlock_.fromLibrary_ === "") {
-    block.fieldFactory_ = "";
-  } else {
+  block.fieldFactory_ = "";
+  if (block.parentBlock_ !== null && block.parentBlock_.fromLibrary_ !== "") {
     var argInput = block.parentBlock_.inputWithBlock = block.parentBlock_.getInputWithBlock(block);
     if (argInput) {
       var argName = argInput.name;
       if (argName.startsWith("ARG")) {
         var argIndex = Number(argName.substring(3));
-        var typeAliasesForArg = block.parentBlock_.typeAliases[argIndex];
-        var _iterator32 = _createForOfIteratorHelper(typeAliasesForArg.split(";")),
-          _step32;
-        try {
-          var _loop3 = function _loop3() {
-            var typeAlias = _step32.value;
-            var _typeAlias$split = typeAlias.split(":", 2),
-              _typeAlias$split2 = _slicedToArray(_typeAlias$split, 2),
-              types = _typeAlias$split2[0],
-              fieldFactory = _typeAlias$split2[1];
-            var forTypes = types.split(" | ");
-            if (pythonTypeNames.some(function (pythonTypeName) {
-              return forTypes.includes(pythonTypeName);
-            })) {
-              block.fieldFactory_ = fieldFactory;
-              return 1; // break
+        var parameterInfoForArg = block.parentBlock_.parameterInfo[argIndex];
+        var _parameterInfoForArg$ = parameterInfoForArg.split(" ", 2),
+          _parameterInfoForArg$2 = _slicedToArray(_parameterInfoForArg$, 2),
+          fullFunctionName = _parameterInfoForArg$2[0],
+          parameterKeyword = _parameterInfoForArg$2[1];
+        var pythonFunction = block.workspace.libraries.resolve(fullFunctionName);
+        var parameter;
+        if (parameterKeyword) {
+          parameter = pythonFunction.parameters.findByKeyword(parameterKeyword);
+        } else {
+          parameter = pythonFunction.parameters[argIndex + pythonFunction.argumentOffset];
+        }
+        var typeHint = parameter.typeHint;
+        if (typeHint) {
+          var typeAliases = typeHint.referencedTypeAliases();
+          var _iterator32 = _createForOfIteratorHelper(typeAliases),
+            _step32;
+          try {
+            var _loop3 = function _loop3() {
+              var typeAlias = _step32.value;
+              if (pythonTypeNames.some(function (pythonTypeName) {
+                return typeAlias.matches(pythonTypeName);
+              })) {
+                block.fieldFactory_ = typeAlias.fieldFactory;
+                return 1; // break
+              }
+            };
+            for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
+              if (_loop3()) break;
             }
-          };
-          for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
-            if (_loop3()) break;
+
+            // TODO case with Literal[...] | None
+          } catch (err) {
+            _iterator32.e(err);
+          } finally {
+            _iterator32.f();
           }
-        } catch (err) {
-          _iterator32.e(err);
-        } finally {
-          _iterator32.f();
+          if (block.fieldFactory_ === "" && typeHint.flattened().isLiteral()) {
+            block.fieldFactory_ = function (block, fieldName) {
+              return new Blockly.FieldDropdown(function () {
+                var result = typeHint.flattened().typeParams.map(function (typeParam) {
+                  var unquotedTypeParam = unquote(typeParam);
+                  return [unquotedTypeParam, unquotedTypeParam];
+                });
+                var currentValue = block.getFieldValue(fieldName);
+                if (!result.some(function (item) {
+                  return item[1] === currentValue;
+                })) {
+                  result.unshift([currentValue, currentValue]);
+                }
+                return result;
+              });
+            };
+          }
         }
       }
     }
@@ -3507,7 +3577,7 @@ function updateBlockFieldFactory(block, pythonTypeNames, render) {
     }
   }
 }
-function initBlockDynamicFieldFactory(block, pythonTypeNames) {
+function initBlockFieldFactory(block, pythonTypeNames) {
   block.onchange = function (changeEvent) {
     if (changeEvent instanceof Blockly.Events.BlockMove) {
       updateBlockFieldFactory(block, pythonTypeNames, false);
@@ -3608,28 +3678,28 @@ if (typeof FieldAngle === "function") {
       }
     }
   };
-  BlockMirrorTextToBlocks['turtleAngleFieldLeft'] = function (block) {
+  BlockMirrorTextToBlocks['turtleAngleFieldLeft'] = function (block, _fieldName) {
     return _turtleAngleField(block, false);
   };
-  BlockMirrorTextToBlocks['turtleAngleFieldRight'] = function (block) {
+  BlockMirrorTextToBlocks['turtleAngleFieldRight'] = function (block, _fieldName) {
     return _turtleAngleField(block, true);
   };
-  BlockMirrorTextToBlocks['turtleAngleFieldHeading'] = function (block) {
+  BlockMirrorTextToBlocks['turtleAngleFieldHeading'] = function (block, _fieldName) {
     return _turtleAngleField(block, false, 0);
   };
 } else {
-  BlockMirrorTextToBlocks['turtleAngleFieldLeft'] = function (_block) {};
-  BlockMirrorTextToBlocks['turtleAngleFieldRight'] = function (_block) {};
-  BlockMirrorTextToBlocks['turtleAngleFieldHeading'] = function (_block) {};
+  BlockMirrorTextToBlocks['turtleAngleFieldLeft'] = function (_block, _fieldName) {};
+  BlockMirrorTextToBlocks['turtleAngleFieldRight'] = function (_block, _fieldName) {};
+  BlockMirrorTextToBlocks['turtleAngleFieldHeading'] = function (_block, _fieldName) {};
 }
 if (typeof FieldColourHsvSliders === "function") {
-  BlockMirrorTextToBlocks['turtleColorField'] = function (block) {
+  BlockMirrorTextToBlocks['turtleColorField'] = function (block, _fieldName) {
     if (block.type === 'ast_Str') {
       return new FieldColourHsvSliders();
     }
   };
 } else {
-  BlockMirrorTextToBlocks['turtleColorField'] = function (_block) {};
+  BlockMirrorTextToBlocks['turtleColorField'] = function (_block, _fieldName) {};
 }
 var ZERO_BLOCK = BlockMirrorTextToBlocks.create_block('ast_Num', null, {
   'NUM': 0
@@ -4095,7 +4165,7 @@ Blockly.Blocks['ast_Num'] = {
     this.setColour(BlockMirrorTextToBlocks.COLOR.MATH);
     this.fieldFactory_ = "";
     // TODO perhaps more numeric types to check, but this handles the most common scenarios.
-    initBlockDynamicFieldFactory(this, ["int", "float"]);
+    initBlockFieldFactory(this, ["int", "float"]);
   },
   updateShape_: function updateShape_() {
     var input = this.getInput('INPUT');
@@ -4103,7 +4173,7 @@ Blockly.Blocks['ast_Num'] = {
     if (this.fieldFactory_) {
       var resolvedFieldFactory = _resolveFunction(this.fieldFactory_);
       if (resolvedFieldFactory) {
-        field = resolvedFieldFactory(this);
+        field = resolvedFieldFactory(this, 'NUM');
       }
     }
     if (!field) {
@@ -4708,7 +4778,7 @@ Blockly.Blocks['ast_Str'] = {
     this.setColour(BlockMirrorTextToBlocks.COLOR.TEXT);
     this.fieldFactory_ = "";
     Blockly.Extensions.apply('text_quotes', this);
-    initBlockDynamicFieldFactory(this, ["str"]);
+    initBlockFieldFactory(this, ["str"]);
   },
   updateShape_: function updateShape_() {
     var input = this.getInput('INPUT');
@@ -4716,7 +4786,7 @@ Blockly.Blocks['ast_Str'] = {
     if (this.fieldFactory_) {
       var resolvedFieldFactory = _resolveFunction(this.fieldFactory_);
       if (resolvedFieldFactory) {
-        field = resolvedFieldFactory(this);
+        field = resolvedFieldFactory(this, 'TEXT');
       }
     }
     if (!field) {
@@ -4927,7 +4997,6 @@ BlockMirrorTextToBlocks.prototype['ast_Str'] = function (node, parent) {
       "TEXT": dedented
     })];
   } else if (text.indexOf('\n') === -1) {
-    // // TODO implement dropdowns for Literal function arguments
     return BlockMirrorTextToBlocks.create_block("ast_Str", node.lineno, {
       "TEXT": text
     });
@@ -5202,7 +5271,6 @@ python.pythonGenerator.forBlock['ast_NameConstantBoolean'] = function (block, ge
   return [code, python.Order.ATOMIC];
 };
 python.pythonGenerator.forBlock['ast_NameConstantNone'] = function (block, generator) {
-  // Boolean values true and false.
   var code = 'None';
   return [code, python.Order.ATOMIC];
 };
@@ -6854,7 +6922,7 @@ Blockly.Blocks['ast_Call'] = {
       var parameter = document.createElement('arg');
       parameter.setAttribute('name', this.arguments_[i]);
       container.appendChild(parameter);
-      parameter.textContent = this.typeAliases[i];
+      parameter.textContent = this.parameterInfo[i];
     }
     return container;
   },
@@ -6879,12 +6947,13 @@ Blockly.Blocks['ast_Call'] = {
     this.givenColour_ = parseInt(xmlElement.getAttribute('colour'), 10);
     var args = [];
     var paramIds = [];
-    this.typeAliases = [];
-    for (var i = 0, childNode; childNode = xmlElement.childNodes[i]; i++) {
+    this.parameterInfo = [];
+    for (var i = 0; i < xmlElement.childNodes.length; i++) {
+      var childNode = xmlElement.childNodes[i];
       if (childNode.nodeName.toLowerCase() === 'arg') {
         args.push(childNode.getAttribute('name'));
         paramIds.push(childNode.getAttribute('paramId'));
-        this.typeAliases.push(childNode.textContent);
+        this.parameterInfo.push(childNode.textContent);
       }
     }
     var result = this.setProcedureParameters_(args, paramIds);
@@ -7025,20 +7094,6 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   var _fromLibrary$fullName,
     _fromLibrary,
     _this15 = this;
-  function pythonParameterMutation(pythonParameter) {
-    if (pythonParameter) {
-      var _pythonParameter$type;
-      var referencedTypeAliases = (_pythonParameter$type = pythonParameter.typeHint) === null || _pythonParameter$type === void 0 ? void 0 : _pythonParameter$type.referencedTypeAliases();
-      if (referencedTypeAliases) {
-        return document.createTextNode(referencedTypeAliases.filter(function (item) {
-          return item.fieldFactory;
-        }).map(function (item) {
-          return item + ":" + item.fieldFactory;
-        }).join(" "));
-      }
-    }
-    return null;
-  }
   var func = node.func;
   var args = node.args;
   var keywords = node.keywords;
@@ -7154,20 +7209,19 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   if (fromLibrary instanceof PythonFunction) {
     if (args !== null) {
       for (var _i7 = 0; _i7 < args.length; _i7 += 1) {
-        var pythonParameter = fromLibrary.parameters[_i7 + fromLibrary.argumentOffset];
-        argumentsMutation["UNKNOWN_ARG:" + _i7] = pythonParameterMutation(pythonParameter);
+        argumentsMutation["UNKNOWN_ARG:" + _i7] = document.createTextNode(fromLibrary.fullName);
       }
     }
     for (var _i8 = overallI; _i8 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i8 += 1) {
-      var _pythonParameter = fromLibrary.parameters[_i8 + fromLibrary.argumentOffset];
-      if (_pythonParameter.keyword || _pythonParameter.preferKeyword) {
+      var pythonParameter = fromLibrary.parameters[_i8 + fromLibrary.argumentOffset];
+      if (pythonParameter.keyword || pythonParameter.preferKeyword) {
         break;
       }
-      if (_pythonParameter.defaultValue !== "") {
+      if (pythonParameter.defaultValue !== "") {
         var _this$convertSource$r;
-        argumentsNormal["ARG" + _i8] = (_this$convertSource$r = this.convertSource("positionalDefaultValue.py", "\n".repeat(node.lineno - 1) + "p=" + _pythonParameter.defaultValue).rawXml.children[0].children['VALUE']) === null || _this$convertSource$r === void 0 ? void 0 : _this$convertSource$r.children[0];
+        argumentsNormal["ARG" + _i8] = (_this$convertSource$r = this.convertSource("positionalDefaultValue.py", "\n".repeat(node.lineno - 1) + "p=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE']) === null || _this$convertSource$r === void 0 ? void 0 : _this$convertSource$r.children[0];
       }
-      argumentsMutation["UNKNOWN_ARG:" + _i8] = pythonParameterMutation(_pythonParameter);
+      argumentsMutation["UNKNOWN_ARG:" + _i8] = document.createTextNode(fromLibrary.fullName);
       overallI += 1;
     }
   }
@@ -7194,7 +7248,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             keywordName = keywordName + ' ' + parameter.names.join(' ');
             aliasNames.forEach(foundKeywords.add, foundKeywords);
           }
-          argumentsMutation["KEYWORD:" + keywordName] = pythonParameterMutation(parameter);
+          argumentsMutation["KEYWORD:" + keywordName] = document.createTextNode(fromLibrary.fullName + " " + keywordName);
         } else {
           argumentsMutation["KEYWORD:" + keywordName] = null;
         }
@@ -7207,17 +7261,17 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   }
   if (fromLibrary instanceof PythonFunction) {
     for (var _i0 = overallIBeforeKeywords; _i0 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i0 += 1) {
-      var _pythonParameter2 = fromLibrary.parameters[_i0 + fromLibrary.argumentOffset];
-      if (!(_pythonParameter2.keyword || _pythonParameter2.preferKeyword) || foundKeywords.has(_pythonParameter2.name)) {
+      var _pythonParameter = fromLibrary.parameters[_i0 + fromLibrary.argumentOffset];
+      if (!(_pythonParameter.keyword || _pythonParameter.preferKeyword) || foundKeywords.has(_pythonParameter.name)) {
         continue;
       }
-      if (_pythonParameter2.variableLength) {
+      if (_pythonParameter.variableLength) {
         continue;
       }
-      if (_pythonParameter2.defaultValue !== "") {
-        argumentsNormal["ARG" + overallI] = this.convertSource("keywordDefaultValue.py", "\n".repeat(node.lineno - 1) + "k=" + _pythonParameter2.defaultValue).rawXml.children[0].children['VALUE'].children[0];
+      if (_pythonParameter.defaultValue !== "") {
+        argumentsNormal["ARG" + overallI] = this.convertSource("keywordDefaultValue.py", "\n".repeat(node.lineno - 1) + "k=" + _pythonParameter.defaultValue).rawXml.children[0].children['VALUE'].children[0];
       }
-      argumentsMutation["KEYWORD:" + _pythonParameter2.names.join(' ')] = pythonParameterMutation(_pythonParameter2);
+      argumentsMutation["KEYWORD:" + _pythonParameter.names.join(' ')] = document.createTextNode(fromLibrary.fullName + " " + _pythonParameter.name);
       overallI += 1;
     }
   }
@@ -9212,7 +9266,7 @@ BlockMirror.LIBRARIES['matplotlib'] = {
   "matplotlib.pyplot as plt": [
     "show(*, block: bool | None = None): None // show plot canvas",
     "hist(x, bins=None, *, range=None, density=False, weights=None, cumulative: bool = False, bottom=None, histtype: str = 'bar', align: str = 'mid', orientation: str = 'vertical', rwidth: float | None = None, log: bool = False, color=None, label=None, stacked: bool = False, data=None, **kwargs): Any // plot histogram",
-    "bar(x, height, width=0.8, bottom=None, *, align: str = 'center', data=None, tick_label: str | list[str] | None = None, **kwargs): Any // plot bar chart",
+    "bar(x, height, width=0.8, bottom=None, *, align: typing.Literal['center', 'edge'] = 'center', data=None, tick_label: str | list[str] | None = None, **kwargs): Any // plot bar chart",
     "plot(*args, scalex: bool = True, scaley: bool = True, data=None, **kwargs): list // plot line",
     "boxplot(x, *, notch=None, sym=None, vert=None, orientation='vertical', whis=None, positions=None, widths=None, patch_artist=None, bootstrap=None, usermedians=None, conf_intervals=None, meanline=None, showmeans=None, showcaps=None, showbox=None, showfliers=None, boxprops=None, tick_labels=None, flierprops=None, medianprops=None, meanprops=None, capprops=None, whiskerprops=None, manage_ticks=True, autorange=False, zorder=None, capwidths=None, label=None, data=None): dict // plot boxplot",
     "hlines(y, xmin, xmax, colors=None, linestyles='solid', *, label='', data=None, **kwargs): Any // plot horizontal line",

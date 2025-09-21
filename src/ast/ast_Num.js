@@ -6,7 +6,7 @@ Blockly.Blocks['ast_Num'] = {
         this.setColour(BlockMirrorTextToBlocks.COLOR.MATH);
         this.fieldFactory_ = "";
         // TODO perhaps more numeric types to check, but this handles the most common scenarios.
-        initBlockDynamicFieldFactory(this, ["int", "float"])
+        initBlockFieldFactory(this, ["int", "float"])
     },
     updateShape_: function () {
         let input = this.getInput('INPUT')
@@ -16,7 +16,7 @@ Blockly.Blocks['ast_Num'] = {
             let resolvedFieldFactory = _resolveFunction(this.fieldFactory_)
 
             if (resolvedFieldFactory) {
-                field = resolvedFieldFactory(this)
+                field = resolvedFieldFactory(this, 'NUM')
             }
         }
 
