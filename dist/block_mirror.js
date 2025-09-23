@@ -1068,6 +1068,7 @@ function BlockMirrorBlockEditor(blockMirror) {
   this.resized();
 
   // Needed for libraries with dynamic toolbox
+  // TODO optimize
   this.blockMirror.addChangeListener(function (event) {
     return _this6.remakeToolbox();
   });
@@ -1979,8 +1980,18 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function (node) {
     var caller = node.value;
     var potentialModule = this.getAsModule(caller);
     if (potentialModule) {
-      var _ref, _this$variables$getSi;
-      var _fullTypeName = (_ref = (_this$variables$getSi = this.variables.getSingleType(potentialModule)) !== null && _this$variables$getSi !== void 0 ? _this$variables$getSi : this.imports.getType(potentialModule)) !== null && _ref !== void 0 ? _ref : potentialModule;
+      var _fullTypeName = this.variables.getSingleType(potentialModule);
+      if (!_fullTypeName) {
+        // Needed for variables defined in the root module of a library
+        var resolvedFromLibrary = this.blockMirror.libraries.resolve(potentialModule);
+        if (resolvedFromLibrary instanceof PythonAttribute) {
+          _fullTypeName = resolvedFromLibrary.typeHint.value;
+        }
+      }
+      if (!_fullTypeName) {
+        var _this$imports$getType2;
+        _fullTypeName = (_this$imports$getType2 = this.imports.getType(potentialModule)) !== null && _this$imports$getType2 !== void 0 ? _this$imports$getType2 : potentialModule;
+      }
       var attributeName = Sk.ffi.remapToJs(node.attr);
       return this.blockMirror.libraries.resolve(_fullTypeName + "." + attributeName);
     }
@@ -2689,14 +2700,14 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
   return _createClass(PythonParameters, [{
     key: "toPythonSource",
     value: function toPythonSource() {
-      return _toConsumableArray(this.entries().filter(function (_ref2) {
-        var _ref3 = _slicedToArray(_ref2, 2),
-          key = _ref3[0],
-          value = _ref3[1];
+      return _toConsumableArray(this.entries().filter(function (_ref) {
+        var _ref2 = _slicedToArray(_ref, 2),
+          key = _ref2[0],
+          value = _ref2[1];
         return !(key === 0 && (value.name === "self" || value.name === "cls"));
-      }).map(function (_ref4) {
-        var _ref5 = _slicedToArray(_ref4, 2),
-          value = _ref5[1];
+      }).map(function (_ref3) {
+        var _ref4 = _slicedToArray(_ref3, 2),
+          value = _ref4[1];
         return value.toPythonSource();
       })).filter(function (result) {
         return result !== "";
@@ -3503,6 +3514,23 @@ function unquote(value) {
   }
   return value;
 }
+function fieldFactoryForLiteral(typeHint) {
+  return function (block, fieldName) {
+    return new Blockly.FieldDropdown(function () {
+      var result = typeHint.flattened().typeParams.map(function (typeParam) {
+        var unquotedTypeParam = unquote(typeParam);
+        return [unquotedTypeParam, unquotedTypeParam];
+      });
+      var currentValue = block.getFieldValue(fieldName);
+      if (!result.some(function (item) {
+        return item[1] === currentValue;
+      })) {
+        result.unshift([currentValue, currentValue]);
+      }
+      return result;
+    });
+  };
+}
 function updateBlockFieldFactory(block, pythonTypeNames, render) {
   var fieldFactoryBefore = block.fieldFactory_;
   block.fieldFactory_ = "";
@@ -3512,59 +3540,47 @@ function updateBlockFieldFactory(block, pythonTypeNames, render) {
       var argName = argInput.name;
       if (argName.startsWith("ARG")) {
         var argIndex = Number(argName.substring(3));
-        var parameterInfoForArg = block.parentBlock_.parameterInfo[argIndex];
-        var _parameterInfoForArg$ = parameterInfoForArg.split(" ", 2),
-          _parameterInfoForArg$2 = _slicedToArray(_parameterInfoForArg$, 2),
-          fullFunctionName = _parameterInfoForArg$2[0],
-          parameterKeyword = _parameterInfoForArg$2[1];
+        var argumentInfo = block.parentBlock_.argumentInfo[argIndex];
+        var _argumentInfo$split = argumentInfo.split(" ", 2),
+          _argumentInfo$split2 = _slicedToArray(_argumentInfo$split, 2),
+          fullFunctionName = _argumentInfo$split2[0],
+          parameterKeyword = _argumentInfo$split2[1];
         var pythonFunction = block.workspace.libraries.resolve(fullFunctionName);
-        var parameter;
-        if (parameterKeyword) {
-          parameter = pythonFunction.parameters.findByKeyword(parameterKeyword);
-        } else {
-          parameter = pythonFunction.parameters[argIndex + pythonFunction.argumentOffset];
-        }
-        var typeHint = parameter.typeHint;
-        if (typeHint) {
-          var typeAliases = typeHint.referencedTypeAliases();
-          var _iterator32 = _createForOfIteratorHelper(typeAliases),
-            _step32;
-          try {
-            var _loop3 = function _loop3() {
-              var typeAlias = _step32.value;
-              if (pythonTypeNames.some(function (pythonTypeName) {
-                return typeAlias.matches(pythonTypeName);
-              })) {
-                block.fieldFactory_ = typeAlias.fieldFactory;
-                return 1; // break
-              }
-            };
-            for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
-              if (_loop3()) break;
-            }
-
-            // TODO case with Literal[...] | None
-          } catch (err) {
-            _iterator32.e(err);
-          } finally {
-            _iterator32.f();
+        if (pythonFunction instanceof PythonFunction) {
+          var parameter;
+          if (parameterKeyword) {
+            parameter = pythonFunction.parameters.findByKeyword(parameterKeyword);
+          } else {
+            parameter = pythonFunction.parameters[argIndex + pythonFunction.argumentOffset];
           }
-          if (block.fieldFactory_ === "" && typeHint.flattened().isLiteral()) {
-            block.fieldFactory_ = function (block, fieldName) {
-              return new Blockly.FieldDropdown(function () {
-                var result = typeHint.flattened().typeParams.map(function (typeParam) {
-                  var unquotedTypeParam = unquote(typeParam);
-                  return [unquotedTypeParam, unquotedTypeParam];
-                });
-                var currentValue = block.getFieldValue(fieldName);
-                if (!result.some(function (item) {
-                  return item[1] === currentValue;
+          var typeHint = parameter.typeHint;
+          if (typeHint) {
+            var typeAliases = typeHint.referencedTypeAliases();
+            var _iterator32 = _createForOfIteratorHelper(typeAliases),
+              _step32;
+            try {
+              var _loop3 = function _loop3() {
+                var typeAlias = _step32.value;
+                if (pythonTypeNames.some(function (pythonTypeName) {
+                  return typeAlias.matches(pythonTypeName);
                 })) {
-                  result.unshift([currentValue, currentValue]);
+                  block.fieldFactory_ = typeAlias.fieldFactory;
+                  return 1; // break
                 }
-                return result;
-              });
-            };
+              };
+              for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
+                if (_loop3()) break;
+              }
+
+              // TODO case with Literal[...] | None
+            } catch (err) {
+              _iterator32.e(err);
+            } finally {
+              _iterator32.f();
+            }
+            if (block.fieldFactory_ === "" && typeHint.flattened().isLiteral()) {
+              block.fieldFactory_ = fieldFactoryForLiteral(typeHint);
+            }
           }
         }
       }
@@ -6922,7 +6938,7 @@ Blockly.Blocks['ast_Call'] = {
       var parameter = document.createElement('arg');
       parameter.setAttribute('name', this.arguments_[i]);
       container.appendChild(parameter);
-      parameter.textContent = this.parameterInfo[i];
+      parameter.textContent = this.argumentInfo[i];
     }
     return container;
   },
@@ -6947,13 +6963,13 @@ Blockly.Blocks['ast_Call'] = {
     this.givenColour_ = parseInt(xmlElement.getAttribute('colour'), 10);
     var args = [];
     var paramIds = [];
-    this.parameterInfo = [];
+    this.argumentInfo = [];
     for (var i = 0; i < xmlElement.childNodes.length; i++) {
       var childNode = xmlElement.childNodes[i];
       if (childNode.nodeName.toLowerCase() === 'arg') {
         args.push(childNode.getAttribute('name'));
         paramIds.push(childNode.getAttribute('paramId'));
-        this.parameterInfo.push(childNode.textContent);
+        this.argumentInfo.push(childNode.textContent);
       }
     }
     var result = this.setProcedureParameters_(args, paramIds);

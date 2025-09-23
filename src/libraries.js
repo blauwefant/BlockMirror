@@ -1329,6 +1329,29 @@ function unquote(value) {
     return value
 }
 
+function fieldFactoryForLiteral(typeHint) {
+    return function (block, fieldName) {
+        return new Blockly.FieldDropdown(
+            () => {
+                let result = typeHint.flattened().typeParams.map(
+                    typeParam => {
+                        let unquotedTypeParam = unquote(typeParam)
+                        return [unquotedTypeParam, unquotedTypeParam]
+                    }
+                )
+
+                let currentValue = block.getFieldValue(fieldName)
+
+                if (!result.some(item => item[1] === currentValue)) {
+                    result.unshift([currentValue, currentValue]);
+                }
+
+                return result
+            }
+        )
+    };
+}
+
 function updateBlockFieldFactory(block, pythonTypeNames, render) {
     let fieldFactoryBefore = block.fieldFactory_;
     block.fieldFactory_ = "";
@@ -1341,51 +1364,35 @@ function updateBlockFieldFactory(block, pythonTypeNames, render) {
 
             if (argName.startsWith("ARG")) {
                 let argIndex = Number(argName.substring(3));
-                let parameterInfoForArg = block.parentBlock_.parameterInfo[argIndex];
-                let [fullFunctionName, parameterKeyword] = parameterInfoForArg.split(" ", 2)
+                let argumentInfo = block.parentBlock_.argumentInfo[argIndex];
+                let [fullFunctionName, parameterKeyword] = argumentInfo.split(" ", 2)
                 let pythonFunction = block.workspace.libraries.resolve(fullFunctionName);
-                let parameter
 
-                if (parameterKeyword) {
-                    parameter = pythonFunction.parameters.findByKeyword(parameterKeyword)
-                } else {
-                    parameter = pythonFunction.parameters[argIndex + pythonFunction.argumentOffset]
-                }
+                if (pythonFunction instanceof PythonFunction) {
+                    let parameter
 
-                let typeHint = parameter.typeHint
-
-                if (typeHint) {
-                    let typeAliases = typeHint.referencedTypeAliases()
-
-                    for (let typeAlias of typeAliases) {
-                        if (pythonTypeNames.some(pythonTypeName => typeAlias.matches(pythonTypeName))) {
-                            block.fieldFactory_ = typeAlias.fieldFactory;
-                            break
-                        }
+                    if (parameterKeyword) {
+                        parameter = pythonFunction.parameters.findByKeyword(parameterKeyword);
+                    } else {
+                        parameter = pythonFunction.parameters[argIndex + pythonFunction.argumentOffset];
                     }
 
-                    // TODO case with Literal[...] | None
-                    if (block.fieldFactory_ === "" && typeHint.flattened().isLiteral()) {
-                        block.fieldFactory_ = function (block, fieldName) {
-                            return new Blockly.FieldDropdown(
-                                () => {
-                                    let result = typeHint.flattened().typeParams.map(
-                                        typeParam => {
-                                            let unquotedTypeParam = unquote(typeParam)
-                                            return [unquotedTypeParam, unquotedTypeParam]
-                                        }
-                                    )
+                    let typeHint = parameter.typeHint
 
-                                    let currentValue = block.getFieldValue(fieldName)
+                    if (typeHint) {
+                        let typeAliases = typeHint.referencedTypeAliases()
 
-                                    if (!result.some(item => item[1] === currentValue)) {
-                                        result.unshift([currentValue, currentValue]);
-                                    }
+                        for (let typeAlias of typeAliases) {
+                            if (pythonTypeNames.some(pythonTypeName => typeAlias.matches(pythonTypeName))) {
+                                block.fieldFactory_ = typeAlias.fieldFactory;
+                                break
+                            }
+                        }
 
-                                    return result
-                                }
-                            )
-                        };
+                        // TODO case with Literal[...] | None
+                        if (block.fieldFactory_ === "" && typeHint.flattened().isLiteral()) {
+                            block.fieldFactory_ = fieldFactoryForLiteral(typeHint);
+                        }
                     }
                 }
             }

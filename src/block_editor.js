@@ -50,6 +50,7 @@ function BlockMirrorBlockEditor(blockMirror) {
     this.resized();
 
     // Needed for libraries with dynamic toolbox
+    // TODO optimize
     this.blockMirror.addChangeListener(event => this.remakeToolbox());
 }
 

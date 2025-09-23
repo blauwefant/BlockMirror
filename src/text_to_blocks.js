@@ -569,7 +569,21 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function(node) {
         let potentialModule = this.getAsModule(caller);
 
         if (potentialModule) {
-            let fullTypeName = this.variables.getSingleType(potentialModule) ?? this.imports.getType(potentialModule) ?? potentialModule
+            let fullTypeName = this.variables.getSingleType(potentialModule)
+
+            if (!fullTypeName) {
+                // Needed for variables defined in the root module of a library
+                let resolvedFromLibrary = this.blockMirror.libraries.resolve(potentialModule);
+
+                if (resolvedFromLibrary instanceof PythonAttribute) {
+                    fullTypeName = resolvedFromLibrary.typeHint.value
+                }
+            }
+
+            if (!fullTypeName) {
+                fullTypeName = this.imports.getType(potentialModule) ?? potentialModule
+            }
+
             let attributeName = Sk.ffi.remapToJs(node.attr);
             return this.blockMirror.libraries.resolve(fullTypeName + "." + attributeName)
         }

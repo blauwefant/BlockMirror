@@ -318,7 +318,7 @@ Blockly.Blocks['ast_Call'] = {
             var parameter = document.createElement('arg');
             parameter.setAttribute('name', this.arguments_[i]);
             container.appendChild(parameter);
-            parameter.textContent = this.parameterInfo[i];
+            parameter.textContent = this.argumentInfo[i];
         }
         return container;
     },
@@ -344,7 +344,7 @@ Blockly.Blocks['ast_Call'] = {
 
         var args = [];
         var paramIds = [];
-        this.parameterInfo = []
+        this.argumentInfo = []
 
         for (var i = 0; i < xmlElement.childNodes.length; i++) {
             let childNode = xmlElement.childNodes[i];
@@ -352,7 +352,7 @@ Blockly.Blocks['ast_Call'] = {
             if (childNode.nodeName.toLowerCase() === 'arg') {
                 args.push(childNode.getAttribute('name'));
                 paramIds.push(childNode.getAttribute('paramId'));
-                this.parameterInfo.push(childNode.textContent)
+                this.argumentInfo.push(childNode.textContent)
             }
         }
         let result = this.setProcedureParameters_(args, paramIds);
