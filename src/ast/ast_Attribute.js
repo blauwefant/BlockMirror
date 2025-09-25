@@ -4,7 +4,6 @@ Blockly.Blocks['ast_Attribute'] = {
         this.setOutput(true, null);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.OO);
         this.premessage_ = "";
         this.message_ = "";
         this.postmessage_ = "";
@@ -12,14 +11,13 @@ Blockly.Blocks['ast_Attribute'] = {
         this.import_ = "";
         this.isFull_ = false;
         this.names_ = [];
+        this.givenColour_ = BlockMirrorTextToBlocks.COLOR.OO;
 
         this.appendDummyInput('NAME').appendField(' ', 'premessage')
             .appendField(new Blockly.FieldVariable('variable'), 'VALUE')
             .appendField('.', 'message')
             .appendField(new Blockly.FieldTextInput('attribute'), 'ATTR')
             .appendField(' ', 'postmessage');
-
-        this.updateShape_();
     },
     mutationToDom: function () {
         var container = document.createElement('mutation');
@@ -30,6 +28,7 @@ Blockly.Blocks['ast_Attribute'] = {
         container.setAttribute('import', this.import_);
         container.setAttribute('full', this.isFull_);
         container.setAttribute('names', this.names_.join(' '));
+        container.setAttribute('colour', this.givenColour_);
         return container;
     },
     domToMutation: function (xmlElement) {
@@ -40,6 +39,7 @@ Blockly.Blocks['ast_Attribute'] = {
         this.import_ = xmlElement.getAttribute('import');
         this.isFull_ = "true" === xmlElement.getAttribute('full');
         this.names_ = xmlElement.getAttribute('names').split(' ');
+        this.givenColour_ = parseInt(xmlElement.getAttribute('colour'), 10);
         this.updateShape_();
     },
     updateShape_: function () {
@@ -78,6 +78,7 @@ Blockly.Blocks['ast_Attribute'] = {
         this.getField('premessage').setValue(this.premessage_)
         this.getField('message').setValue(this.message_)
         this.getField('postmessage').setValue(this.postmessage_)
+        this.setColour(this.givenColour_);
     },
 };
 
@@ -114,6 +115,8 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
     let value = node.value;
     let attrStr = Sk.ffi.remapToJs(node.attr)
     let returns = 'Any';
+    let fromLibrary = this.resolveFromLibrary(node)
+    let alias = null
 
     let mutations = {
         "@returns": returns,
@@ -122,33 +125,37 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
         "@postmessage": '',
         "@import": '',
         "@full": false,
-        "@names": ''
+        "@names": '',
+        "@colour": BlockMirrorTextToBlocks.COLOR.OO,
     };
 
-    let fromLibrary = this.resolveFromLibrary(node)
-    let alias = null
+    if (fromLibrary) {
+        // TODO support for custom behavior?
+        mutations["@colour"] = fromLibrary.colour
 
-    if (fromLibrary instanceof PythonAttribute) {
-        mutations["@premessage"] = fromLibrary.premessage
-        mutations["@message"] = fromLibrary.message
-        mutations["@postmessage"] = fromLibrary.postmessage
-        mutations["@returns"] = fromLibrary.typeHint?.flattened().toString() ?? returns
-        mutations["@names"] = fromLibrary.names.join(" ")
+        if (fromLibrary instanceof PythonAttribute) {
+            mutations["@premessage"] = fromLibrary.premessage
+            mutations["@message"] = fromLibrary.message
+            mutations["@postmessage"] = fromLibrary.postmessage
+            mutations["@returns"] = fromLibrary.typeHint?.flattened().toString() ?? returns
+            mutations["@names"] = fromLibrary.names.join(" ")
 
-        if (fromLibrary.pythonClass === null) {
-          mutations["@import"] = fromLibrary.pythonModule.requiresImport ?? ""
-        }
-    } else if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
-        if (fromLibrary.requiresImport) {
-            mutations["@import"] = fromLibrary.requiresImport
-            let type
-            [type, alias] = fromLibrary.requiresImport.split(' as ', 2)
+            if (fromLibrary.pythonClass === null) {
+                mutations["@import"] = fromLibrary.pythonModule.requiresImport ?? ""
+            }
+        } else if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
+            if (fromLibrary.requiresImport) {
+                mutations["@import"] = fromLibrary.requiresImport
+                let type
+                [type, alias] = fromLibrary.requiresImport.split(' as ', 2)
+            }
         }
     }
 
     let newBlock
 
-    if (alias != null) {
+    if (alias !== null) {
+        // TODO colour from fromLibrary?
         newBlock = BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
             "VAR": attrStr
         },  {}, {}, {"@import": mutations["@import"]});

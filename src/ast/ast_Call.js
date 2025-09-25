@@ -480,8 +480,7 @@ python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
         if (argument.startsWith('KWARGS:')) {
             args.push("**" + value);
         } else if (argument.startsWith('KEYWORD:')) {
-            let keywords = argument.substring(8)
-            let keyword = keywords.split(' ', 1)[0]
+            let keyword = block.getFieldValue('ARGNAME' + i);
             args.push(keyword + "=" + value);
         } else {
             args.push(value);
@@ -658,17 +657,17 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                 if (fromLibrary instanceof PythonFunction) {
                     let parameter = fromLibrary.parameters.findByKeyword(keywordName)
                     foundKeywords.add(keywordName);
+                    let keywordNames = keywordName
 
                     if (parameter?.names.length > 1) {
-                        let aliasNames = [...parameter.names].filter(item => item !== keywordName)
-                        keywordName = keywordName + ' ' + parameter.names.join(' ');
-                        aliasNames.forEach(foundKeywords.add, foundKeywords);
+                        let otherNames = [...parameter.names].filter(item => item !== keywordName)
+                        keywordNames = keywordName + ' ' + otherNames;
+                        otherNames.forEach(foundKeywords.add, foundKeywords);
                     }
-                    argumentsMutation["KEYWORD:" + keywordName] = document.createTextNode(fromLibrary.fullName + " " + keywordName)
+                    argumentsMutation["KEYWORD:" + keywordNames] = document.createTextNode(fromLibrary.fullName + " " + keywordName)
                 } else {
                     argumentsMutation["KEYWORD:" + keywordName] = null;
                 }
-                argumentsMutation["KEYWORD:" + keywordName] = null;
             }
         }
     }

@@ -74,11 +74,16 @@ class PythonModule {
     }
     this.requiresImport = this.fullName === "" ? "" : this.name === this.fullName ? this.fullName : (this.fullName + " as " + this.name);
     this.members = new Map();
+    this.colour = library.colour
 
     if (members !== undefined) {
       for (let input of members) {
         if (typeof input === "object") {
-          if (input.signatures) {
+          if (input.__colour) {
+            this.colour = _resolve_colour(input.__colour)
+          } else if (input.__color) {
+            this.colour = _resolve_colour(input.__color)
+          } else if (input.signatures) {
             for (const signature of input.signatures) {
               this.addMember(signature, input)
             }
@@ -563,14 +568,15 @@ class PythonParameters extends Array {
           positional = false;
         } else {
           let isSelfOrCls = argIndex === 0 && (parameter === "self" || parameter === "cls")
-          this.push(
-            new PythonParameter(
+          let pythonParameter = new PythonParameter(
               pythonFunction,
               parameter,
-          isSelfOrCls ? "" : (argParts[argIndex] ?? ""),
+              isSelfOrCls ? "" : (argParts[argIndex] ?? ""),
               positional,
               keyword,
-            ),
+          )
+          this.push(
+            pythonParameter
           );
 
           if (parameter.length > 1 && parameter[0] === '*' && parameter[1] !== '*') {
@@ -610,7 +616,7 @@ class PythonParameters extends Array {
   }
 
   findByKeyword(keyword) {
-    return this.values().find((value) => value.name === keyword);
+    return this.values().find((value) => value.names.includes(keyword));
   }
 }
 
@@ -755,7 +761,16 @@ class PythonFunction {
 
         if (mutation.startsWith('KEYWORD:')) {
           let keywords = mutation.substring(8).split(' ')
-          this.parameters.findByKeyword(keywords[0])?.applyShadow(valueElement);
+          let parameter = this.parameters.findByKeyword(keywords[0])
+
+          if (parameter) {
+              if (parameter.name === keywords[0]) {
+                parameter.applyShadow(valueElement);
+              } else {
+                // Addressed by an alias, so may not be functionally the same
+                parameter.applyShadow(valueElement, false);
+              }
+          }
         } else {
           this.parameters[i + this.argumentOffset]?.applyShadow(valueElement);
         }
@@ -766,10 +781,20 @@ class PythonFunction {
         let argBlock = block.getInputTargetBlock('ARG' + i);
 
         if (mutation.startsWith('KEYWORD:')) {
-          let keywords = mutation.substring(8).split(' ')
-          this.parameters.findByKeyword(keywords[0])?.applyShadow(argBlock);
+          let keyword = block.getFieldValue('ARGNAME' + i)
+          let parameter = this.parameters.findByKeyword(keyword)
+
+          if (parameter) {
+            if (parameter.name === keyword) {
+              parameter.applyShadow(argBlock);
+          } else {
+              // Addressed by an alias, so may not be functionally the same
+              parameter.applyShadow(argBlock, false);
+            }
+          }
         } else {
-          this.parameters[i + this.argumentOffset]?.applyShadow(argBlock);
+            // Addressed by an alias, so may not be functionally the same
+          this.parameters[i + this.argumentOffset]?.applyShadow(argBlock, false);
         }
       }
     }
@@ -1377,7 +1402,7 @@ function updateBlockFieldFactory(block, pythonTypeNames, render) {
                         parameter = pythonFunction.parameters[argIndex + pythonFunction.argumentOffset];
                     }
 
-                    let typeHint = parameter.typeHint
+                    let typeHint = parameter?.typeHint
 
                     if (typeHint) {
                         let typeAliases = typeHint.referencedTypeAliases()
@@ -1429,5 +1454,7 @@ if (typeof module !== 'undefined') {
       PythonModule,
       PythonParameter,
       PythonParameters,
+      PythonTypeHint,
+      PythonTypeAliasType
   };
 }

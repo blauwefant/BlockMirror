@@ -2033,6 +2033,7 @@ var PythonModule = /*#__PURE__*/function () {
     }
     this.requiresImport = this.fullName === "" ? "" : this.name === this.fullName ? this.fullName : this.fullName + " as " + this.name;
     this.members = new Map();
+    this.colour = library.colour;
     if (members !== undefined) {
       var _iterator6 = _createForOfIteratorHelper(members),
         _step6;
@@ -2040,7 +2041,11 @@ var PythonModule = /*#__PURE__*/function () {
         for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
           var input = _step6.value;
           if (_typeof(input) === "object") {
-            if (input.signatures) {
+            if (input.__colour) {
+              this.colour = _resolve_colour(input.__colour);
+            } else if (input.__color) {
+              this.colour = _resolve_colour(input.__color);
+            } else if (input.signatures) {
               var _iterator7 = _createForOfIteratorHelper(input.signatures),
                 _step7;
               try {
@@ -2668,7 +2673,8 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
           } else {
             var _argParts$argIndex;
             var isSelfOrCls = argIndex === 0 && (_parameter === "self" || _parameter === "cls");
-            _this0.push(new PythonParameter(pythonFunction, _parameter, isSelfOrCls ? "" : (_argParts$argIndex = argParts[argIndex]) !== null && _argParts$argIndex !== void 0 ? _argParts$argIndex : "", positional, keyword));
+            var pythonParameter = new PythonParameter(pythonFunction, _parameter, isSelfOrCls ? "" : (_argParts$argIndex = argParts[argIndex]) !== null && _argParts$argIndex !== void 0 ? _argParts$argIndex : "", positional, keyword);
+            _this0.push(pythonParameter);
             if (_parameter.length > 1 && _parameter[0] === '*' && _parameter[1] !== '*') {
               // No positional arguments after *args
               positional = false;
@@ -2717,7 +2723,7 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
     key: "findByKeyword",
     value: function findByKeyword(keyword) {
       return this.values().find(function (value) {
-        return value.name === keyword;
+        return value.names.includes(keyword);
       });
     }
   }]);
@@ -2859,9 +2865,16 @@ var PythonFunction = /*#__PURE__*/function () {
           }
           var mutation = mutationElement.children[i].getAttribute('name');
           if (mutation.startsWith('KEYWORD:')) {
-            var _this$parameters$find;
             var keywords = mutation.substring(8).split(' ');
-            (_this$parameters$find = this.parameters.findByKeyword(keywords[0])) === null || _this$parameters$find === void 0 || _this$parameters$find.applyShadow(valueElement);
+            var parameter = this.parameters.findByKeyword(keywords[0]);
+            if (parameter) {
+              if (parameter.name === keywords[0]) {
+                parameter.applyShadow(valueElement);
+              } else {
+                // Addressed by an alias, so may not be functionally the same
+                parameter.applyShadow(valueElement, false);
+              }
+            }
           } else {
             var _this$parameters;
             (_this$parameters = this.parameters[i + this.argumentOffset]) === null || _this$parameters === void 0 || _this$parameters.applyShadow(valueElement);
@@ -2872,12 +2885,20 @@ var PythonFunction = /*#__PURE__*/function () {
           var _mutation = block.arguments_[_i4];
           var argBlock = block.getInputTargetBlock('ARG' + _i4);
           if (_mutation.startsWith('KEYWORD:')) {
-            var _this$parameters$find2;
-            var _keywords = _mutation.substring(8).split(' ');
-            (_this$parameters$find2 = this.parameters.findByKeyword(_keywords[0])) === null || _this$parameters$find2 === void 0 || _this$parameters$find2.applyShadow(argBlock);
+            var keyword = block.getFieldValue('ARGNAME' + _i4);
+            var _parameter2 = this.parameters.findByKeyword(keyword);
+            if (_parameter2) {
+              if (_parameter2.name === keyword) {
+                _parameter2.applyShadow(argBlock);
+              } else {
+                // Addressed by an alias, so may not be functionally the same
+                _parameter2.applyShadow(argBlock, false);
+              }
+            }
           } else {
             var _this$parameters2;
-            (_this$parameters2 = this.parameters[_i4 + this.argumentOffset]) === null || _this$parameters2 === void 0 || _this$parameters2.applyShadow(argBlock);
+            // Addressed by an alias, so may not be functionally the same
+            (_this$parameters2 = this.parameters[_i4 + this.argumentOffset]) === null || _this$parameters2 === void 0 || _this$parameters2.applyShadow(argBlock, false);
           }
         }
       }
@@ -3547,13 +3568,14 @@ function updateBlockFieldFactory(block, pythonTypeNames, render) {
           parameterKeyword = _argumentInfo$split2[1];
         var pythonFunction = block.workspace.libraries.resolve(fullFunctionName);
         if (pythonFunction instanceof PythonFunction) {
+          var _parameter3;
           var parameter;
           if (parameterKeyword) {
             parameter = pythonFunction.parameters.findByKeyword(parameterKeyword);
           } else {
             parameter = pythonFunction.parameters[argIndex + pythonFunction.argumentOffset];
           }
-          var typeHint = parameter.typeHint;
+          var typeHint = (_parameter3 = parameter) === null || _parameter3 === void 0 ? void 0 : _parameter3.typeHint;
           if (typeHint) {
             var typeAliases = typeHint.referencedTypeAliases();
             var _iterator32 = _createForOfIteratorHelper(typeAliases),
@@ -3614,7 +3636,9 @@ if (typeof module !== 'undefined') {
     PythonMethod: PythonMethod,
     PythonModule: PythonModule,
     PythonParameter: PythonParameter,
-    PythonParameters: PythonParameters
+    PythonParameters: PythonParameters,
+    PythonTypeHint: PythonTypeHint,
+    PythonTypeAliasType: PythonTypeAliasType
   };
 }
 BlockMirrorTextToBlocks['ast_Image'] = function (node, parent, textToBlocks) {
@@ -6471,7 +6495,6 @@ Blockly.Blocks['ast_Attribute'] = {
     this.setOutput(true, null);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(BlockMirrorTextToBlocks.COLOR.OO);
     this.premessage_ = "";
     this.message_ = "";
     this.postmessage_ = "";
@@ -6479,8 +6502,8 @@ Blockly.Blocks['ast_Attribute'] = {
     this.import_ = "";
     this.isFull_ = false;
     this.names_ = [];
+    this.givenColour_ = BlockMirrorTextToBlocks.COLOR.OO;
     this.appendDummyInput('NAME').appendField(' ', 'premessage').appendField(new Blockly.FieldVariable('variable'), 'VALUE').appendField('.', 'message').appendField(new Blockly.FieldTextInput('attribute'), 'ATTR').appendField(' ', 'postmessage');
-    this.updateShape_();
   },
   mutationToDom: function mutationToDom() {
     var container = document.createElement('mutation');
@@ -6491,6 +6514,7 @@ Blockly.Blocks['ast_Attribute'] = {
     container.setAttribute('import', this.import_);
     container.setAttribute('full', this.isFull_);
     container.setAttribute('names', this.names_.join(' '));
+    container.setAttribute('colour', this.givenColour_);
     return container;
   },
   domToMutation: function domToMutation(xmlElement) {
@@ -6501,6 +6525,7 @@ Blockly.Blocks['ast_Attribute'] = {
     this.import_ = xmlElement.getAttribute('import');
     this.isFull_ = "true" === xmlElement.getAttribute('full');
     this.names_ = xmlElement.getAttribute('names').split(' ');
+    this.givenColour_ = parseInt(xmlElement.getAttribute('colour'), 10);
     this.updateShape_();
   },
   updateShape_: function updateShape_() {
@@ -6535,6 +6560,7 @@ Blockly.Blocks['ast_Attribute'] = {
     this.getField('premessage').setValue(this.premessage_);
     this.getField('message').setValue(this.message_);
     this.getField('postmessage').setValue(this.postmessage_);
+    this.setColour(this.givenColour_);
   }
 };
 python.pythonGenerator.forBlock['ast_Attribute'] = function (block, generator) {
@@ -6568,6 +6594,8 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
   var value = node.value;
   var attrStr = Sk.ffi.remapToJs(node.attr);
   var returns = 'Any';
+  var fromLibrary = this.resolveFromLibrary(node);
+  var alias = null;
   var mutations = {
     "@returns": returns,
     "@premessage": '',
@@ -6575,33 +6603,37 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
     "@postmessage": '',
     "@import": '',
     "@full": false,
-    "@names": ''
+    "@names": '',
+    "@colour": BlockMirrorTextToBlocks.COLOR.OO
   };
-  var fromLibrary = this.resolveFromLibrary(node);
-  var alias = null;
-  if (fromLibrary instanceof PythonAttribute) {
-    var _fromLibrary$typeHint, _fromLibrary$typeHint2;
-    mutations["@premessage"] = fromLibrary.premessage;
-    mutations["@message"] = fromLibrary.message;
-    mutations["@postmessage"] = fromLibrary.postmessage;
-    mutations["@returns"] = (_fromLibrary$typeHint = (_fromLibrary$typeHint2 = fromLibrary.typeHint) === null || _fromLibrary$typeHint2 === void 0 ? void 0 : _fromLibrary$typeHint2.flattened().toString()) !== null && _fromLibrary$typeHint !== void 0 ? _fromLibrary$typeHint : returns;
-    mutations["@names"] = fromLibrary.names.join(" ");
-    if (fromLibrary.pythonClass === null) {
-      var _fromLibrary$pythonMo;
-      mutations["@import"] = (_fromLibrary$pythonMo = fromLibrary.pythonModule.requiresImport) !== null && _fromLibrary$pythonMo !== void 0 ? _fromLibrary$pythonMo : "";
-    }
-  } else if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
-    if (fromLibrary.requiresImport) {
-      mutations["@import"] = fromLibrary.requiresImport;
-      var type;
-      var _fromLibrary$requires = fromLibrary.requiresImport.split(' as ', 2);
-      var _fromLibrary$requires2 = _slicedToArray(_fromLibrary$requires, 2);
-      type = _fromLibrary$requires2[0];
-      alias = _fromLibrary$requires2[1];
+  if (fromLibrary) {
+    // TODO support for custom behavior?
+    mutations["@colour"] = fromLibrary.colour;
+    if (fromLibrary instanceof PythonAttribute) {
+      var _fromLibrary$typeHint, _fromLibrary$typeHint2;
+      mutations["@premessage"] = fromLibrary.premessage;
+      mutations["@message"] = fromLibrary.message;
+      mutations["@postmessage"] = fromLibrary.postmessage;
+      mutations["@returns"] = (_fromLibrary$typeHint = (_fromLibrary$typeHint2 = fromLibrary.typeHint) === null || _fromLibrary$typeHint2 === void 0 ? void 0 : _fromLibrary$typeHint2.flattened().toString()) !== null && _fromLibrary$typeHint !== void 0 ? _fromLibrary$typeHint : returns;
+      mutations["@names"] = fromLibrary.names.join(" ");
+      if (fromLibrary.pythonClass === null) {
+        var _fromLibrary$pythonMo;
+        mutations["@import"] = (_fromLibrary$pythonMo = fromLibrary.pythonModule.requiresImport) !== null && _fromLibrary$pythonMo !== void 0 ? _fromLibrary$pythonMo : "";
+      }
+    } else if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
+      if (fromLibrary.requiresImport) {
+        mutations["@import"] = fromLibrary.requiresImport;
+        var type;
+        var _fromLibrary$requires = fromLibrary.requiresImport.split(' as ', 2);
+        var _fromLibrary$requires2 = _slicedToArray(_fromLibrary$requires, 2);
+        type = _fromLibrary$requires2[0];
+        alias = _fromLibrary$requires2[1];
+      }
     }
   }
   var newBlock;
-  if (alias != null) {
+  if (alias !== null) {
+    // TODO colour from fromLibrary?
     newBlock = BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
       "VAR": attrStr
     }, {}, {}, {
@@ -7090,8 +7122,7 @@ python.pythonGenerator.forBlock['ast_Call'] = function (block, generator) {
     if (argument.startsWith('KWARGS:')) {
       args.push("**" + value);
     } else if (argument.startsWith('KEYWORD:')) {
-      var keywords = argument.substring(8);
-      var keyword = keywords.split(' ', 1)[0];
+      var keyword = block.getFieldValue('ARGNAME' + i);
       args.push(keyword + "=" + value);
     } else {
       args.push(value);
@@ -7257,18 +7288,18 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         if (fromLibrary instanceof PythonFunction) {
           var parameter = fromLibrary.parameters.findByKeyword(keywordName);
           foundKeywords.add(keywordName);
+          var keywordNames = keywordName;
           if ((parameter === null || parameter === void 0 ? void 0 : parameter.names.length) > 1) {
-            var aliasNames = _toConsumableArray(parameter.names).filter(function (item) {
+            var otherNames = _toConsumableArray(parameter.names).filter(function (item) {
               return item !== keywordName;
             });
-            keywordName = keywordName + ' ' + parameter.names.join(' ');
-            aliasNames.forEach(foundKeywords.add, foundKeywords);
+            keywordNames = keywordName + ' ' + otherNames;
+            otherNames.forEach(foundKeywords.add, foundKeywords);
           }
-          argumentsMutation["KEYWORD:" + keywordName] = document.createTextNode(fromLibrary.fullName + " " + keywordName);
+          argumentsMutation["KEYWORD:" + keywordNames] = document.createTextNode(fromLibrary.fullName + " " + keywordName);
         } else {
           argumentsMutation["KEYWORD:" + keywordName] = null;
         }
-        argumentsMutation["KEYWORD:" + keywordName] = null;
       }
     };
     for (var _i9 = 0; _i9 < keywords.length; _i9 += 1, overallI += 1) {
