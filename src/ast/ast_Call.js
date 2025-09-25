@@ -28,6 +28,9 @@ Blockly.Blocks['ast_Call'] = {
         this.premessage_ = "";
         this.import_ = "";
         this.fromLibrary_ = null;
+
+        let messageInput = this.appendDummyInput('MESSAGE_INPUT').setAlign(Blockly.inputs.Align.RIGHT);
+        messageInput.appendField(new Blockly.FieldLabel(), 'MESSAGE');
     },
 
     /**
@@ -172,6 +175,7 @@ Blockly.Blocks['ast_Call'] = {
     updateShapeForArguments() {
         // Process arguments
         let drawnArgumentCount = this.getDrawnArgumentCount_();
+
         for (let i = 0; i < drawnArgumentCount; i++) {
             let argument = this.arguments_[i];
             let argumentName = this.parseArgument_(argument);
@@ -184,9 +188,6 @@ Blockly.Blocks['ast_Call'] = {
                 postfix = '='
             }
 
-            if (i === 0) {
-                argumentName = this.message_ + "\ (" + argumentName;
-            }
             let field = this.getField('ARGNAME' + i);
             let postfixField = this.getField('ARGPOSTFIX' + i);
             if (field) {
@@ -242,23 +243,9 @@ Blockly.Blocks['ast_Call'] = {
             this.removeInput('FUNC');
         }
 
-        let drawnArgumentCount = this.getDrawnArgumentCount_();
-        let message = this.getInput('MESSAGE_AREA')
-        // Zero arguments, just do {message()}
-        if (drawnArgumentCount === 0) {
-            if (message) {
-                message.removeField('MESSAGE');
-            } else {
-                message = this.appendDummyInput('MESSAGE_AREA')
-                    .setAlign(Blockly.inputs.Align.RIGHT);
-            }
-            message.appendField(new Blockly.FieldLabel(this.message_ + "\ ("), 'MESSAGE');
-            // One argument, no MESSAGE_AREA
-        } else if (message) {
-            this.removeInput('MESSAGE_AREA');
-        }
+        this.setFieldValue(this.message_ + "\ (", "MESSAGE");
         this.updateShapeForArguments();
-        let i = drawnArgumentCount;
+        let i = this.getDrawnArgumentCount_();
 
         // Closing parentheses
         if (!this.getInput('CLOSE_PAREN')) {
@@ -268,16 +255,11 @@ Blockly.Blocks['ast_Call'] = {
         }
 
         // Move everything into place
-        if (drawnArgumentCount === 0) {
-            if (this.isMethod_) {
-                this.moveInputBefore('FUNC', 'MESSAGE_AREA');
-            }
-            this.moveInputBefore('MESSAGE_AREA', 'CLOSE_PAREN');
-        } else {
-            if (this.isMethod_) {
-                this.moveInputBefore('FUNC', 'CLOSE_PAREN');
-            }
+        if (this.isMethod_) {
+            this.moveInputBefore('FUNC', 'MESSAGE_INPUT');
         }
+        this.moveInputBefore('MESSAGE_INPUT', 'CLOSE_PAREN');
+
         for (let j = 0; j < i; j++) {
             this.moveInputBefore('ARG' + j, 'CLOSE_PAREN')
         }
