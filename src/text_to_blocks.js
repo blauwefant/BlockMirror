@@ -549,6 +549,8 @@ BlockMirrorTextToBlocks.COLOR = {
 BlockMirrorTextToBlocks.prototype.getAsModule = function (node) {
     if (node._astname === 'Name') {
         return Sk.ffi.remapToJs(node.id);
+    } else if (node._astname === 'Call') {
+        return this.getAsModule(node.func)
     } else if (node._astname === 'Attribute') {
         let origin = this.getAsModule(node.value);
         if (origin !== null) {
