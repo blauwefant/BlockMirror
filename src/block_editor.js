@@ -133,6 +133,10 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
             header += ">";
         }
         let body = (category.blocks || []).map((code) => {
+          if (code === '') {
+            return "<sep/>";
+          }
+
           let textToBlocks = this.blockMirror.textToBlocks;
           let originalVariables = textToBlocks.variables;
           try {

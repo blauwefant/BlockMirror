@@ -1149,6 +1149,9 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
       header += ">";
     }
     var body = (category.blocks || []).map(function (code) {
+      if (code === '') {
+        return "<sep/>";
+      }
       var textToBlocks = _this7.blockMirror.textToBlocks;
       var originalVariables = textToBlocks.variables;
       try {
@@ -5076,6 +5079,8 @@ python.pythonGenerator.forBlock['ast_Expr'] = function (block, generator) {
         // Nothing to do
       } else if (childBlock.type === 'ast_Call') {
         order = Math.min(order, python.Order.FUNCTION_CALL);
+      } else if (childBlock.type === "ast_Attribute") {
+        order = Math.min(order, python.Order.MEMBER);
       } else {
         order = Math.min(order, python.Order.ATOMIC);
       }
