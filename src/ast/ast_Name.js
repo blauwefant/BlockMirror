@@ -83,12 +83,10 @@ python.pythonGenerator.forBlock['ast_Name'] = function(block, generator) {
 
 BlockMirrorTextToBlocks.prototype['ast_Name'] = function (node, parent) {
     var id = node.id;
-    var ctx = node.ctx;
     if (id.v === python.pythonGenerator.blank) {
         return null;
-    } else {
-        return BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
-            "VAR": id.v
-        });
     }
+    return BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
+        "VAR": id.v
+    });
 }

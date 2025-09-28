@@ -1617,7 +1617,7 @@ BlockMirrorTextToBlocks.prototype.getSourceCode = function (frm, to) {
 };
 BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   this.levelIndex += 1;
-  var is_top_level = this.isTopLevel(parent);
+  var is_top_level = this.isStatementContainer(parent);
   // Empty body, return nothing
   /*if (node.length === 0) {
       return null;
@@ -1783,10 +1783,6 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   finalizePeers();
   this.levelIndex -= 1;
   return children;
-};
-BlockMirrorTextToBlocks.prototype.TOP_LEVEL_NODES = ['Module', 'Expression', 'Interactive', 'Suite'];
-BlockMirrorTextToBlocks.prototype.isTopLevel = function (parent) {
-  return !parent || this.TOP_LEVEL_NODES.indexOf(parent._astname) !== -1;
 };
 BlockMirrorTextToBlocks.prototype.isStatementContainer = function (ast) {
   return ast instanceof Sk.astnodes.Module || ast instanceof Sk.astnodes.Expression || ast instanceof Sk.astnodes.Interactive || ast instanceof Sk.astnodes.Suite || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent);
@@ -4419,14 +4415,12 @@ python.pythonGenerator.forBlock['ast_Name'] = function (block, generator) {
 };
 BlockMirrorTextToBlocks.prototype['ast_Name'] = function (node, parent) {
   var id = node.id;
-  var ctx = node.ctx;
   if (id.v === python.pythonGenerator.blank) {
     return null;
-  } else {
-    return BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
-      "VAR": id.v
-    });
   }
+  return BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
+    "VAR": id.v
+  });
 };
 Blockly.Blocks['ast_Assign'] = {
   init: function init() {
@@ -5095,17 +5089,13 @@ python.pythonGenerator.forBlock['ast_Expr'] = function (block, generator) {
   return value + "\n";
 };
 BlockMirrorTextToBlocks.prototype['ast_Expr'] = function (node, parent) {
-  var value = node.value;
-  var converted = this.convert(value, node);
+  var converted = this.convert(node.value, node);
   if (converted.constructor === Array) {
     return converted[0];
-  } else if (this.isTopLevel(parent)) {
-    return [this.convert(value, node)];
-  } else {
-    return BlockMirrorTextToBlocks.create_block("ast_Expr", node.lineno, {}, {
-      "VALUE": this.convert(value, node)
-    });
   }
+  return BlockMirrorTextToBlocks.create_block("ast_Expr", node.lineno, {}, {
+    "VALUE": converted
+  });
 };
 BlockMirrorTextToBlocks.UNARYOPS = [["+", "UAdd", 'Do nothing to the number'], ["-", "USub", 'Make the number negative'], ["not", "Not", 'Return the logical opposite of the value.'], ["~", "Invert", 'Take the bit inversion of the number']];
 BlockMirrorTextToBlocks.UNARYOPS.forEach(function (unaryop) {

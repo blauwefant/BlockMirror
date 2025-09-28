@@ -157,7 +157,7 @@ BlockMirrorTextToBlocks.prototype.getSourceCode = function (frm, to) {
 
 BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
     this.levelIndex += 1;
-    let is_top_level = this.isTopLevel(parent);
+    let is_top_level = this.isStatementContainer(parent);
     // Empty body, return nothing
     /*if (node.length === 0) {
         return null;
@@ -343,13 +343,6 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
     this.levelIndex -= 1;
 
     return children;
-};
-
-BlockMirrorTextToBlocks.prototype.TOP_LEVEL_NODES = ['Module', 'Expression', 'Interactive', 'Suite'];
-
-BlockMirrorTextToBlocks.prototype.isTopLevel = function (parent) {
-
-    return !parent || this.TOP_LEVEL_NODES.indexOf(parent._astname) !== -1;
 };
 
 BlockMirrorTextToBlocks.prototype.isStatementContainer = function(ast) {
