@@ -5071,7 +5071,7 @@ BlockMirrorTextToBlocks.prototype['ast_Expr'] = function (node, parent) {
   var converted = this.convert(node.value, node);
   if (converted.constructor === Array) {
     return converted[0];
-  } else if (this.isTopLevel(parent) && parent.body.length === 1) {
+  } else if (this.isTopLevel(parent) && this.filename === "toolbox.py") {
     // For toolbox only
     return converted;
   }
