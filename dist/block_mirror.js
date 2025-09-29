@@ -1617,7 +1617,7 @@ BlockMirrorTextToBlocks.prototype.getSourceCode = function (frm, to) {
 };
 BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   this.levelIndex += 1;
-  var is_top_level = this.isStatementContainer(parent);
+  var is_top_level = this.isTopLevel(parent);
   // Empty body, return nothing
   /*if (node.length === 0) {
       return null;
@@ -1784,8 +1784,11 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   this.levelIndex -= 1;
   return children;
 };
+BlockMirrorTextToBlocks.prototype.isTopLevel = function (ast) {
+  return !ast || ast instanceof Sk.astnodes.Module || ast instanceof Sk.astnodes.Expression || ast instanceof Sk.astnodes.Interactive || ast instanceof Sk.astnodes.Suite;
+};
 BlockMirrorTextToBlocks.prototype.isStatementContainer = function (ast) {
-  return ast instanceof Sk.astnodes.Module || ast instanceof Sk.astnodes.Expression || ast instanceof Sk.astnodes.Interactive || ast instanceof Sk.astnodes.Suite || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent);
+  return this.isTopLevel(ast) || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent);
 };
 BlockMirrorTextToBlocks.prototype.convert = function (node, parent) {
   var functionName = 'ast_' + node._astname;
@@ -5060,31 +5063,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
   "colour": BlockMirrorTextToBlocks.COLOR.PYTHON
 });
 python.pythonGenerator.forBlock['ast_Expr'] = function (block, generator) {
-  // Numeric value.
-  var order = python.Order.NONE;
-
-  // Generate more optimal parentheses:
-  var _iterator33 = _createForOfIteratorHelper(block.getChildren()),
-    _step33;
-  try {
-    for (_iterator33.s(); !(_step33 = _iterator33.n()).done;) {
-      var childBlock = _step33.value;
-      if (childBlock.type === 'ast_Expr') {
-        // Nothing to do
-      } else if (childBlock.type === 'ast_Call') {
-        order = Math.min(order, python.Order.FUNCTION_CALL);
-      } else if (childBlock.type === "ast_Attribute") {
-        order = Math.min(order, python.Order.MEMBER);
-      } else {
-        order = Math.min(order, python.Order.ATOMIC);
-      }
-    }
-  } catch (err) {
-    _iterator33.e(err);
-  } finally {
-    _iterator33.f();
-  }
-  var value = python.pythonGenerator.valueToCode(block, 'VALUE', order) || python.pythonGenerator.blank;
+  var value = python.pythonGenerator.valueToCode(block, 'VALUE', python.Order.NONE) || python.pythonGenerator.blank;
   // TODO: Assemble JavaScript into code variable.
   return value + "\n";
 };
@@ -5092,6 +5071,9 @@ BlockMirrorTextToBlocks.prototype['ast_Expr'] = function (node, parent) {
   var converted = this.convert(node.value, node);
   if (converted.constructor === Array) {
     return converted[0];
+  } else if (this.isTopLevel(parent) && parent.body.length === 1) {
+    // For toolbox only
+    return converted;
   }
   return BlockMirrorTextToBlocks.create_block("ast_Expr", node.lineno, {}, {
     "VALUE": converted
@@ -6491,7 +6473,6 @@ Blockly.Blocks['ast_Attribute'] = {
     this.setInputsInline(true);
     this.setOutput(true, null);
     this.setPreviousStatement(true, null);
-    this.setNextStatement(true, null);
     this.premessage_ = "";
     this.message_ = "";
     this.postmessage_ = "";
@@ -6596,7 +6577,7 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
   var mutations = {
     "@returns": returns,
     "@premessage": '',
-    "@message": '',
+    "@message": '.',
     "@postmessage": '',
     "@import": '',
     "@full": false,
@@ -6649,13 +6630,7 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
       "ATTR": attrStr
     }, {}, {}, mutations);
   }
-  if (this.isStatementContainer(parent)) {
-    // Return as statement
-    return [newBlock];
-  } else {
-    // Return as expression
-    return newBlock;
-  }
+  return newBlock;
 };
 
 // TODO: Support stuff like "append" where the message is after the value input

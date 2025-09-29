@@ -157,7 +157,7 @@ BlockMirrorTextToBlocks.prototype.getSourceCode = function (frm, to) {
 
 BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
     this.levelIndex += 1;
-    let is_top_level = this.isStatementContainer(parent);
+    let is_top_level = this.isTopLevel(parent);
     // Empty body, return nothing
     /*if (node.length === 0) {
         return null;
@@ -345,13 +345,18 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
     return children;
 };
 
-BlockMirrorTextToBlocks.prototype.isStatementContainer = function(ast) {
-    return (
+BlockMirrorTextToBlocks.prototype.isTopLevel = function (ast) {
+
+    return !ast || (
         ast instanceof Sk.astnodes.Module ||
         ast instanceof Sk.astnodes.Expression ||
         ast instanceof Sk.astnodes.Interactive ||
         ast instanceof Sk.astnodes.Suite
-    ) || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent)
+    )
+};
+
+BlockMirrorTextToBlocks.prototype.isStatementContainer = function(ast) {
+    return  this.isTopLevel(ast) || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent)
 }
 
 BlockMirrorTextToBlocks.prototype.convert = function (node, parent) {

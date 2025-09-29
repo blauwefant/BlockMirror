@@ -11,25 +11,9 @@ BlockMirrorTextToBlocks.BLOCKS.push({
 });
 
 python.pythonGenerator.forBlock['ast_Expr'] = function(block, generator) {
-    // Numeric value.
-    let order = python.Order.NONE;
-
-    // Generate more optimal parentheses:
-    for (const childBlock of block.getChildren()) {
-        if (childBlock.type === 'ast_Expr') {
-            // Nothing to do
-        } else if (childBlock.type === 'ast_Call') {
-            order = Math.min(order, python.Order.FUNCTION_CALL)
-        } else if (childBlock.type === "ast_Attribute") {
-            order = Math.min(order, python.Order.MEMBER);
-        } else {
-            order = Math.min(order, python.Order.ATOMIC)
-        }
-    }
-
-    var value = python.pythonGenerator.valueToCode(block, 'VALUE', order) || python.pythonGenerator.blank;
+    var value = python.pythonGenerator.valueToCode(block, 'VALUE', python.Order.NONE) || python.pythonGenerator.blank;
     // TODO: Assemble JavaScript into code variable.
-    return value+"\n";
+    return value + "\n";
 };
 
 BlockMirrorTextToBlocks.prototype['ast_Expr'] = function (node, parent) {
@@ -37,6 +21,9 @@ BlockMirrorTextToBlocks.prototype['ast_Expr'] = function (node, parent) {
 
     if (converted.constructor === Array) {
         return converted[0];
+    } else if (this.isTopLevel(parent) && parent.body.length === 1) {
+        // For toolbox only
+        return converted;
     }
 
     return BlockMirrorTextToBlocks.create_block("ast_Expr", node.lineno, {}, {

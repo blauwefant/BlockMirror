@@ -3,7 +3,6 @@ Blockly.Blocks['ast_Attribute'] = {
         this.setInputsInline(true);
         this.setOutput(true, null);
         this.setPreviousStatement(true, null);
-        this.setNextStatement(true, null);
         this.premessage_ = "";
         this.message_ = "";
         this.postmessage_ = "";
@@ -108,6 +107,7 @@ python.pythonGenerator.forBlock['ast_Attribute'] = function(block, generator) {
         // Return as expression
         return [code, python.Order.MEMBER];
     }
+
     return code + "\n";
 };
 
@@ -121,7 +121,7 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
     let mutations = {
         "@returns": returns,
         "@premessage": '',
-        "@message": '',
+        "@message": '.',
         "@postmessage": '',
         "@import": '',
         "@full": false,
@@ -173,11 +173,5 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
         }, {}, {}, mutations);
     }
 
-    if (this.isStatementContainer(parent)) {
-        // Return as statement
-        return [newBlock];
-    } else {
-        // Return as expression
-        return newBlock;
-    }
+    return newBlock;
 }
