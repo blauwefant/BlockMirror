@@ -609,17 +609,19 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                 argumentsMutation["UNKNOWN_ARG:" + i] = document.createTextNode(fromLibrary.fullName)
             }
         }
-        for (let i = overallI; i < fromLibrary.parameters.length - fromLibrary.argumentOffset; i += 1) {
-            let pythonParameter = fromLibrary.parameters[i + fromLibrary.argumentOffset]
-            if (pythonParameter.keyword || pythonParameter.preferKeyword) {
-                break
-            }
+        if (this.blockMirror.configuration.showDefaultArguments) {
+            for (let i = overallI; i < fromLibrary.parameters.length - fromLibrary.argumentOffset; i += 1) {
+                let pythonParameter = fromLibrary.parameters[i + fromLibrary.argumentOffset]
+                if (pythonParameter.keyword || pythonParameter.preferKeyword) {
+                    break
+                }
 
-            if (pythonParameter.defaultValue !== "") {
-                argumentsNormal["ARG" + i] = this.convertSource("positionalDefaultValue.py", "\n".repeat(node.lineno - 1) + "p=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE']?.children[0]
+                if (pythonParameter.defaultValue !== "") {
+                    argumentsNormal["ARG" + i] = pythonParameter.defaultValueBlocks(this)
+                }
+                argumentsMutation["UNKNOWN_ARG:" + i] = document.createTextNode(fromLibrary.fullName)
+                overallI += 1
             }
-            argumentsMutation["UNKNOWN_ARG:" + i] = document.createTextNode(fromLibrary.fullName)
-            overallI += 1
         }
     }
     let foundKeywords = new Set();
@@ -653,7 +655,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             }
         }
     }
-    if (fromLibrary instanceof PythonFunction) {
+    if (this.blockMirror.configuration.showDefaultArguments && fromLibrary instanceof PythonFunction) {
         for (let i = overallIBeforeKeywords; i < fromLibrary.parameters.length - fromLibrary.argumentOffset; i += 1) {
             let pythonParameter = fromLibrary.parameters[i + fromLibrary.argumentOffset]
             if (!(pythonParameter.keyword || pythonParameter.preferKeyword) || foundKeywords.has(pythonParameter.name)) {
@@ -665,7 +667,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             }
 
             if (pythonParameter.defaultValue !== "") {
-                argumentsNormal["ARG" + overallI] = this.convertSource("keywordDefaultValue.py", "\n".repeat(node.lineno - 1) + "k=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE'].children[0]
+                argumentsNormal["ARG" + overallI] = pythonParameter.defaultValueBlocks(this)
             }
             argumentsMutation["KEYWORD:" + pythonParameter.names.join(' ')] = document.createTextNode(fromLibrary.fullName + " " + pythonParameter.name)
             overallI += 1

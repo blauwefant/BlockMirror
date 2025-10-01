@@ -471,6 +471,7 @@ function BlockMirror(configuration) {
   this.setMode(this.configuration.viewMode);
 }
 BlockMirror.prototype.validateConfiguration = function (configuration) {
+  var _configuration$readOn, _configuration$height, _configuration$viewMo, _configuration$skipSk, _configuration$blockD, _configuration$toolbo, _configuration$render, _configuration$imageU, _configuration$imageD, _configuration$imageL, _configuration$imageD2, _configuration$imageM, _configuration$librar, _configuration$transl, _configuration$prefer, _configuration$showDe, _configuration$move;
   this.configuration = {};
 
   // Container
@@ -497,38 +498,44 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
   }
 
   // readOnly
-  this.configuration['readOnly'] = configuration['readOnly'] || false;
+  this.configuration['readOnly'] = (_configuration$readOn = configuration['readOnly']) !== null && _configuration$readOn !== void 0 ? _configuration$readOn : false;
 
   // height
-  this.configuration.height = configuration.height || 500;
+  this.configuration.height = (_configuration$height = configuration.height) !== null && _configuration$height !== void 0 ? _configuration$height : 500;
 
   // viewMode
-  this.configuration.viewMode = configuration.viewMode || 'split';
+  this.configuration.viewMode = (_configuration$viewMo = configuration.viewMode) !== null && _configuration$viewMo !== void 0 ? _configuration$viewMo : 'split';
 
   // Need to load skulpt?
-  this.configuration.skipSkulpt = configuration.skipSkulpt || false;
+  this.configuration.skipSkulpt = (_configuration$skipSk = configuration.skipSkulpt) !== null && _configuration$skipSk !== void 0 ? _configuration$skipSk : false;
 
   // Delay?
-  this.configuration.blockDelay = configuration.blockDelay || false;
+  this.configuration.blockDelay = (_configuration$blockD = configuration.blockDelay) !== null && _configuration$blockD !== void 0 ? _configuration$blockD : false;
 
   // Toolbox
-  this.configuration.toolbox = configuration.toolbox || "normal";
-  this.configuration.renderer = configuration.renderer || 'Thrasos';
+  this.configuration.toolbox = (_configuration$toolbo = configuration.toolbox) !== null && _configuration$toolbo !== void 0 ? _configuration$toolbo : "normal";
+  this.configuration.renderer = (_configuration$render = configuration.renderer) !== null && _configuration$render !== void 0 ? _configuration$render : 'Thrasos';
 
   // Convert image URLs?
-  this.configuration.imageUploadHook = configuration.imageUploadHook || function (old) {
+  this.configuration.imageUploadHook = (_configuration$imageU = configuration.imageUploadHook) !== null && _configuration$imageU !== void 0 ? _configuration$imageU : function (old) {
     return Promise.resolve(old);
   };
-  this.configuration.imageDownloadHook = configuration.imageDownloadHook || function (old) {
+  this.configuration.imageDownloadHook = (_configuration$imageD = configuration.imageDownloadHook) !== null && _configuration$imageD !== void 0 ? _configuration$imageD : function (old) {
     return old;
   };
-  this.configuration.imageLiteralHook = configuration.imageLiteralHook || function (old) {
+  this.configuration.imageLiteralHook = (_configuration$imageL = configuration.imageLiteralHook) !== null && _configuration$imageL !== void 0 ? _configuration$imageL : function (old) {
     return old;
   };
-  this.configuration.imageDetection = configuration.imageDetection || 'string';
-  this.configuration.imageMode = configuration.imageMode || false;
-  this.configuration.libraries = configuration.libraries || BlockMirror.LIBRARIES;
-  this.configuration.preferFullAttributeBlocks = configuration.preferFullAttributeBlocks || false;
+  this.configuration.imageDetection = (_configuration$imageD2 = configuration.imageDetection) !== null && _configuration$imageD2 !== void 0 ? _configuration$imageD2 : 'string';
+  this.configuration.imageMode = (_configuration$imageM = configuration.imageMode) !== null && _configuration$imageM !== void 0 ? _configuration$imageM : false;
+  this.configuration.libraries = (_configuration$librar = configuration.libraries) !== null && _configuration$librar !== void 0 ? _configuration$librar : BlockMirror.LIBRARIES;
+  this.configuration.translate = (_configuration$transl = configuration.translate) !== null && _configuration$transl !== void 0 ? _configuration$transl : function (identifier, defaultValue) {
+    var _namespace = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : None;
+    return defaultValue === undefined || defaultValue === null ? identifier : defaultValue;
+  };
+  this.configuration.preferFullAttributeBlocks = (_configuration$prefer = configuration.preferFullAttributeBlocks) !== null && _configuration$prefer !== void 0 ? _configuration$prefer : false;
+  this.configuration.showDefaultArguments = (_configuration$showDe = configuration.showDefaultArguments) !== null && _configuration$showDe !== void 0 ? _configuration$showDe : false;
+  this.configuration.move = (_configuration$move = configuration.move) !== null && _configuration$move !== void 0 ? _configuration$move : {};
 };
 BlockMirror.prototype.initializeVariables = function () {
   this.tags = {
@@ -573,7 +580,7 @@ BlockMirror.prototype.initializeVariables = function () {
 
   // Listeners
   this.listeners_ = [];
-  this.libraries = new Libraries(this.configuration.libraries);
+  this.libraries = new Libraries(this.configuration.libraries, this.configuration.translate);
 };
 BlockMirror.prototype.loadSkulpt = function () {
   Sk.configure({
@@ -1035,6 +1042,7 @@ function BlockMirrorBlockEditor(blockMirror) {
 
   // Have to call BEFORE we inject, or Blockly will delete the css string!
   // this.loadBlocklyCSS();
+  this.baseToolboxContent_ = this.makeBaseToolboxContent();
 
   // Inject Blockly
   var blocklyOptions = {
@@ -1049,7 +1057,8 @@ function BlockMirrorBlockEditor(blockMirror) {
     readOnly: blockMirror.configuration.readOnly,
     scrollbars: true,
     toolbox: this.makeToolbox(),
-    renderer: blockMirror.configuration.renderer
+    renderer: blockMirror.configuration.renderer,
+    move: blockMirror.configuration.move
   };
   this.workspace = Blockly.inject(blockMirror.tags.blockEditor, blocklyOptions);
   this.workspace.libraries = blockMirror.libraries;
@@ -1176,7 +1185,7 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
     return [header, body, footer].join("\n");
   }).join("\n");
 };
-BlockMirrorBlockEditor.prototype.makeToolbox = function () {
+BlockMirrorBlockEditor.prototype.makeBaseToolboxContent = function () {
   var toolbox = this.blockMirror.configuration.toolbox;
   // Use palette if it exists, otherwise assume it is a custom one.
   if (toolbox in this.TOOLBOXES) {
@@ -1201,6 +1210,10 @@ BlockMirrorBlockEditor.prototype.makeToolbox = function () {
   for (var name in BlockMirrorBlockEditor.EXTRA_TOOLS) {
     toolbox += BlockMirrorBlockEditor.EXTRA_TOOLS[name];
   }
+  return toolbox;
+};
+BlockMirrorBlockEditor.prototype.makeToolbox = function () {
+  var toolbox = this.baseToolboxContent_;
   toolbox += this.blockMirror.libraries.toToolbox(this.blockMirror.textToBlocks);
   return '<xml id="toolbox" style="display:none">' + toolbox + '</xml>';
 };
@@ -1788,7 +1801,7 @@ BlockMirrorTextToBlocks.prototype.isTopLevel = function (ast) {
   return !ast || ast instanceof Sk.astnodes.Module || ast instanceof Sk.astnodes.Expression || ast instanceof Sk.astnodes.Interactive || ast instanceof Sk.astnodes.Suite;
 };
 BlockMirrorTextToBlocks.prototype.isStatementContainer = function (ast) {
-  return this.isTopLevel(ast) || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent);
+  return this.isTopLevel(ast) || ast instanceof Sk.astnodes.FunctionDef || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent);
 };
 BlockMirrorTextToBlocks.prototype.convert = function (node, parent) {
   var functionName = 'ast_' + node._astname;
@@ -1980,24 +1993,41 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function (node) {
     var name = Sk.ffi.remapToJs(node.id);
     var fullTypeName = (_this$imports$getType = this.imports.getType(name)) !== null && _this$imports$getType !== void 0 ? _this$imports$getType : name;
     return this.blockMirror.libraries.resolve(fullTypeName);
+  } else if (node._astname === 'Call') {
+    var _this$imports$getType2;
+    var _fullTypeName = (_this$imports$getType2 = this.imports.getType(Sk.ffi.remapToJs(node.func.id))) !== null && _this$imports$getType2 !== void 0 ? _this$imports$getType2 : node.func.id;
+    var resolved = this.blockMirror.libraries.resolve(_fullTypeName);
+    if (resolved instanceof PythonClass) {
+      return resolved;
+    } else if (resolved instanceof PythonFunction && resolved.typeHint) {
+      // TODO more elegantly resolve to single type if possible
+      var flattenedTypeHint = resolved.typeHint.flattened();
+      if (!flattenedTypeHint.isUnion() && flattenedTypeHint.isOptional()) {
+        var value = flattenedTypeHint.value;
+        return this.blockMirror.libraries.resolve(value);
+      }
+    }
   } else if (node._astname === 'Attribute') {
     var caller = node.value;
     var potentialModule = this.getAsModule(caller);
     if (potentialModule) {
-      var _fullTypeName = this.variables.getSingleType(potentialModule);
-      if (!_fullTypeName) {
-        // Needed for variables defined in the root module of a library
-        var resolvedFromLibrary = this.blockMirror.libraries.resolve(potentialModule);
-        if (resolvedFromLibrary instanceof PythonAttribute) {
-          _fullTypeName = resolvedFromLibrary.typeHint.value;
-        }
-      }
-      if (!_fullTypeName) {
-        var _this$imports$getType2;
-        _fullTypeName = (_this$imports$getType2 = this.imports.getType(potentialModule)) !== null && _this$imports$getType2 !== void 0 ? _this$imports$getType2 : potentialModule;
-      }
       var attributeName = Sk.ffi.remapToJs(node.attr);
-      return this.blockMirror.libraries.resolve(_fullTypeName + "." + attributeName);
+      var singleType = this.variables.getSingleType(potentialModule);
+      if (singleType instanceof PythonClass) {
+        return singleType.resolve(attributeName);
+      }
+
+      // Needed for variables defined in the root module of a library
+      var _fullTypeName2;
+      var resolvedFromLibrary = this.blockMirror.libraries.resolve(potentialModule);
+      if (resolvedFromLibrary instanceof PythonAttribute) {
+        _fullTypeName2 = resolvedFromLibrary.typeHint.value;
+      }
+      if (!_fullTypeName2) {
+        var _this$imports$getType3;
+        _fullTypeName2 = (_this$imports$getType3 = this.imports.getType(potentialModule)) !== null && _this$imports$getType3 !== void 0 ? _this$imports$getType3 : potentialModule;
+      }
+      return this.blockMirror.libraries.resolve(_fullTypeName2 + "." + attributeName);
     }
     var callerBlock = this.convert(caller, node._parent); // TODO caller node
 
@@ -2085,10 +2115,12 @@ var PythonModule = /*#__PURE__*/function () {
         comment = _signature$split4[1];
       var member;
       if (PythonTypeAliasType.isA(code)) {
-        member = new PythonTypeAliasType(this, code, comment, inputObject === null || inputObject === void 0 ? void 0 : inputObject.fieldFactory);
+        var translatedComment = this.translate(PythonTypeAliasType.extractName(code), comment);
+        member = new PythonTypeAliasType(this, code, translatedComment, inputObject === null || inputObject === void 0 ? void 0 : inputObject.fieldFactory);
       } else if (PythonFunction.isA(code)) {
         var _inputObject$colour;
-        member = new PythonFunction(this, code, comment, (_inputObject$colour = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour !== void 0 ? _inputObject$colour : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
+        var _translatedComment = this.translateFunctionComment(PythonFunction.extractName(code), comment);
+        member = new PythonFunction(this, code, _translatedComment, (_inputObject$colour = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour !== void 0 ? _inputObject$colour : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
         var _iterator8 = _createForOfIteratorHelper(member.aliases),
           _step8;
         try {
@@ -2103,7 +2135,8 @@ var PythonModule = /*#__PURE__*/function () {
         }
       } else {
         var _inputObject$colour2;
-        member = new PythonAttribute(this, code, comment, (_inputObject$colour2 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour2 !== void 0 ? _inputObject$colour2 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
+        var _translatedComment2 = this.translate(code.split(":", 1)[0], comment);
+        member = new PythonAttribute(this, code, _translatedComment2, (_inputObject$colour2 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour2 !== void 0 ? _inputObject$colour2 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
         var _iterator9 = _createForOfIteratorHelper(member.aliases),
           _step9;
         try {
@@ -2118,6 +2151,28 @@ var PythonModule = /*#__PURE__*/function () {
         }
       }
       this.members.set(member.name, member);
+    }
+  }, {
+    key: "translate",
+    value: function translate(memberName, defaultValue) {
+      if (this.fullName === "") {
+        return this.library.translate(memberName, defaultValue);
+      }
+      return this.library.translate(this.fullName + "." + memberName, defaultValue);
+    }
+  }, {
+    key: "translateFunctionComment",
+    value: function translateFunctionComment(memberName, defaultValue) {
+      if (defaultValue) {
+        var _defaultValue$split = defaultValue.split("(", 2),
+          _defaultValue$split2 = _slicedToArray(_defaultValue$split, 2),
+          toTranslate = _defaultValue$split2[0],
+          tail = _defaultValue$split2[1];
+        if (tail) {
+          return this.translate(memberName, toTranslate) + "(" + tail;
+        }
+      }
+      return this.translate(memberName, defaultValue);
     }
   }, {
     key: "toString",
@@ -2423,8 +2478,7 @@ var PythonTypeAliasType = /*#__PURE__*/function (_PythonTypeHint) {
     if (signature.startsWith("type ")) {
       signature = signature.substring(5);
     }
-    var name = signature.split('=', 1)[0];
-    _this9.name = name.trim();
+    _this9.name = PythonTypeAliasType.extractName(signature);
     _this9.fullName = (pythonModule === null || pythonModule === void 0 ? void 0 : pythonModule.fullName) === "" ? _this9.name : (pythonModule === null || pythonModule === void 0 ? void 0 : pythonModule.fullName) + "." + _this9.name;
     _this9.comment = (_comment$trim = comment === null || comment === void 0 ? void 0 : comment.trim()) !== null && _comment$trim !== void 0 ? _comment$trim : "";
     _this9.resolvedFieldFactory = _resolveFunction(fieldFactory, _this9.fullName);
@@ -2436,6 +2490,11 @@ var PythonTypeAliasType = /*#__PURE__*/function (_PythonTypeHint) {
     key: "isA",
     value: function isA(signature) {
       return signature.startsWith("type ");
+    }
+  }, {
+    key: "extractName",
+    value: function extractName(signature) {
+      return signature.split('=', 1)[0].trim();
     }
   }]);
 }(PythonTypeHint);
@@ -2564,6 +2623,23 @@ var PythonParameter = /*#__PURE__*/function () {
           }
         }
       }
+    }
+  }, {
+    key: "defaultValueBlocks",
+    value: function defaultValueBlocks(textToBlocks) {
+      var _converted$0$children;
+      var pythonSource, fictionalFilename;
+      if (this.keyword || this.preferKeyword) {
+        pythonSource = "k=" + this.defaultValue;
+        fictionalFilename = "keywordDefaultValue.py";
+      } else {
+        pythonSource = "p=" + this.defaultValue;
+        fictionalFilename = "positionalDefaultValue.py";
+      }
+      var parse = Sk.parse(fictionalFilename, pythonSource);
+      var ast = Sk.astFromParse(parse.cst, fictionalFilename, parse.flags);
+      var converted = textToBlocks.convert(ast);
+      return (_converted$0$children = converted[0].children['VALUE']) === null || _converted$0$children === void 0 ? void 0 : _converted$0$children.children[0];
     }
   }]);
 }();
@@ -3013,11 +3089,11 @@ var PythonClass = /*#__PURE__*/function () {
       if (PythonFunction.isA(code)) {
         if (PythonConstructorMethod.isA(code)) {
           var _inputObject$colour3;
-          member = new PythonConstructorMethod(this, code, comment, (_inputObject$colour3 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour3 !== void 0 ? _inputObject$colour3 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
+          member = new PythonConstructorMethod(this, code, this.pythonModule.translateFunctionComment(this.name, comment), (_inputObject$colour3 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour3 !== void 0 ? _inputObject$colour3 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
           this.colour = member.colour;
         } else {
           var _inputObject$colour4;
-          member = new PythonMethod(this, code, comment, (_inputObject$colour4 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour4 !== void 0 ? _inputObject$colour4 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
+          member = new PythonMethod(this, code, this.translateFunctionComment(PythonFunction.extractName(code), comment), (_inputObject$colour4 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour4 !== void 0 ? _inputObject$colour4 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
           var _iterator20 = _createForOfIteratorHelper(member.aliases),
             _step20;
           try {
@@ -3033,7 +3109,7 @@ var PythonClass = /*#__PURE__*/function () {
         }
       } else {
         var _inputObject$colour5;
-        member = new PythonAttribute(this, code, comment, (_inputObject$colour5 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour5 !== void 0 ? _inputObject$colour5 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
+        member = new PythonAttribute(this, code, this.translate(code.split(":", 1)[0], comment), (_inputObject$colour5 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour5 !== void 0 ? _inputObject$colour5 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
         var _iterator21 = _createForOfIteratorHelper(member.aliases),
           _step21;
         try {
@@ -3048,6 +3124,25 @@ var PythonClass = /*#__PURE__*/function () {
         }
       }
       this.members.set(member.name, member);
+    }
+  }, {
+    key: "translate",
+    value: function translate(memberName, defaultValue) {
+      return this.pythonModule.translate(this.name + "." + memberName, defaultValue);
+    }
+  }, {
+    key: "translateFunctionComment",
+    value: function translateFunctionComment(memberName, defaultValue) {
+      if (defaultValue) {
+        var _defaultValue$split3 = defaultValue.split("(", 2),
+          _defaultValue$split4 = _slicedToArray(_defaultValue$split3, 2),
+          toTranslate = _defaultValue$split4[0],
+          tail = _defaultValue$split4[1];
+        if (tail) {
+          return this.translate(memberName, toTranslate) + "(" + tail;
+        }
+      }
+      return this.translate(memberName, defaultValue);
     }
   }, {
     key: "toString",
@@ -3122,6 +3217,7 @@ var PythonAttribute = /*#__PURE__*/function () {
     name = _this$names2[0];
     aliases = _this$names2.slice(1);
     this.name = name.trim();
+    this.fullName = pythonClassOrModule.fullName === "" ? this.name : pythonClassOrModule.fullname + "." + this.name;
     this.typeHint = typeHint ? new PythonTypeHint(this.pythonModule.library.libraries, typeHint) : null;
     this.colour = (_resolve_colour3 = _resolve_colour(colour)) !== null && _resolve_colour3 !== void 0 ? _resolve_colour3 : pythonClassOrModule.colour;
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
@@ -3440,14 +3536,22 @@ var Library = /*#__PURE__*/function () {
         _iterator28.f();
       }
     }
+  }, {
+    key: "translate",
+    value: function translate(identifier, defaultValue) {
+      return this.libraries.translate(identifier, defaultValue, this.name.split(" ", 1)[0]);
+    }
   }]);
 }();
 var Libraries = /*#__PURE__*/function (_Map) {
-  function Libraries(librariesConfiguration) {
+  function Libraries(librariesConfiguration, translate) {
     var _this13;
     _classCallCheck(this, Libraries);
     _this13 = _callSuper(this, Libraries);
     _this13.defaultColor = _resolve_colour("FUNCTIONS");
+    _this13.translate_from_config = translate || function (identifier, defaultValue) {
+      return defaultValue;
+    };
     for (var name in librariesConfiguration) {
       _this13.set(name, new Library(name, librariesConfiguration[name], _this13));
     }
@@ -3526,6 +3630,11 @@ var Libraries = /*#__PURE__*/function (_Map) {
       } finally {
         _iterator31.f();
       }
+    }
+  }, {
+    key: "translate",
+    value: function translate(identifier, defaultValue, namespace) {
+      return this.translate_from_config(identifier, defaultValue || " ", namespace).trim();
     }
   }]);
 }(/*#__PURE__*/_wrapNativeSuper(Map));
@@ -4514,7 +4623,12 @@ BlockMirrorTextToBlocks.prototype['ast_Assign'] = function (node, parent) {
   var simpleTarget = targets.length === 1 && targets[0]._astname === 'Name';
   if (simpleTarget) {
     values = {};
-    fields['VAR'] = Sk.ffi.remapToJs(targets[0].id);
+    var variableName = Sk.ffi.remapToJs(targets[0].id);
+    fields['VAR'] = variableName;
+    var type = this.resolveFromLibrary(value);
+    if (type) {
+      this.variables.add(type, variableName);
+    }
   } else {
     values = this.convertElements("TARGET", targets, node);
   }
@@ -7211,17 +7325,18 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         argumentsMutation["UNKNOWN_ARG:" + _i7] = document.createTextNode(fromLibrary.fullName);
       }
     }
-    for (var _i8 = overallI; _i8 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i8 += 1) {
-      var pythonParameter = fromLibrary.parameters[_i8 + fromLibrary.argumentOffset];
-      if (pythonParameter.keyword || pythonParameter.preferKeyword) {
-        break;
+    if (this.blockMirror.configuration.showDefaultArguments) {
+      for (var _i8 = overallI; _i8 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i8 += 1) {
+        var pythonParameter = fromLibrary.parameters[_i8 + fromLibrary.argumentOffset];
+        if (pythonParameter.keyword || pythonParameter.preferKeyword) {
+          break;
+        }
+        if (pythonParameter.defaultValue !== "") {
+          argumentsNormal["ARG" + _i8] = pythonParameter.defaultValueBlocks(this);
+        }
+        argumentsMutation["UNKNOWN_ARG:" + _i8] = document.createTextNode(fromLibrary.fullName);
+        overallI += 1;
       }
-      if (pythonParameter.defaultValue !== "") {
-        var _this$convertSource$r;
-        argumentsNormal["ARG" + _i8] = (_this$convertSource$r = this.convertSource("positionalDefaultValue.py", "\n".repeat(node.lineno - 1) + "p=" + pythonParameter.defaultValue).rawXml.children[0].children['VALUE']) === null || _this$convertSource$r === void 0 ? void 0 : _this$convertSource$r.children[0];
-      }
-      argumentsMutation["UNKNOWN_ARG:" + _i8] = document.createTextNode(fromLibrary.fullName);
-      overallI += 1;
     }
   }
   var foundKeywords = new Set();
@@ -7258,7 +7373,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
       _loop4();
     }
   }
-  if (fromLibrary instanceof PythonFunction) {
+  if (this.blockMirror.configuration.showDefaultArguments && fromLibrary instanceof PythonFunction) {
     for (var _i0 = overallIBeforeKeywords; _i0 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i0 += 1) {
       var _pythonParameter = fromLibrary.parameters[_i0 + fromLibrary.argumentOffset];
       if (!(_pythonParameter.keyword || _pythonParameter.preferKeyword) || foundKeywords.has(_pythonParameter.name)) {
@@ -7268,7 +7383,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         continue;
       }
       if (_pythonParameter.defaultValue !== "") {
-        argumentsNormal["ARG" + overallI] = this.convertSource("keywordDefaultValue.py", "\n".repeat(node.lineno - 1) + "k=" + _pythonParameter.defaultValue).rawXml.children[0].children['VALUE'].children[0];
+        argumentsNormal["ARG" + overallI] = _pythonParameter.defaultValueBlocks(this);
       }
       argumentsMutation["KEYWORD:" + _pythonParameter.names.join(' ')] = document.createTextNode(fromLibrary.fullName + " " + _pythonParameter.name);
       overallI += 1;
@@ -9380,7 +9495,7 @@ BlockMirror.LIBRARIES['builtin file'] = {
   "": [
     "input(prompt: str | None = None): str",
     "open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None): Any",
-    "print(*objects, sep: str = ' ', end: str ='\\n', file=None, flush: bool = False)"
+    "print(*objects, sep: str = ' ', end: str ='\\n', file=None, flush: bool = False): None"
   ]
 }
 ;

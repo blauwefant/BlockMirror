@@ -35,12 +35,14 @@ class PythonModule {
     let member;
 
     if (PythonTypeAliasType.isA(code)) {
-      member = new PythonTypeAliasType(this, code, comment, inputObject?.fieldFactory)
+      const translatedComment = this.translate(PythonTypeAliasType.extractName(code), comment);
+      member = new PythonTypeAliasType(this, code, translatedComment, inputObject?.fieldFactory)
     } else if (PythonFunction.isA(code)) {
+      const translatedComment = this.translateFunctionComment(PythonFunction.extractName(code), comment);
       member = new PythonFunction(
           this,
           code,
-          comment,
+          translatedComment,
           inputObject?.colour ?? inputObject?.color,
           inputObject?.custom
       );
@@ -49,10 +51,11 @@ class PythonModule {
         this.members.set(alias.name, alias);
       }
     } else {
+      const translatedComment = this.translate(code.split(":", 1)[0], comment);
       member = new PythonAttribute(
           this,
           code,
-          comment,
+          translatedComment,
           inputObject?.colour ?? inputObject?.color,
       );
 
@@ -62,6 +65,24 @@ class PythonModule {
     }
 
     this.members.set(member.name, member);
+  }
+
+  translate(memberName, defaultValue) {
+    if (this.fullName === "") {
+      return this.library.translate(memberName, defaultValue);
+    }
+    return this.library.translate(this.fullName + "." + memberName, defaultValue);
+  }
+
+  translateFunctionComment(memberName, defaultValue) {
+    if (defaultValue) {
+      const [toTranslate, tail] = defaultValue.split("(", 2);
+
+      if (tail) {
+        return this.translate(memberName, toTranslate) + "(" + tail;
+      }
+    }
+    return this.translate(memberName, defaultValue);
   }
 
   constructor(library, signature, comment, members) {
@@ -329,6 +350,10 @@ class PythonTypeAliasType extends PythonTypeHint {
     return signature.startsWith("type ");
   }
 
+  static extractName(signature) {
+    return signature.split('=', 1)[0].trim();
+  }
+
   constructor(pythonModule, signature, comment, fieldFactory) {
     super(pythonModule.library.libraries, signature.substring(signature.indexOf('=') + 1).trim());
 
@@ -336,8 +361,7 @@ class PythonTypeAliasType extends PythonTypeHint {
       signature = signature.substring(5);
     }
 
-    let name = signature.split('=', 1)[0]
-    this.name = name.trim()
+    this.name = PythonTypeAliasType.extractName(signature);
     this.fullName = pythonModule?.fullName === "" ? this.name : (pythonModule?.fullName + "." + this.name);
     this.comment = comment?.trim() ?? ""
     this.resolvedFieldFactory = _resolveFunction(fieldFactory, this.fullName);
@@ -537,6 +561,23 @@ class PythonParameter {
         }
       }
     }
+  }
+
+  defaultValueBlocks(textToBlocks) {
+      let pythonSource, fictionalFilename
+
+      if (this.keyword || this.preferKeyword) {
+          pythonSource = "k=" + this.defaultValue
+          fictionalFilename = "keywordDefaultValue.py"
+      } else {
+          pythonSource = "p=" + this.defaultValue
+          fictionalFilename = "positionalDefaultValue.py"
+      }
+
+      let parse = Sk.parse(fictionalFilename, pythonSource);
+      let ast = Sk.astFromParse(parse.cst, fictionalFilename, parse.flags);
+      let converted = textToBlocks.convert(ast);
+      return converted[0].children['VALUE']?.children[0]
   }
 }
 
@@ -837,7 +878,7 @@ class PythonClass {
         member = new PythonConstructorMethod(
             this,
             code,
-            comment,
+            this.pythonModule.translateFunctionComment(this.name, comment),
             inputObject?.colour ?? inputObject?.color,
             inputObject?.custom
         );
@@ -846,7 +887,7 @@ class PythonClass {
         member = new PythonMethod(
             this,
             code,
-            comment,
+            this.translateFunctionComment(PythonFunction.extractName(code), comment),
             inputObject?.colour ?? inputObject?.color,
             inputObject?.custom
         );
@@ -859,7 +900,7 @@ class PythonClass {
       member = new PythonAttribute(
           this,
           code,
-          comment,
+          this.translate(code.split(":", 1)[0], comment),
           inputObject?.colour ?? inputObject?.color,
       );
 
@@ -869,6 +910,21 @@ class PythonClass {
     }
 
     this.members.set(member.name, member);
+  }
+
+  translate(memberName, defaultValue) {
+    return this.pythonModule.translate(this.name + "." + memberName, defaultValue);
+  }
+
+  translateFunctionComment(memberName, defaultValue) {
+    if (defaultValue) {
+      const [toTranslate, tail] = defaultValue.split("(", 2);
+
+      if (tail) {
+        return this.translate(memberName, toTranslate) + "(" + tail;
+      }
+    }
+    return this.translate(memberName, defaultValue);
   }
 
   constructor(pythonModule, signature, comment, members) {
@@ -990,6 +1046,7 @@ class PythonAttribute {
     let name, aliases
     [name, ...aliases] = this.names
     this.name = name.trim()
+    this.fullName = pythonClassOrModule.fullName === "" ? this.name : pythonClassOrModule.fullname + "." + this.name;
     this.typeHint = typeHint ? new PythonTypeHint(this.pythonModule.library.libraries, typeHint) : null
     this.colour = _resolve_colour(colour) ?? pythonClassOrModule.colour;
 
@@ -1286,12 +1343,17 @@ class Library {
       module.registerImports(typeRegistry)
     }
   }
+
+  translate(identifier, defaultValue) {
+    return this.libraries.translate(identifier, defaultValue, this.name.split(" ", 1)[0]);
+  }
 }
 
 class Libraries extends Map {
-  constructor(librariesConfiguration) {
+  constructor(librariesConfiguration, translate) {
     super()
     this.defaultColor = _resolve_colour("FUNCTIONS")
+    this.translate_from_config = translate || ((identifier, defaultValue) => defaultValue)
     for (let name in librariesConfiguration) {
       this.set(name, new Library(name, librariesConfiguration[name], this))
     }
@@ -1340,6 +1402,10 @@ class Libraries extends Map {
     for (const library of this.values()) {
       library.registerImports(typeRegistry)
     }
+  }
+
+  translate(identifier, defaultValue, namespace) {
+    return this.translate_from_config(identifier, defaultValue || " ", namespace).trim();
   }
 }
 

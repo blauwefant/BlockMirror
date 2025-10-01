@@ -356,7 +356,7 @@ BlockMirrorTextToBlocks.prototype.isTopLevel = function (ast) {
 };
 
 BlockMirrorTextToBlocks.prototype.isStatementContainer = function(ast) {
-    return  this.isTopLevel(ast) || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent)
+    return this.isTopLevel(ast) || ast instanceof Sk.astnodes.FunctionDef || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent)
 }
 
 BlockMirrorTextToBlocks.prototype.convert = function (node, parent) {
@@ -564,27 +564,46 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function(node) {
         let name = Sk.ffi.remapToJs(node.id);
         let fullTypeName = this.imports.getType(name) ?? name
         return this.blockMirror.libraries.resolve(fullTypeName)
+    } else if (node._astname === 'Call') {
+        let fullTypeName = this.imports.getType(Sk.ffi.remapToJs(node.func.id)) ?? node.func.id
+        let resolved = this.blockMirror.libraries.resolve(fullTypeName)
+
+        if (resolved instanceof PythonClass) {
+            return resolved
+        } else if (resolved instanceof PythonFunction && resolved.typeHint) {
+            // TODO more elegantly resolve to single type if possible
+            let flattenedTypeHint = resolved.typeHint.flattened()
+
+            if (!flattenedTypeHint.isUnion() && flattenedTypeHint.isOptional()) {
+                let value = flattenedTypeHint.value
+
+                return this.blockMirror.libraries.resolve(value);
+            }
+        }
     } else if (node._astname === 'Attribute') {
         let caller = node.value;
         let potentialModule = this.getAsModule(caller);
 
         if (potentialModule) {
-            let fullTypeName = this.variables.getSingleType(potentialModule)
+            let attributeName = Sk.ffi.remapToJs(node.attr);
+            let singleType = this.variables.getSingleType(potentialModule)
 
-            if (!fullTypeName) {
-                // Needed for variables defined in the root module of a library
-                let resolvedFromLibrary = this.blockMirror.libraries.resolve(potentialModule);
+            if (singleType instanceof PythonClass) {
+                return singleType.resolve(attributeName)
+            }
 
-                if (resolvedFromLibrary instanceof PythonAttribute) {
-                    fullTypeName = resolvedFromLibrary.typeHint.value
-                }
+            // Needed for variables defined in the root module of a library
+            let fullTypeName
+            let resolvedFromLibrary = this.blockMirror.libraries.resolve(potentialModule);
+
+            if (resolvedFromLibrary instanceof PythonAttribute) {
+                fullTypeName = resolvedFromLibrary.typeHint.value
             }
 
             if (!fullTypeName) {
                 fullTypeName = this.imports.getType(potentialModule) ?? potentialModule
             }
 
-            let attributeName = Sk.ffi.remapToJs(node.attr);
             return this.blockMirror.libraries.resolve(fullTypeName + "." + attributeName)
         }
         let callerBlock = this.convert(caller, node._parent) // TODO caller node

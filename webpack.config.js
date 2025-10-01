@@ -3,10 +3,6 @@ const fs = require('fs')
 const MergeIntoSingleFilePlugin = require('webpack-merge-and-include-globally');
 const Uglify = require("uglify-js");
 const babel = require("@babel/core");
-python = {}
-python.pythonGenerator = {}
-python.pythonGenerator.blank = '_'
-const blockMirrorLibraries = require('./src/libraries.js');
 
 // Blockly
 const JS_BLOCKLY_FILES = [

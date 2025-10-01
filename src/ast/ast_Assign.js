@@ -95,7 +95,13 @@ BlockMirrorTextToBlocks.prototype['ast_Assign'] = function (node, parent) {
     let simpleTarget = (targets.length === 1 && targets[0]._astname === 'Name');
     if (simpleTarget) {
         values = {};
-        fields['VAR'] = Sk.ffi.remapToJs(targets[0].id);
+        let variableName = Sk.ffi.remapToJs(targets[0].id)
+        fields['VAR'] = variableName;
+        let type = this.resolveFromLibrary(value);
+
+        if (type) {
+            this.variables.add(type, variableName)
+        }
     } else {
         values = this.convertElements("TARGET", targets, node);
     }

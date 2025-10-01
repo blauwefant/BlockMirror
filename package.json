@@ -10,7 +10,8 @@
     "build": "webpack --mode production",
     "devbuild": "webpack --mode development",
     "watch": "webpack --watch --mode development",
-    "test": "jest"
+    "test": "jest",
+    "translations": "node export_lib_translations.js"
   },
   "repository": {
     "type": "git",

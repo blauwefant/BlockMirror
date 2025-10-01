@@ -16,6 +16,7 @@ function BlockMirrorBlockEditor(blockMirror) {
 
     // Have to call BEFORE we inject, or Blockly will delete the css string!
     // this.loadBlocklyCSS();
+    this.baseToolboxContent_ = this.makeBaseToolboxContent()
 
     // Inject Blockly
     let blocklyOptions = {
@@ -28,7 +29,8 @@ function BlockMirrorBlockEditor(blockMirror) {
         readOnly: blockMirror.configuration.readOnly,
         scrollbars: true,
         toolbox: this.makeToolbox(),
-        renderer: blockMirror.configuration.renderer
+        renderer: blockMirror.configuration.renderer,
+        move: blockMirror.configuration.move
     };
     this.workspace = Blockly.inject(blockMirror.tags.blockEditor,
         blocklyOptions);
@@ -164,7 +166,7 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
     }).join("\n");
 };
 
-BlockMirrorBlockEditor.prototype.makeToolbox = function () {
+BlockMirrorBlockEditor.prototype.makeBaseToolboxContent = function () {
     let toolbox = this.blockMirror.configuration.toolbox;
     // Use palette if it exists, otherwise assume it is a custom one.
     if (toolbox in this.TOOLBOXES) {
@@ -176,13 +178,13 @@ BlockMirrorBlockEditor.prototype.makeToolbox = function () {
         let originalImports = textToBlocks.imports
         let originalVariables = textToBlocks.variables
         try {
-          textToBlocks.imports = new TypeRegistry()
-          textToBlocks.variables = new TypesRegistry()
-          this.blockMirror.libraries.registerImports(textToBlocks.imports)
-          toolbox = this.toolboxPythonToBlocks(toolbox);
+            textToBlocks.imports = new TypeRegistry()
+            textToBlocks.variables = new TypesRegistry()
+            this.blockMirror.libraries.registerImports(textToBlocks.imports)
+            toolbox = this.toolboxPythonToBlocks(toolbox);
         } finally {
-          textToBlocks.imports = originalImports
-          textToBlocks.variables = originalVariables
+            textToBlocks.imports = originalImports
+            textToBlocks.variables = originalVariables
         }
     }
     // TODO: Fix Hack, this should be configurable by instance rather than by class
@@ -190,9 +192,13 @@ BlockMirrorBlockEditor.prototype.makeToolbox = function () {
         toolbox += BlockMirrorBlockEditor.EXTRA_TOOLS[name];
     }
 
-    toolbox += this.blockMirror.libraries.toToolbox(this.blockMirror.textToBlocks);
+    return toolbox
+}
 
-    return '<xml id="toolbox" style="display:none">'+toolbox+'</xml>';
+BlockMirrorBlockEditor.prototype.makeToolbox = function () {
+    let toolbox = this.baseToolboxContent_;
+    toolbox += this.blockMirror.libraries.toToolbox(this.blockMirror.textToBlocks);
+    return '<xml id="toolbox" style="display:none">' + toolbox + '</xml>';
 };
 
 BlockMirrorBlockEditor.prototype.remakeToolbox = function () {
