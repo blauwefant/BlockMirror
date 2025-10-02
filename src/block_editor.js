@@ -21,16 +21,15 @@ function BlockMirrorBlockEditor(blockMirror) {
     // Inject Blockly
     let blocklyOptions = {
         media: blockMirror.configuration.blocklyMediaPath,
-        // We use special comment blocks
-        zoom: {controls: true},
-        comments: false,
+        comments: false, // We use special comment blocks
         disable: false,
         oneBasedIndex: false,
         readOnly: blockMirror.configuration.readOnly,
         scrollbars: true,
         toolbox: this.makeToolbox(),
         renderer: blockMirror.configuration.renderer,
-        move: blockMirror.configuration.move
+        move: blockMirror.configuration.move,
+        zoom: blockMirror.configuration.zoom
     };
     this.workspace = Blockly.inject(blockMirror.tags.blockEditor,
         blocklyOptions);

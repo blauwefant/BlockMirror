@@ -2,7 +2,6 @@ Blockly.Blocks['ast_Attribute'] = {
     init: function () {
         this.setInputsInline(true);
         this.setOutput(true, null);
-        this.setPreviousStatement(true, null);
         this.premessage_ = "";
         this.message_ = "";
         this.postmessage_ = "";

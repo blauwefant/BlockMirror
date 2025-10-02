@@ -471,7 +471,7 @@ function BlockMirror(configuration) {
   this.setMode(this.configuration.viewMode);
 }
 BlockMirror.prototype.validateConfiguration = function (configuration) {
-  var _configuration$readOn, _configuration$height, _configuration$viewMo, _configuration$skipSk, _configuration$blockD, _configuration$toolbo, _configuration$render, _configuration$imageU, _configuration$imageD, _configuration$imageL, _configuration$imageD2, _configuration$imageM, _configuration$librar, _configuration$transl, _configuration$prefer, _configuration$showDe, _configuration$move;
+  var _configuration$readOn, _configuration$height, _configuration$viewMo, _configuration$skipSk, _configuration$blockD, _configuration$toolbo, _configuration$render, _configuration$imageU, _configuration$imageD, _configuration$imageL, _configuration$imageD2, _configuration$imageM, _configuration$librar, _configuration$transl, _configuration$prefer, _configuration$showDe, _configuration$move, _configuration$zoom;
   this.configuration = {};
 
   // Container
@@ -536,6 +536,9 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
   this.configuration.preferFullAttributeBlocks = (_configuration$prefer = configuration.preferFullAttributeBlocks) !== null && _configuration$prefer !== void 0 ? _configuration$prefer : false;
   this.configuration.showDefaultArguments = (_configuration$showDe = configuration.showDefaultArguments) !== null && _configuration$showDe !== void 0 ? _configuration$showDe : false;
   this.configuration.move = (_configuration$move = configuration.move) !== null && _configuration$move !== void 0 ? _configuration$move : {};
+  this.configuration.zoom = (_configuration$zoom = configuration.zoom) !== null && _configuration$zoom !== void 0 ? _configuration$zoom : {
+    controls: true
+  };
 };
 BlockMirror.prototype.initializeVariables = function () {
   this.tags = {
@@ -1047,18 +1050,16 @@ function BlockMirrorBlockEditor(blockMirror) {
   // Inject Blockly
   var blocklyOptions = {
     media: blockMirror.configuration.blocklyMediaPath,
-    // We use special comment blocks
-    zoom: {
-      controls: true
-    },
     comments: false,
+    // We use special comment blocks
     disable: false,
     oneBasedIndex: false,
     readOnly: blockMirror.configuration.readOnly,
     scrollbars: true,
     toolbox: this.makeToolbox(),
     renderer: blockMirror.configuration.renderer,
-    move: blockMirror.configuration.move
+    move: blockMirror.configuration.move,
+    zoom: blockMirror.configuration.zoom
   };
   this.workspace = Blockly.inject(blockMirror.tags.blockEditor, blocklyOptions);
   this.workspace.libraries = blockMirror.libraries;
@@ -1995,17 +1996,13 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function (node) {
     return this.blockMirror.libraries.resolve(fullTypeName);
   } else if (node._astname === 'Call') {
     var _this$imports$getType2;
-    var _fullTypeName = (_this$imports$getType2 = this.imports.getType(Sk.ffi.remapToJs(node.func.id))) !== null && _this$imports$getType2 !== void 0 ? _this$imports$getType2 : node.func.id;
+    var _name = Sk.ffi.remapToJs(node.func.id);
+    var _fullTypeName = (_this$imports$getType2 = this.imports.getType(_name)) !== null && _this$imports$getType2 !== void 0 ? _this$imports$getType2 : _name;
     var resolved = this.blockMirror.libraries.resolve(_fullTypeName);
     if (resolved instanceof PythonClass) {
       return resolved;
     } else if (resolved instanceof PythonFunction && resolved.typeHint) {
-      // TODO more elegantly resolve to single type if possible
-      var flattenedTypeHint = resolved.typeHint.flattened();
-      if (!flattenedTypeHint.isUnion() && flattenedTypeHint.isOptional()) {
-        var value = flattenedTypeHint.value;
-        return this.blockMirror.libraries.resolve(value);
-      }
+      return resolved.typeHint.resolveSingleClass();
     }
   } else if (node._astname === 'Attribute') {
     var caller = node.value;
@@ -2440,6 +2437,22 @@ var PythonTypeHint = /*#__PURE__*/function () {
         return this.flattened().matches(typeString);
       }
       return false;
+    }
+
+    /**
+     * Resolves to a single Python class.
+     * @returns {PythonClass | null}
+     */
+  }, {
+    key: "resolveSingleClass",
+    value: function resolveSingleClass() {
+      var flattened = this.flattened();
+      if (flattened.isOptional()) {
+        return this.libraries.resolve(flattened.typeParams[0]);
+      } else if (!flattened.isUnion()) {
+        return this.libraries.resolve(flattened.value);
+      }
+      return null;
     }
   }]);
 }();
@@ -3419,16 +3432,16 @@ var Library = /*#__PURE__*/function () {
     for (var classOrModuleDef in libraryConfiguration) {
       var _classOrModuleDef$spl = classOrModuleDef.split("//", 2),
         _classOrModuleDef$spl2 = _slicedToArray(_classOrModuleDef$spl, 2),
-        _name = _classOrModuleDef$spl2[0],
+        _name2 = _classOrModuleDef$spl2[0],
         comment = _classOrModuleDef$spl2[1];
-      if (_name.startsWith("__")) {
+      if (_name2.startsWith("__")) {
         // Library metadata
-        if (_name === "__colour" || _name === "__color") {
-          this.colour = _resolve_colour(libraryConfiguration[_name]);
-        } else if (_name === "__toolbox") {
-          this.toolbox = libraryConfiguration[_name];
+        if (_name2 === "__colour" || _name2 === "__color") {
+          this.colour = _resolve_colour(libraryConfiguration[_name2]);
+        } else if (_name2 === "__toolbox") {
+          this.toolbox = libraryConfiguration[_name2];
         }
-      } else if (PythonClass.isA(_name)) {
+      } else if (PythonClass.isA(_name2)) {
         classes.push(classOrModuleDef);
       } else {
         var members = libraryConfiguration[classOrModuleDef];
@@ -3437,7 +3450,7 @@ var Library = /*#__PURE__*/function () {
         })) {
           classes.push(classOrModuleDef);
         } else {
-          var _module = new PythonModule(this, _name, comment, members);
+          var _module = new PythonModule(this, _name2, comment, members);
           this.modules.set(_module.fullName, _module);
         }
       }
@@ -6586,7 +6599,6 @@ Blockly.Blocks['ast_Attribute'] = {
   init: function init() {
     this.setInputsInline(true);
     this.setOutput(true, null);
-    this.setPreviousStatement(true, null);
     this.premessage_ = "";
     this.message_ = "";
     this.postmessage_ = "";
@@ -8958,12 +8970,12 @@ python.pythonGenerator.forBlock['ast_ClassDef'] = function (block, generator) {
   // Keywords
   var keywords = new Array(block.keywords_);
   for (var _i15 = 0; _i15 < block.keywords_; _i15++) {
-    var _name2 = block.getFieldValue('KEYWORDNAME' + _i15);
+    var _name3 = block.getFieldValue('KEYWORDNAME' + _i15);
     var value = python.pythonGenerator.valueToCode(block, 'KEYWORDVALUE' + _i15, python.Order.NONE) || python.pythonGenerator.blank;
-    if (_name2 == '**') {
+    if (_name3 == '**') {
       keywords[_i15] = '**' + value;
     } else {
-      keywords[_i15] = _name2 + '=' + value;
+      keywords[_i15] = _name3 + '=' + value;
     }
   }
   // Body:

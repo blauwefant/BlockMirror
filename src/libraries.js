@@ -319,6 +319,22 @@ class PythonTypeHint {
       }
       return false
   }
+
+    /**
+     * Resolves to a single Python class.
+     * @returns {PythonClass | null}
+     */
+  resolveSingleClass() {
+    let flattened = this.flattened()
+
+    if (flattened.isOptional()) {
+      return this.libraries.resolve(flattened.typeParams[0])
+    } else if (!flattened.isUnion()) {
+      return this.libraries.resolve(flattened.value)
+    }
+
+    return null
+  }
 }
 
 function _resolveFunction(identifier, fullName) {

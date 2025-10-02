@@ -107,6 +107,7 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
     this.configuration.preferFullAttributeBlocks = configuration.preferFullAttributeBlocks ?? false;
     this.configuration.showDefaultArguments = configuration.showDefaultArguments ?? false;
     this.configuration.move = configuration.move ?? {};
+    this.configuration.zoom = configuration.zoom ?? {controls: true};
 };
 
 BlockMirror.prototype.initializeVariables = function () {

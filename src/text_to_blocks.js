@@ -565,20 +565,14 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function(node) {
         let fullTypeName = this.imports.getType(name) ?? name
         return this.blockMirror.libraries.resolve(fullTypeName)
     } else if (node._astname === 'Call') {
-        let fullTypeName = this.imports.getType(Sk.ffi.remapToJs(node.func.id)) ?? node.func.id
+        let name = Sk.ffi.remapToJs(node.func.id)
+        let fullTypeName = this.imports.getType(name) ?? name
         let resolved = this.blockMirror.libraries.resolve(fullTypeName)
 
         if (resolved instanceof PythonClass) {
             return resolved
         } else if (resolved instanceof PythonFunction && resolved.typeHint) {
-            // TODO more elegantly resolve to single type if possible
-            let flattenedTypeHint = resolved.typeHint.flattened()
-
-            if (!flattenedTypeHint.isUnion() && flattenedTypeHint.isOptional()) {
-                let value = flattenedTypeHint.value
-
-                return this.blockMirror.libraries.resolve(value);
-            }
+            return resolved.typeHint.resolveSingleClass()
         }
     } else if (node._astname === 'Attribute') {
         let caller = node.value;
