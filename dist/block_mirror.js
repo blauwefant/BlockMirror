@@ -9407,6 +9407,7 @@ BlockMirror.LIBRARIES['matplotlib'] = {
 };
 
 BlockMirror.LIBRARIES['turtle'] = {
+    "__toolbox": false,
     "__colour": "PLOTTING",
     "turtle": [
       {
@@ -9430,14 +9431,14 @@ BlockMirror.LIBRARIES['turtle'] = {
         "left lt(angle: turtle._AngleLeft): None // turn turtle left by(90)",
         "right rt(angle: turtle._AngleRight): None // turn turtle right by(90)",
         "goto setpos setposition(x: float, y: float | None = None): None // move turtle to position(0, 0)",
-        "teleport(x: float, y: float | None = None, *, fill_gap: bool = False) // teleport turtle to position(0, 0)",
+        "teleport(x: float, y: float | None = None, *, fill_gap: bool = False): None // teleport turtle to position(0, 0)",
         "setx(x: float): None // set turtle's x position to(100)",
         "sety(y: float): None // set turtle's y position to(100)",
         "setheading seth(angle: turtle._AngleHeading): None // set turtle's heading to(270)",
         "home(): None // move turtle to origin",
         "circle(radius: float, extent: float | None = None, steps: int | None=None): None // move the turtle in a circle",
         "dot(size: float | None = None, color: turtle._Color | None=None): None // turtle draws a dot(0)",
-        "stamp(): Any // stamp a copy of the turtle shape",
+        "stamp(): int // stamp a copy of the turtle shape",
         "clearstamp(stampid: int): None // delete stamp with id",
         "clearstamps(n: int | None = None): None // delete all stamps",
         "undo(): None // undo last turtle action",
@@ -9470,7 +9471,7 @@ BlockMirror.LIBRARIES['turtle'] = {
 
         "reset(): None // reset drawing",
         "clear(): None // clear drawing",
-        "write(arg: str, move: bool = False, align: Literal['left', 'center', 'right'] = 'left', font: tuple[str, int, str] = ('Arial', 8, 'normal')): None // write text(___)",
+        "write(arg: str, move: bool = False, align: typing.Literal['left', 'center', 'right'] = 'left', font: tuple[str, int, str] = ('Arial', 8, 'normal')): None // write text(___)",
 
         "bgpic(picname: str | None = None): None // set background to(___)",
         "done mainloop(): None // start the turtle loop",
