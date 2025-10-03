@@ -178,7 +178,7 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
           itemBlock.nextConnection && itemBlock.nextConnection.targetBlock();
       }
       // Disconnect any children that don't belong.
-      for (var i = 1; i < this.itemCount_; i++) {
+      for (let i = 1; i < this.itemCount_; i++) {
         var connection = this.getInput("GENERATOR" + i).connection
           .targetConnection;
         if (connection && connections.indexOf(connection) === -1) {
@@ -213,7 +213,7 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
       this.itemCount_ = connections.length;
       this.updateShape_();
       // Reconnect any child blocks.
-      for (var i = 1; i < this.itemCount_; i++) {
+      for (let i = 1; i < this.itemCount_; i++) {
         connections[i]?.reconnect(this, "GENERATOR" + i);
         // TODO: glitch when inserting into middle, deletes children values
         if (!connections[i]) {

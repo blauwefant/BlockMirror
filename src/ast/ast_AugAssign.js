@@ -57,6 +57,7 @@ Blockly.Blocks['ast_AugAssign'] = {
     updateShape_: function (block) {
         // Add new inputs.
         this.getField("OP_NAME").getOptions(false);
+
         if (this.simpleTarget_) {
             if (!this.getInput('VAR_ANCHOR')) {
                 this.appendDummyInput('VAR_ANCHOR')
@@ -105,6 +106,7 @@ BlockMirrorTextToBlocks.prototype['ast_AugAssign'] = function (node, parent) {
     let values = {'VALUE': this.convert(value, node)};
     let fields = {'OP_NAME': op};
     let simpleTarget = target._astname === 'Name';
+
     if (simpleTarget) {
         fields['VAR'] = Sk.ffi.remapToJs(target.id);
     } else {

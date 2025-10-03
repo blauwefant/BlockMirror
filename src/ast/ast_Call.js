@@ -243,7 +243,7 @@ Blockly.Blocks['ast_Call'] = {
             this.removeInput('FUNC');
         }
 
-        this.setFieldValue(this.message_ + "\ (", "MESSAGE");
+        this.setFieldValue(this.message_ + " (", "MESSAGE");
         this.updateShapeForArguments();
         let i = this.getDrawnArgumentCount_();
 
@@ -686,7 +686,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         fromLibrary.applyShadow(newBlock)
     }
 
-    if (returns === 'None' || this.isStatementContainer(parent)) {
+    if (returns === 'None' || this.isStatement(node)) {
         // Return as statement
         return [newBlock];
     } else {

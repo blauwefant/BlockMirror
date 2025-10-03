@@ -3,6 +3,7 @@ const fs = require('fs')
 const MergeIntoSingleFilePlugin = require('webpack-merge-and-include-globally');
 const Uglify = require("uglify-js");
 const babel = require("@babel/core");
+const ESLintPlugin = require("eslint-webpack-plugin");
 
 // Blockly
 const JS_BLOCKLY_FILES = [
@@ -156,7 +157,8 @@ const config = {
                     return result
                 }
             }
-        })
+        }),
+        new ESLintPlugin({})
     ]
     /*devServer: {
         port: 3000,

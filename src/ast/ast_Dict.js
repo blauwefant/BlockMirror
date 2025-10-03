@@ -74,7 +74,7 @@ Blockly.Blocks["ast_Dict"] = {
         itemBlock.nextConnection && itemBlock.nextConnection.targetBlock();
     }
     // Disconnect any children that don't belong.
-    for (var i = 0; i < this.itemCount_; i++) {
+    for (let i = 0; i < this.itemCount_; i++) {
       var connection = this.getInput("ADD" + i).connection.targetConnection;
       if (connection && connections.indexOf(connection) == -1) {
         let key = connection.getSourceBlock().getInput("KEY");
@@ -92,7 +92,7 @@ Blockly.Blocks["ast_Dict"] = {
     this.itemCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var i = 0; i < this.itemCount_; i++) {
+    for (let i = 0; i < this.itemCount_; i++) {
       connections[i]?.reconnect(this, "ADD" + i);
       if (!connections[i]) {
         let itemBlock = this.workspace.newBlock("ast_DictItem");

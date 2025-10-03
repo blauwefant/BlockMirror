@@ -328,24 +328,24 @@ Blockly.Variables.flyoutCategoryBlocks = function (workspace) {
     if (!Blockly.Variables._HIDE_GETTERS_SETTERS && Blockly.Blocks['ast_Assign']) {
       var gap = Blockly.Blocks['ast_AugAssign'] ? 8 : 24;
       var blockText = '<xml>' + '<block type="ast_Assign" gap="' + gap + '">' + mostRecentVariableFieldXmlString + '</block>' + '</xml>';
-      var block = Blockly.utils.xml.textToDom(blockText).firstChild;
-      xmlList.push(block);
+      var _block2 = Blockly.utils.xml.textToDom(blockText).firstChild;
+      xmlList.push(_block2);
     }
     if (!Blockly.Variables._HIDE_GETTERS_SETTERS && Blockly.Blocks['ast_AugAssign']) {
-      var gap = Blockly.Blocks['ast_Name'] ? 20 : 8;
-      var blockText = '<xml>' + '<block type="ast_AugAssign" gap="' + gap + '">' + mostRecentVariableFieldXmlString + '<value name="VALUE">' + '<shadow type="ast_Num">' + '<field name="NUM">1</field>' + '</shadow>' + '</value>' + '<mutation options="false" simple="true"></mutation>' + '</block>' + '</xml>';
-      var block = Blockly.utils.xml.textToDom(blockText).firstChild;
-      xmlList.push(block);
+      var _gap = Blockly.Blocks['ast_Name'] ? 20 : 8;
+      var _blockText = '<xml>' + '<block type="ast_AugAssign" gap="' + _gap + '">' + mostRecentVariableFieldXmlString + '<value name="VALUE">' + '<shadow type="ast_Num">' + '<field name="NUM">1</field>' + '</shadow>' + '</value>' + '<mutation options="false" simple="true"></mutation>' + '</block>' + '</xml>';
+      var _block3 = Blockly.utils.xml.textToDom(_blockText).firstChild;
+      xmlList.push(_block3);
     }
     if (Blockly.Blocks['ast_Name']) {
       variableModelList.sort(Blockly.VariableModel.compareByName);
       for (var i = 0, variable; variable = variableModelList[i]; i++) {
         if (!Blockly.Variables._HIDE_GETTERS_SETTERS) {
-          var _block2 = Blockly.utils.xml.createElement('block');
-          _block2.setAttribute('type', 'ast_Name');
-          _block2.setAttribute('gap', 8);
-          _block2.appendChild(Blockly.Variables.generateVariableFieldDom(variable));
-          xmlList.push(_block2);
+          var _block4 = Blockly.utils.xml.createElement('block');
+          _block4.setAttribute('type', 'ast_Name');
+          _block4.setAttribute('gap', 8);
+          _block4.appendChild(Blockly.Variables.generateVariableFieldDom(variable));
+          xmlList.push(_block4);
         } else {
           block = Blockly.utils.xml.createElement('label');
           block.setAttribute('text', variable.name);
@@ -857,10 +857,10 @@ BlockMirrorTextEditor.prototype.updateImages = function (cm, from, to) {
 };
 
 //'https://game-icons.net/icons/ffffff/000000/1x1/delapouite/labrador-head.png'
-var FULL_IMAGE_URL = /^(?:https?:\/\/[-a-zA-Z0-9@:%._\/\+~#=]+(?:png|jpg|jpeg|gif|svg)+)$/;
+var FULL_IMAGE_URL = /^(?:https?:\/\/[-a-zA-Z0-9@:%._/\\+~#=]+(?:png|jpg|jpeg|gif|svg)+)$/;
 //const BLOB_IMAGE_URL = /(["'])(blob:null\/[A-Fa-f0-9-]+)\1/g;
 //const REGULAR_IMAGE_URL = /(["'])((?:http(s)?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+)\1/g;
-var STRING_IMAGE_URL = /((["'])(?:https?:\/\/[-a-zA-Z0-9@:%._\/\+~#=]+(?:png|jpg|jpeg|gif|svg)+)|(?:blob:null\/[A-Fa-f0-9-]+)|(?:data:image\/(?:png|jpg|jpeg|gif|svg\+xml|webp|bmp)(?:;charset=utf-8)?;base64,(?:[A-Za-z0-9]|[+/])+={0,2})\2)/g;
+var STRING_IMAGE_URL = /((["'])(?:https?:\/\/[-a-zA-Z0-9@:%._\\/+~#=]+(?:png|jpg|jpeg|gif|svg)+)|(?:blob:null\/[A-Fa-f0-9-]+)|(?:data:image\/(?:png|jpg|jpeg|gif|svg\+xml|webp|bmp)(?:;charset=utf-8)?;base64,(?:[A-Za-z0-9]|[+/])+={0,2}))/g;
 //const CONSTRUCTOR_IMAGE_URL = /(?:^|\W)(Image\((["'])((?:blob:null\/[A-Fa-f0-9-]+)|(?:(?:https?:\/\/)?[\w.-]+(?:\.[\w\.-]+)+[\w\-\._~:/?#[\]@!\$&'\(\)\*\+,;=.]+(?:png|jpg|jpeg|gif|svg)+))\2\))/g;
 var CONSTRUCTOR_IMAGE_URL = /(?:^|\W)(Image\((["'])(.+?)\2\))/g;
 BlockMirrorTextEditor.REGEX_PATTERNS = {
@@ -1311,10 +1311,10 @@ BlockMirrorBlockEditor.prototype._cleanUpWorkspace = function () {
     _step5;
   try {
     for (_iterator5.s(); !(_step5 = _iterator5.n()).done;) {
-      var _block3 = _step5.value;
-      var boundingRect = _block3.getBoundingRectangle();
-      _block3.moveBy(-boundingRect.left + spacerHeight, Math.max(0, cursorY - boundingRect.top), ['cleanup']);
-      cursorY = _block3.getRelativeToSurfaceXY().y + _block3.getHeightWidth().height + extraHeight;
+      var _block5 = _step5.value;
+      var boundingRect = _block5.getBoundingRectangle();
+      _block5.moveBy(-boundingRect.left + spacerHeight, Math.max(0, cursorY - boundingRect.top), ['cleanup']);
+      cursorY = _block5.getRelativeToSurfaceXY().y + _block5.getHeightWidth().height + extraHeight;
     }
   } catch (err) {
     _iterator5.e(err);
@@ -1760,9 +1760,9 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   // Handle comments that are on the very last line
   var lastLineNumber = lineNumberInProgram + 1;
   if (lastLineNumber in this.comments) {
-    var comment = this.comments[lastLineNumber].split("|", 2);
-    if (parseInt(comment[0], 10) / 4 == this.levelIndex - 1) {
-      var lastComment = comment[1];
+    var _comment = this.comments[lastLineNumber].split("|", 2);
+    if (parseInt(_comment[0], 10) / 4 == this.levelIndex - 1) {
+      var lastComment = _comment[1];
       var _commentChild = this.ast_Comment(lastComment, lastLineNumber);
       if (is_top_level && !previousWasStatement) {
         addPeer(_commentChild);
@@ -1777,9 +1777,9 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   // Handle any extra comments that stuck around
   if (is_top_level) {
     for (var commentLineInProgram in this.comments) {
-      var comment = this.comments[commentLineInProgram].split("|", 2);
-      if (parseInt(comment[0], 10) / 4 == this.levelIndex - 1) {
-        var commentInProgram = comment[1];
+      var _comment2 = this.comments[commentLineInProgram].split("|", 2);
+      if (parseInt(_comment2[0], 10) / 4 == this.levelIndex - 1) {
+        var commentInProgram = _comment2[1];
         var _commentChild2 = this.ast_Comment(commentInProgram, commentLineInProgram);
         distance = commentLineInProgram - previousLineInProgram;
         if (previousLineInProgram == null) {
@@ -1803,6 +1803,12 @@ BlockMirrorTextToBlocks.prototype.isTopLevel = function (ast) {
 };
 BlockMirrorTextToBlocks.prototype.isStatementContainer = function (ast) {
   return this.isTopLevel(ast) || ast instanceof Sk.astnodes.FunctionDef || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent);
+};
+BlockMirrorTextToBlocks.prototype.isStatement = function (ast) {
+  if (ast instanceof Sk.astnodes.FunctionDef) {
+    return ast.decorator_list.includes(ast);
+  }
+  return this.isStatementContainer(ast._parent);
 };
 BlockMirrorTextToBlocks.prototype.convert = function (node, parent) {
   var functionName = 'ast_' + node._astname;
@@ -1834,16 +1840,16 @@ BlockMirrorTextToBlocks.prototype.convertStatement = function (node, full_source
 };
 BlockMirrorTextToBlocks.prototype.getChunkHeights = function (node) {
   var lineNumbers = [];
-  if (node.hasOwnProperty("lineno")) {
+  if (Object.hasOwn(node, "lineno")) {
     lineNumbers.push(node.lineno);
   }
-  if (node.hasOwnProperty("body")) {
+  if (Object.hasOwn(node, "body")) {
     for (var i = 0; i < node.body.length; i += 1) {
       var subnode = node.body[i];
       lineNumbers = lineNumbers.concat(this.getChunkHeights(subnode));
     }
   }
-  if (node.hasOwnProperty("orelse")) {
+  if (Object.hasOwn(node, "orelse")) {
     for (var _i2 = 0; _i2 < node.orelse.length; _i2 += 1) {
       var _subnode = node.orelse[_i2];
       lineNumbers = lineNumbers.concat(this.getChunkHeights(_subnode));
@@ -2730,7 +2736,7 @@ function _shouldShadow(argBlock, defaultValue) {
     if (blockType === "ast_UnaryOpUSub") {
       value = "-" + value;
     } else if (blockType === "ast_Str" || blockType === "ast_StrChar") {
-      value = "'" + value.replace("'", "\'").replace('\n', '\\n') + "'";
+      value = "'" + value.replace("'", "\\'").replace('\n', '\\n') + "'";
     }
     return _assertClassBrand(_PythonParameter_brand, this, _matchesDefaultValue).call(this, blockType, value, defaultValue);
   } else {
@@ -3285,7 +3291,7 @@ var PythonAttribute = /*#__PURE__*/function () {
         var _result = textToBlocks.convertSource("toolbox.py", this.toPythonSource());
         blockElement = _result.rawXml.children[0];
       }
-      if (!!this.typeHint) {
+      if (this.typeHint) {
         blockElement.setAttribute("output", this.typeHint.flattened().toString());
       }
       return blockElement;
@@ -3461,14 +3467,14 @@ var Library = /*#__PURE__*/function () {
       var _classDef$split = classDef.split("//", 2),
         _classDef$split2 = _slicedToArray(_classDef$split, 2),
         signature = _classDef$split2[0],
-        _comment = _classDef$split2[1];
+        _comment3 = _classDef$split2[1];
       var moduleName = (_PythonModule$extract = PythonModule.extractName(signature)) !== null && _PythonModule$extract !== void 0 ? _PythonModule$extract : "";
       var pythonModule = this.modules.get(moduleName);
       if (!pythonModule) {
         pythonModule = new PythonModule(this, moduleName);
         this.modules.set(moduleName, pythonModule);
       }
-      var pythonClass = new PythonClass(pythonModule, signature, _comment, libraryConfiguration[classDef]);
+      var pythonClass = new PythonClass(pythonModule, signature, _comment3, libraryConfiguration[classDef]);
       pythonModule.members.set(pythonClass.name, pythonClass);
     }
   }
@@ -4819,7 +4825,7 @@ BlockMirrorTextToBlocks.prototype['ast_AnnAssign'] = function (node, parent) {
     var variableType = annotationElement.getAttribute('type') === "ast_NameConstantNone" ? "None" : (_annotationElement$ch = annotationElement.childNodes[1]) === null || _annotationElement$ch === void 0 ? void 0 : _annotationElement$ch.textContent;
     if (variableType) {
       var fullVariableType = this.imports.getType(variableType);
-      if (Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank) {
+      if (node instanceof Sk.astnodes.Name && Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank) {
         this.variables.add(fullVariableType, python.pythonGenerator.blank);
       } else {
         var _variableName = values['TARGET'].childNodes[0].textContent;
@@ -5507,9 +5513,9 @@ Blockly.Blocks["ast_List"] = {
     this.itemCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var i = 0; i < this.itemCount_; i++) {
-      var _connections$i;
-      (_connections$i = connections[i]) === null || _connections$i === void 0 || _connections$i.reconnect(this, "ADD" + i);
+    for (var _i6 = 0; _i6 < this.itemCount_; _i6++) {
+      var _connections$_i;
+      (_connections$_i = connections[_i6]) === null || _connections$_i === void 0 || _connections$_i.reconnect(this, "ADD" + _i6);
     }
   },
   /**
@@ -5678,9 +5684,9 @@ Blockly.Blocks["ast_Tuple"] = {
     this.itemCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var i = 0; i < this.itemCount_; i++) {
-      var _connections$i2;
-      (_connections$i2 = connections[i]) === null || _connections$i2 === void 0 || _connections$i2.reconnect(this, "ADD" + i);
+    for (var _i7 = 0; _i7 < this.itemCount_; _i7++) {
+      var _connections$_i2;
+      (_connections$_i2 = connections[_i7]) === null || _connections$_i2 === void 0 || _connections$_i2.reconnect(this, "ADD" + _i7);
     }
   },
   /**
@@ -5859,9 +5865,9 @@ Blockly.Blocks["ast_Set"] = {
     this.itemCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var i = 0; i < this.itemCount_; i++) {
-      var _connections$i3;
-      (_connections$i3 = connections[i]) === null || _connections$i3 === void 0 || _connections$i3.reconnect(this, "ADD" + i);
+    for (var _i8 = 0; _i8 < this.itemCount_; _i8++) {
+      var _connections$_i3;
+      (_connections$_i3 = connections[_i8]) === null || _connections$_i3 === void 0 || _connections$_i3.reconnect(this, "ADD" + _i8);
     }
   },
   /**
@@ -6050,15 +6056,15 @@ Blockly.Blocks["ast_Dict"] = {
     this.itemCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var i = 0; i < this.itemCount_; i++) {
-      var _connections$i4;
-      (_connections$i4 = connections[i]) === null || _connections$i4 === void 0 || _connections$i4.reconnect(this, "ADD" + i);
-      if (!connections[i]) {
+    for (var _i9 = 0; _i9 < this.itemCount_; _i9++) {
+      var _connections$_i4;
+      (_connections$_i4 = connections[_i9]) === null || _connections$_i4 === void 0 || _connections$_i4.reconnect(this, "ADD" + _i9);
+      if (!connections[_i9]) {
         var _itemBlock = this.workspace.newBlock("ast_DictItem");
         _itemBlock.setDeletable(false);
         _itemBlock.setMovable(false);
         _itemBlock.initSvg();
-        this.getInput("ADD" + i).connection.connect(_itemBlock.outputConnection);
+        this.getInput("ADD" + _i9).connection.connect(_itemBlock.outputConnection);
         _itemBlock.render();
         //this.get(itemBlock, 'ADD'+i)
       }
@@ -6338,16 +6344,16 @@ Blockly.Blocks["ast_JoinedStr"] = {
     this.itemCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var i = 0; i < this.itemCount_; i++) {
-      var _connections$i5;
-      (_connections$i5 = connections[i]) === null || _connections$i5 === void 0 || _connections$i5.reconnect(this, "ADD" + i);
-      if (!connections[i]) {
-        var createName = blockTypes[i] === "ast_JoinedStr_create_with_item_S" ? "ast_JoinedStrStr" : blockTypes[i] === "ast_JoinedStr_create_with_item_FVF" ? "ast_FormattedValueFull" : "ast_FormattedValue";
+    for (var _i0 = 0; _i0 < this.itemCount_; _i0++) {
+      var _connections$_i5;
+      (_connections$_i5 = connections[_i0]) === null || _connections$_i5 === void 0 || _connections$_i5.reconnect(this, "ADD" + _i0);
+      if (!connections[_i0]) {
+        var createName = blockTypes[_i0] === "ast_JoinedStr_create_with_item_S" ? "ast_JoinedStrStr" : blockTypes[_i0] === "ast_JoinedStr_create_with_item_FVF" ? "ast_FormattedValueFull" : "ast_FormattedValue";
         var _itemBlock2 = this.workspace.newBlock(createName);
         _itemBlock2.setDeletable(false);
         _itemBlock2.setMovable(false);
         _itemBlock2.initSvg();
-        this.getInput("ADD" + i).connection.connect(_itemBlock2.outputConnection);
+        this.getInput("ADD" + _i0).connection.connect(_itemBlock2.outputConnection);
         _itemBlock2.render();
         //this.get(itemBlock, 'ADD'+i)
       }
@@ -6895,11 +6901,11 @@ Blockly.Blocks['ast_Call'] = {
     this.quarkIds_ = paramIds;
     // Reconnect any child blocks.
     if (this.quarkIds_) {
-      for (var _i6 = 0; _i6 < this.arguments_.length; _i6++) {
-        var quarkId = this.quarkIds_[_i6];
+      for (var _i1 = 0; _i1 < this.arguments_.length; _i1++) {
+        var quarkId = this.quarkIds_[_i1];
         if (quarkId in this.quarkConnections_) {
           var _connection = this.quarkConnections_[quarkId];
-          if (!(_connection !== null && _connection !== void 0 && _connection.reconnect(this, 'ARG' + _i6))) {
+          if (!(_connection !== null && _connection !== void 0 && _connection.reconnect(this, 'ARG' + _i1))) {
             // Block no longer exists or has been attached elsewhere.
             delete this.quarkConnections_[quarkId];
           }
@@ -6996,7 +7002,7 @@ Blockly.Blocks['ast_Call'] = {
     } else if (!this.isMethod_ && this.getInput('FUNC')) {
       this.removeInput('FUNC');
     }
-    this.setFieldValue(this.message_ + "\ (", "MESSAGE");
+    this.setFieldValue(this.message_ + " (", "MESSAGE");
     this.updateShapeForArguments();
     var i = this.getDrawnArgumentCount_();
 
@@ -7333,20 +7339,20 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   }
   if (fromLibrary instanceof PythonFunction) {
     if (args !== null) {
-      for (var _i7 = 0; _i7 < args.length; _i7 += 1) {
-        argumentsMutation["UNKNOWN_ARG:" + _i7] = document.createTextNode(fromLibrary.fullName);
+      for (var _i10 = 0; _i10 < args.length; _i10 += 1) {
+        argumentsMutation["UNKNOWN_ARG:" + _i10] = document.createTextNode(fromLibrary.fullName);
       }
     }
     if (this.blockMirror.configuration.showDefaultArguments) {
-      for (var _i8 = overallI; _i8 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i8 += 1) {
-        var pythonParameter = fromLibrary.parameters[_i8 + fromLibrary.argumentOffset];
+      for (var _i11 = overallI; _i11 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i11 += 1) {
+        var pythonParameter = fromLibrary.parameters[_i11 + fromLibrary.argumentOffset];
         if (pythonParameter.keyword || pythonParameter.preferKeyword) {
           break;
         }
         if (pythonParameter.defaultValue !== "") {
-          argumentsNormal["ARG" + _i8] = pythonParameter.defaultValueBlocks(this);
+          argumentsNormal["ARG" + _i11] = pythonParameter.defaultValueBlocks(this);
         }
-        argumentsMutation["UNKNOWN_ARG:" + _i8] = document.createTextNode(fromLibrary.fullName);
+        argumentsMutation["UNKNOWN_ARG:" + _i11] = document.createTextNode(fromLibrary.fullName);
         overallI += 1;
       }
     }
@@ -7355,7 +7361,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   var overallIBeforeKeywords = overallI;
   if (keywords !== null) {
     var _loop4 = function _loop4() {
-      var keyword = keywords[_i9];
+      var keyword = keywords[_i12];
       var arg = keyword.arg;
       var value = keyword.value;
       if (arg === null) {
@@ -7381,13 +7387,13 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         }
       }
     };
-    for (var _i9 = 0; _i9 < keywords.length; _i9 += 1, overallI += 1) {
+    for (var _i12 = 0; _i12 < keywords.length; _i12 += 1, overallI += 1) {
       _loop4();
     }
   }
   if (this.blockMirror.configuration.showDefaultArguments && fromLibrary instanceof PythonFunction) {
-    for (var _i0 = overallIBeforeKeywords; _i0 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i0 += 1) {
-      var _pythonParameter = fromLibrary.parameters[_i0 + fromLibrary.argumentOffset];
+    for (var _i13 = overallIBeforeKeywords; _i13 < fromLibrary.parameters.length - fromLibrary.argumentOffset; _i13 += 1) {
+      var _pythonParameter = fromLibrary.parameters[_i13 + fromLibrary.argumentOffset];
       if (!(_pythonParameter.keyword || _pythonParameter.preferKeyword) || foundKeywords.has(_pythonParameter.name)) {
         continue;
       }
@@ -7412,7 +7418,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
   if (fromLibrary instanceof PythonFunction) {
     fromLibrary.applyShadow(newBlock);
   }
-  if (returns === 'None' || this.isStatementContainer(parent)) {
+  if (returns === 'None' || this.isStatement(node)) {
     // Return as statement
     return [newBlock];
   } else {
@@ -7951,24 +7957,24 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
       this.itemCount_ = connections.length;
       this.updateShape_();
       // Reconnect any child blocks.
-      for (var i = 1; i < this.itemCount_; i++) {
-        var _connections$i6;
-        (_connections$i6 = connections[i]) === null || _connections$i6 === void 0 || _connections$i6.reconnect(this, "GENERATOR" + i);
+      for (var _i14 = 1; _i14 < this.itemCount_; _i14++) {
+        var _connections$_i6;
+        (_connections$_i6 = connections[_i14]) === null || _connections$_i6 === void 0 || _connections$_i6.reconnect(this, "GENERATOR" + _i14);
         // TODO: glitch when inserting into middle, deletes children values
-        if (!connections[i]) {
+        if (!connections[_i14]) {
           var createName = void 0;
-          if (blockTypes[i] === "ast_Comp_create_with_if") {
+          if (blockTypes[_i14] === "ast_Comp_create_with_if") {
             createName = "ast_comprehensionIf";
-          } else if (blockTypes[i] === "ast_Comp_create_with_for") {
+          } else if (blockTypes[_i14] === "ast_Comp_create_with_for") {
             createName = "ast_comprehensionFor";
           } else {
-            throw Error("Unknown block type: " + blockTypes[i]);
+            throw Error("Unknown block type: " + blockTypes[_i14]);
           }
           var _itemBlock3 = this.workspace.newBlock(createName);
           _itemBlock3.setDeletable(false);
           _itemBlock3.setMovable(false);
           _itemBlock3.initSvg();
-          this.getInput("GENERATOR" + i).connection.connect(_itemBlock3.outputConnection);
+          this.getInput("GENERATOR" + _i14).connection.connect(_itemBlock3.outputConnection);
           _itemBlock3.render();
           //this.get(itemBlock, 'ADD'+i)
         }
@@ -8328,16 +8334,16 @@ Blockly.Blocks['ast_FunctionDef'] = {
     this.parametersCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var _i1 = 0; _i1 < this.parametersCount_; _i1++) {
-      var _connections$_i;
-      (_connections$_i = connections[_i1]) === null || _connections$_i === void 0 || _connections$_i.reconnect(this, 'PARAMETER' + _i1);
-      if (!connections[_i1]) {
-        var createName = 'ast_Function' + blockTypes[_i1].substring('ast_FunctionMutant'.length);
+    for (var _i15 = 0; _i15 < this.parametersCount_; _i15++) {
+      var _connections$_i7;
+      (_connections$_i7 = connections[_i15]) === null || _connections$_i7 === void 0 || _connections$_i7.reconnect(this, 'PARAMETER' + _i15);
+      if (!connections[_i15]) {
+        var createName = 'ast_Function' + blockTypes[_i15].substring('ast_FunctionMutant'.length);
         var _itemBlock4 = this.workspace.newBlock(createName);
         _itemBlock4.setDeletable(false);
         _itemBlock4.setMovable(false);
         _itemBlock4.initSvg();
-        this.getInput('PARAMETER' + _i1).connection.connect(_itemBlock4.outputConnection);
+        this.getInput('PARAMETER' + _i15).connection.connect(_itemBlock4.outputConnection);
         _itemBlock4.render();
         //this.get(itemBlock, 'ADD'+i)
       }
@@ -8392,8 +8398,8 @@ python.pythonGenerator.forBlock['ast_FunctionDef'] = function (block, generator)
   }
   // Parameters
   var parameters = new Array(block.parametersCount_);
-  for (var _i10 = 0; _i10 < block.parametersCount_; _i10++) {
-    parameters[_i10] = python.pythonGenerator.valueToCode(block, 'PARAMETER' + _i10, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i16 = 0; _i16 < block.parametersCount_; _i16++) {
+    parameters[_i16] = python.pythonGenerator.valueToCode(block, 'PARAMETER' + _i16, python.Order.NONE) || python.pythonGenerator.blank;
   }
   // Return annotation
   var returns = "";
@@ -8450,14 +8456,14 @@ BlockMirrorTextToBlocks.prototype.parseArgs = function (args, values, lineno, no
   }
   // keyword arguments that must be referenced by name
   if (kwonlyargs !== null) {
-    for (var _i11 = 0; _i11 < kwonlyargs.length; _i11++) {
+    for (var _i17 = 0; _i17 < kwonlyargs.length; _i17++) {
       var _childValues = {};
       var _type = 'ast_FunctionParameter';
-      if (kw_defaults[_i11]) {
-        _childValues['DEFAULT'] = this.convert(kw_defaults[_i11], node);
+      if (kw_defaults[_i17]) {
+        _childValues['DEFAULT'] = this.convert(kw_defaults[_i17], node);
         _type += "Default";
       }
-      values['PARAMETER' + totalArgs] = this.parseArg(kwonlyargs[_i11], _type, lineno, _childValues, node);
+      values['PARAMETER' + totalArgs] = this.parseArg(kwonlyargs[_i17], _type, lineno, _childValues, node);
       totalArgs += 1;
     }
   }
@@ -8477,7 +8483,11 @@ BlockMirrorTextToBlocks.prototype['ast_FunctionDef'] = function (node, parent) {
   var values = {};
   if (decorator_list !== null) {
     for (var i = 0; i < decorator_list.length; i++) {
-      values['DECORATOR' + i] = this.convert(decorator_list[i], node);
+      var converted = this.convert(decorator_list[i], node);
+      if (converted.constructor === Array) {
+        converted = converted[0];
+      }
+      values['DECORATOR' + i] = converted;
     }
   }
   var parsedArgs = 0;
@@ -8917,16 +8927,16 @@ Blockly.Blocks['ast_ClassDef'] = {
       }
       this.moveInputBefore('DECORATOR' + i, 'BODY');
     }
-    for (var _i12 = 0; _i12 < this.bases_; _i12++) {
-      var _input2 = this.appendValueInput("BASE" + _i12).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT);
-      if (_i12 === 0) {
+    for (var _i18 = 0; _i18 < this.bases_; _i18++) {
+      var _input2 = this.appendValueInput("BASE" + _i18).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT);
+      if (_i18 === 0) {
         _input2.appendField("inherits from");
       }
-      this.moveInputBefore('BASE' + _i12, 'BODY');
+      this.moveInputBefore('BASE' + _i18, 'BODY');
     }
-    for (var _i13 = 0; _i13 < this.keywords_; _i13++) {
-      this.appendValueInput("KEYWORDVALUE" + _i13).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT).appendField(new Blockly.FieldTextInput("metaclass"), "KEYWORDNAME" + _i13).appendField("=");
-      this.moveInputBefore('KEYWORDVALUE' + _i13, 'BODY');
+    for (var _i19 = 0; _i19 < this.keywords_; _i19++) {
+      this.appendValueInput("KEYWORDVALUE" + _i19).setCheck(null).setAlign(Blockly.inputs.Align.RIGHT).appendField(new Blockly.FieldTextInput("metaclass"), "KEYWORDNAME" + _i19).appendField("=");
+      this.moveInputBefore('KEYWORDVALUE' + _i19, 'BODY');
     }
   },
   /**
@@ -8964,18 +8974,18 @@ python.pythonGenerator.forBlock['ast_ClassDef'] = function (block, generator) {
   }
   // Bases
   var bases = new Array(block.bases_);
-  for (var _i14 = 0; _i14 < block.bases_; _i14++) {
-    bases[_i14] = python.pythonGenerator.valueToCode(block, 'BASE' + _i14, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i20 = 0; _i20 < block.bases_; _i20++) {
+    bases[_i20] = python.pythonGenerator.valueToCode(block, 'BASE' + _i20, python.Order.NONE) || python.pythonGenerator.blank;
   }
   // Keywords
   var keywords = new Array(block.keywords_);
-  for (var _i15 = 0; _i15 < block.keywords_; _i15++) {
-    var _name3 = block.getFieldValue('KEYWORDNAME' + _i15);
-    var value = python.pythonGenerator.valueToCode(block, 'KEYWORDVALUE' + _i15, python.Order.NONE) || python.pythonGenerator.blank;
+  for (var _i21 = 0; _i21 < block.keywords_; _i21++) {
+    var _name3 = block.getFieldValue('KEYWORDNAME' + _i21);
+    var value = python.pythonGenerator.valueToCode(block, 'KEYWORDVALUE' + _i21, python.Order.NONE) || python.pythonGenerator.blank;
     if (_name3 == '**') {
-      keywords[_i15] = '**' + value;
+      keywords[_i21] = '**' + value;
     } else {
-      keywords[_i15] = _name3 + '=' + value;
+      keywords[_i21] = _name3 + '=' + value;
     }
   }
   // Body:
@@ -9001,18 +9011,18 @@ BlockMirrorTextToBlocks.prototype['ast_ClassDef'] = function (node, parent) {
     }
   }
   if (bases !== null) {
-    for (var _i16 = 0; _i16 < bases.length; _i16++) {
-      values['BASE' + _i16] = this.convert(bases[_i16], node);
+    for (var _i22 = 0; _i22 < bases.length; _i22++) {
+      values['BASE' + _i22] = this.convert(bases[_i22], node);
     }
   }
   if (keywords !== null) {
-    for (var _i17 = 0; _i17 < keywords.length; _i17++) {
-      values['KEYWORDVALUE' + _i17] = this.convert(keywords[_i17].value, node);
-      var arg = keywords[_i17].arg;
+    for (var _i23 = 0; _i23 < keywords.length; _i23++) {
+      values['KEYWORDVALUE' + _i23] = this.convert(keywords[_i23].value, node);
+      var arg = keywords[_i23].arg;
       if (arg === null) {
-        fields['KEYWORDNAME' + _i17] = "**";
+        fields['KEYWORDNAME' + _i23] = "**";
       } else {
-        fields['KEYWORDNAME' + _i17] = Sk.ffi.remapToJs(arg);
+        fields['KEYWORDNAME' + _i23] = Sk.ffi.remapToJs(arg);
       }
     }
   }

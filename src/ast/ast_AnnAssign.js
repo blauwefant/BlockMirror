@@ -201,7 +201,7 @@ BlockMirrorTextToBlocks.prototype['ast_AnnAssign'] = function (node, parent) {
         if (variableType) {
           let fullVariableType = this.imports.getType(variableType);
 
-          if (Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank) {
+          if (node instanceof Sk.astnodes.Name && Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank) {
             this.variables.add(fullVariableType, python.pythonGenerator.blank)
           } else {
             let variableName = values['TARGET'].childNodes[0].textContent;

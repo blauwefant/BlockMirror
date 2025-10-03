@@ -89,18 +89,18 @@ Blockly.Variables.flyoutCategoryBlocks = function (workspace) {
         var mostRecentVariableFieldXmlString =
                 variableModelList[variableModelList.length - 1];
         if (!Blockly.Variables._HIDE_GETTERS_SETTERS && Blockly.Blocks['ast_Assign']) {
-            var gap = Blockly.Blocks['ast_AugAssign'] ? 8 : 24;
-            var blockText = '<xml>' +
+            let gap = Blockly.Blocks['ast_AugAssign'] ? 8 : 24;
+            let blockText = '<xml>' +
                 '<block type="ast_Assign" gap="' + gap + '">' +
                 mostRecentVariableFieldXmlString +
                 '</block>' +
                 '</xml>';
-            var block = Blockly.utils.xml.textToDom(blockText).firstChild;
+            let block = Blockly.utils.xml.textToDom(blockText).firstChild;
             xmlList.push(block);
         }
         if (!Blockly.Variables._HIDE_GETTERS_SETTERS && Blockly.Blocks['ast_AugAssign']) {
-            var gap = Blockly.Blocks['ast_Name'] ? 20 : 8;
-            var blockText = '<xml>' +
+            let gap = Blockly.Blocks['ast_Name'] ? 20 : 8;
+            let blockText = '<xml>' +
                 '<block type="ast_AugAssign" gap="' + gap + '">' +
                 mostRecentVariableFieldXmlString +
                 '<value name="VALUE">' +
@@ -111,7 +111,7 @@ Blockly.Variables.flyoutCategoryBlocks = function (workspace) {
                 '<mutation options="false" simple="true"></mutation>' +
                 '</block>' +
                 '</xml>';
-            var block = Blockly.utils.xml.textToDom(blockText).firstChild;
+            let block = Blockly.utils.xml.textToDom(blockText).firstChild;
             xmlList.push(block);
         }
 

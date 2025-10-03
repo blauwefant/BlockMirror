@@ -540,7 +540,7 @@ class PythonParameter {
       if (blockType === "ast_UnaryOpUSub") {
         value = "-" + value
       } else if (blockType === "ast_Str" || blockType === "ast_StrChar") {
-        value = "'" + value.replace("'", "\'").replace('\n', '\\n') + "'"
+        value = "'" + value.replace("'", "\\'").replace('\n', '\\n') + "'"
       }
 
       return this.#matchesDefaultValue(blockType, value, defaultValue)
@@ -1120,7 +1120,7 @@ class PythonAttribute {
       blockElement = result.rawXml.children[0];
     }
 
-    if (!!this.typeHint) {
+    if (this.typeHint) {
       blockElement.setAttribute("output", this.typeHint.flattened().toString());
     }
     return blockElement;

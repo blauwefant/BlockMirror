@@ -389,7 +389,11 @@ BlockMirrorTextToBlocks.prototype['ast_FunctionDef'] = function (node, parent) {
 
     if (decorator_list !== null) {
         for (let i = 0; i < decorator_list.length; i++) {
-            values['DECORATOR' + i] = this.convert(decorator_list[i], node);
+            let converted = this.convert(decorator_list[i], node)
+            if (converted.constructor === Array) {
+                converted = converted[0]
+            }
+            values['DECORATOR' + i] = converted;
         }
     }
 

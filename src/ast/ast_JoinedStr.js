@@ -146,7 +146,7 @@ Blockly.Blocks["ast_JoinedStr"] = {
         itemBlock.nextConnection && itemBlock.nextConnection.targetBlock();
     }
     // Disconnect any children that don't belong.
-    for (var i = 0; i < this.itemCount_; i++) {
+    for (let i = 0; i < this.itemCount_; i++) {
       var connection = this.getInput("ADD" + i).connection.targetConnection;
       if (connection && connections.indexOf(connection) == -1) {
         let value = connection.getSourceBlock().getInput("VALUE");
@@ -160,7 +160,7 @@ Blockly.Blocks["ast_JoinedStr"] = {
     this.itemCount_ = connections.length;
     this.updateShape_();
     // Reconnect any child blocks.
-    for (var i = 0; i < this.itemCount_; i++) {
+    for (let i = 0; i < this.itemCount_; i++) {
       connections[i]?.reconnect(this, "ADD" + i);
       if (!connections[i]) {
           const createName = blockTypes[i] === "ast_JoinedStr_create_with_item_S" ? "ast_JoinedStrStr" :

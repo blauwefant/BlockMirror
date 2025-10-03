@@ -294,7 +294,7 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
     // Handle comments that are on the very last line
     var lastLineNumber = lineNumberInProgram + 1;
     if (lastLineNumber in this.comments) {
-        var comment = this.comments[lastLineNumber].split("|", 2)
+        let comment = this.comments[lastLineNumber].split("|", 2)
 
         if (parseInt(comment[0], 10) / 4 == this.levelIndex - 1) {
             var lastComment = comment[1];
@@ -314,7 +314,7 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
     // Handle any extra comments that stuck around
     if (is_top_level) {
         for (var commentLineInProgram in this.comments) {
-            var comment = this.comments[commentLineInProgram].split("|", 2)
+            let comment = this.comments[commentLineInProgram].split("|", 2)
 
             if (parseInt(comment[0], 10) / 4 == this.levelIndex - 1) {
               var commentInProgram = comment[1];
@@ -359,6 +359,13 @@ BlockMirrorTextToBlocks.prototype.isStatementContainer = function(ast) {
     return this.isTopLevel(ast) || ast instanceof Sk.astnodes.FunctionDef || ast instanceof Sk.astnodes.Expr && this.isStatementContainer(ast._parent)
 }
 
+BlockMirrorTextToBlocks.prototype.isStatement = function(ast) {
+    if (ast instanceof Sk.astnodes.FunctionDef) {
+        return ast.decorator_list.includes(ast)
+    }
+    return this.isStatementContainer(ast._parent)
+}
+
 BlockMirrorTextToBlocks.prototype.convert = function (node, parent) {
     let functionName = 'ast_' + node._astname;
     if (this[functionName] === undefined) {
@@ -393,16 +400,16 @@ BlockMirrorTextToBlocks.prototype.convertStatement = function (node, full_source
 
 BlockMirrorTextToBlocks.prototype.getChunkHeights = function (node) {
     let lineNumbers = [];
-    if (node.hasOwnProperty("lineno")) {
+    if (Object.hasOwn(node, "lineno")) {
         lineNumbers.push(node.lineno);
     }
-    if (node.hasOwnProperty("body")) {
+    if (Object.hasOwn(node, "body")) {
         for (let i = 0; i < node.body.length; i += 1) {
             let subnode = node.body[i];
             lineNumbers = lineNumbers.concat(this.getChunkHeights(subnode));
         }
     }
-    if (node.hasOwnProperty("orelse")) {
+    if (Object.hasOwn(node, "orelse")) {
         for (let i = 0; i < node.orelse.length; i += 1) {
             let subnode = node.orelse[i];
             lineNumbers = lineNumbers.concat(this.getChunkHeights(subnode));

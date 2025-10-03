@@ -28,7 +28,7 @@ test('constructor with default string tuple values', () => {
 
 test('builtin class without package', () =>
 {
-    let libraries = new Libraries({
+    const libraries = new Libraries({
         'builtin math': {
             "class int(numbers.Integral)": [
                 "__init__(self, value: int | str = 0, /, base: int = 10): None",
@@ -55,14 +55,14 @@ test('class attribute', () =>
         }
     });
 
-    let actor = libraries.resolve('pgzero.actor.Actor')
+    const actor = libraries.resolve('pgzero.actor.Actor')
     expect(actor).toBeInstanceOf(PythonClass);
     expect(actor.name).toBe('Actor');
     expect(actor.fullName).toBe('pgzero.actor.Actor');
 
-    let actorSize = actor.members.get('size')
+    const actorSize = actor.members.get('size')
     expect(actorSize).toBeInstanceOf(PythonAttribute);
-    let typeHint = actorSize.typeHint
+    const typeHint = actorSize.typeHint
     expect(typeHint).toBeInstanceOf(PythonTypeHint);
     expect(typeHint.value).toBe("tuple");
     expect(typeHint.typeParams).toStrictEqual(["float", "float"]);
