@@ -296,7 +296,7 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
     if (lastLineNumber in this.comments) {
         let comment = this.comments[lastLineNumber].split("|", 2)
 
-        if (parseInt(comment[0], 10) / 4 == this.levelIndex - 1) {
+        if (parseInt(comment[0], 10) / 4 === this.levelIndex - 1) {
             var lastComment = comment[1];
 
             let commentChild = this.ast_Comment(lastComment, lastLineNumber);
@@ -477,7 +477,7 @@ BlockMirrorTextToBlocks.create_block = function (type, lineNumber, fields, value
     if (statements !== undefined && Object.keys(statements).length > 0) {
         for (let statement in statements) {
             let statementValue = statements[statement];
-            if (statementValue != null) {
+            if (statementValue !== null) {
                 for (let i = 0; i < statementValue.length; i += 1) {
                     // In most cases, you really shouldn't ever have more than
                     //  one statement in this list. I'm not sure Blockly likes

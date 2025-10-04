@@ -8,18 +8,6 @@ Blockly.Blocks['ast_ReturnFull'] = {
     this.setColour(BlockMirrorTextToBlocks.COLOR.FUNCTIONS);
   }
 };
-// Blockly.common.defineBlocks({ast_ReturnFull: ast_ReturnFull});
-
-// BlockMirrorTextToBlocks.BLOCKS.push({
-//     "message0": "return %1",
-//     "args0": [
-//         {"type": "input_value", "name": "VALUE"}
-//     ],
-//     "inputsInline": true,
-//     "previousStatement": null,
-//     "nextStatement": null,
-//     "colour": BlockMirrorTextToBlocks.COLOR.FUNCTIONS
-// });
 
 BlockMirrorTextToBlocks.BLOCKS.push({
     "type": "ast_Return",

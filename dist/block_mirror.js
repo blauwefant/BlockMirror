@@ -1761,7 +1761,7 @@ BlockMirrorTextToBlocks.prototype.convertBody = function (node, parent) {
   var lastLineNumber = lineNumberInProgram + 1;
   if (lastLineNumber in this.comments) {
     var _comment = this.comments[lastLineNumber].split("|", 2);
-    if (parseInt(_comment[0], 10) / 4 == this.levelIndex - 1) {
+    if (parseInt(_comment[0], 10) / 4 === this.levelIndex - 1) {
       var lastComment = _comment[1];
       var _commentChild = this.ast_Comment(lastComment, lastLineNumber);
       if (is_top_level && !previousWasStatement) {
@@ -1916,7 +1916,7 @@ BlockMirrorTextToBlocks.create_block = function (type, lineNumber, fields, value
   if (statements !== undefined && Object.keys(statements).length > 0) {
     for (var statement in statements) {
       var statementValue = statements[statement];
-      if (statementValue != null) {
+      if (statementValue !== null) {
         for (var _i3 = 0; _i3 < statementValue.length; _i3 += 1) {
           // In most cases, you really shouldn't ever have more than
           //  one statement in this list. I'm not sure Blockly likes
@@ -8561,19 +8561,6 @@ Blockly.Blocks['ast_ReturnFull'] = {
     this.setColour(BlockMirrorTextToBlocks.COLOR.FUNCTIONS);
   }
 };
-// Blockly.common.defineBlocks({ast_ReturnFull: ast_ReturnFull});
-
-// BlockMirrorTextToBlocks.BLOCKS.push({
-//     "message0": "return %1",
-//     "args0": [
-//         {"type": "input_value", "name": "VALUE"}
-//     ],
-//     "inputsInline": true,
-//     "previousStatement": null,
-//     "nextStatement": null,
-//     "colour": BlockMirrorTextToBlocks.COLOR.FUNCTIONS
-// });
-
 BlockMirrorTextToBlocks.BLOCKS.push({
   "type": "ast_Return",
   "message0": "return",

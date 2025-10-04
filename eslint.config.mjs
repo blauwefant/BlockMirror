@@ -4,7 +4,6 @@ import globals from "globals";
 
 export default defineConfig([
   js.configs.recommended,
-  // js.configs.all, // TODO check other rules to enable
   {
     languageOptions: {
       globals: globals.browser,
