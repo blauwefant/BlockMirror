@@ -2014,22 +2014,19 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function (node) {
     var caller = node.value;
     var potentialModule = this.getAsModule(caller);
     if (potentialModule) {
-      var attributeName = Sk.ffi.remapToJs(node.attr);
-      var singleType = this.variables.getSingleType(potentialModule);
-      if (singleType instanceof PythonClass) {
-        return singleType.resolve(attributeName);
-      }
-
-      // Needed for variables defined in the root module of a library
-      var _fullTypeName2;
-      var resolvedFromLibrary = this.blockMirror.libraries.resolve(potentialModule);
-      if (resolvedFromLibrary instanceof PythonAttribute) {
-        _fullTypeName2 = resolvedFromLibrary.typeHint.value;
+      var _fullTypeName2 = this.variables.getSingleType(potentialModule);
+      if (!_fullTypeName2) {
+        // Needed for variables defined in the root module of a library
+        var resolvedFromLibrary = this.blockMirror.libraries.resolve(potentialModule);
+        if (resolvedFromLibrary instanceof PythonAttribute) {
+          _fullTypeName2 = resolvedFromLibrary.typeHint.value;
+        }
       }
       if (!_fullTypeName2) {
         var _this$imports$getType3;
         _fullTypeName2 = (_this$imports$getType3 = this.imports.getType(potentialModule)) !== null && _this$imports$getType3 !== void 0 ? _this$imports$getType3 : potentialModule;
       }
+      var attributeName = Sk.ffi.remapToJs(node.attr);
       return this.blockMirror.libraries.resolve(_fullTypeName2 + "." + attributeName);
     }
     var callerBlock = this.convert(caller, node._parent); // TODO caller node
@@ -4825,10 +4822,10 @@ BlockMirrorTextToBlocks.prototype['ast_AnnAssign'] = function (node, parent) {
     var variableType = annotationElement.getAttribute('type') === "ast_NameConstantNone" ? "None" : (_annotationElement$ch = annotationElement.childNodes[1]) === null || _annotationElement$ch === void 0 ? void 0 : _annotationElement$ch.textContent;
     if (variableType) {
       var fullVariableType = this.imports.getType(variableType);
-      if (node instanceof Sk.astnodes.Name && Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank) {
+      if (node.target instanceof Sk.astnodes.Name && Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank) {
         this.variables.add(fullVariableType, python.pythonGenerator.blank);
       } else {
-        var _variableName = values['TARGET'].childNodes[0].textContent;
+        var _variableName = values["TARGET"].childNodes[0].textContent;
         this.variables.add(fullVariableType, _variableName);
       }
     }
