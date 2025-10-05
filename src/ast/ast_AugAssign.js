@@ -110,7 +110,7 @@ BlockMirrorTextToBlocks.prototype['ast_AugAssign'] = function (node, parent) {
     if (simpleTarget) {
         fields['VAR'] = Sk.ffi.remapToJs(target.id);
     } else {
-        values['TARGET'] = this.convert(value, node);
+        values['TARGET'] = this.convert(target, node);
     }
 
     let preposition = op;

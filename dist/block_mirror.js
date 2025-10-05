@@ -4358,10 +4358,10 @@ python.pythonGenerator.forBlock['ast_Num'] = function (block) {
   // Numeric value.
   var code = parseFloat(block.getFieldValue('NUM'));
   var order;
-  if (code == Infinity) {
+  if (code === Infinity) {
     code = 'float("inf")';
     order = python.Order.FUNCTION_CALL;
-  } else if (code == -Infinity) {
+  } else if (code === -Infinity) {
     code = '-float("inf")';
     order = python.Order.UNARY_SIGN;
   } else {
@@ -4931,7 +4931,7 @@ BlockMirrorTextToBlocks.prototype['ast_AugAssign'] = function (node, parent) {
   if (simpleTarget) {
     fields['VAR'] = Sk.ffi.remapToJs(target.id);
   } else {
-    values['TARGET'] = this.convert(value, node);
+    values['TARGET'] = this.convert(target, node);
   }
   var preposition = op;
   var allOptions = BINOPS_SIMPLE.indexOf(op) === -1;
@@ -5236,6 +5236,11 @@ BlockMirrorTextToBlocks.UNARYOPS.forEach(function (unaryop) {
 BlockMirrorTextToBlocks.prototype['ast_UnaryOp'] = function (node, parent) {
   var op = node.op.name;
   var operand = node.operand;
+  if (operand instanceof Sk.astnodes.Num && op === "USub") {
+    // Do not make the blocks more complex than needed, just make the number negative:
+    operand.n.v = -operand.n.v;
+    return this.convert(operand, node);
+  }
   return BlockMirrorTextToBlocks.create_block('ast_UnaryOp' + op, node.lineno, {}, {
     "VALUE": this.convert(operand, node)
   }, {
@@ -9704,6 +9709,7 @@ BlockMirror.LIBRARIES['builtin sequences'] = {
 BlockMirror.LIBRARIES['builtin set'] = {
   "__colour": "SET",
   "__toolbox": false,
+  "class collections.abc.Collection": [],
   "class collections.abc.Set(collections.abc.Collection)": [
     "isdisjoint(self, other, /): bool",
     "issubset(self, other, /): bool",

@@ -1,6 +1,7 @@
 {
   "__colour": "SET",
   "__toolbox": false,
+  "class collections.abc.Collection": [],
   "class collections.abc.Set(collections.abc.Collection)": [
     "isdisjoint(self, other, /): bool",
     "issubset(self, other, /): bool",

@@ -35,10 +35,10 @@ python.pythonGenerator.forBlock['ast_Num'] = function(block) {
   // Numeric value.
   var code = parseFloat(block.getFieldValue('NUM'));
   var order;
-  if (code == Infinity) {
+  if (code === Infinity) {
     code = 'float("inf")';
     order = python.Order.FUNCTION_CALL;
-  } else if (code == -Infinity) {
+  } else if (code === -Infinity) {
     code = '-float("inf")';
     order = python.Order.UNARY_SIGN;
   } else {
