@@ -4,7 +4,7 @@ Blockly.Blocks['ast_Name'] = {
         this.setOutput(true, null);
         this.appendDummyInput('NAME')
             .appendField(new Blockly.FieldTextInput('default'), 'VAR');
-        this.setColour(BlockMirrorTextToBlocks.COLOR.VARIABLES);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.import_ = "";
     },
     mutationToDom: function () {
@@ -82,11 +82,17 @@ python.pythonGenerator.forBlock['ast_Name'] = function(block, generator) {
 };
 
 BlockMirrorTextToBlocks.prototype['ast_Name'] = function (node, parent) {
-    var id = node.id;
-    if (id.v === python.pythonGenerator.blank) {
-        return null;
-    }
-    return BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
-        "VAR": id.v
-    });
+  let id = node.id;
+  if (id.v === python.pythonGenerator.blank) {
+    return null;
+  }
+  let mutations = {}
+
+  let fromLibrary = this.resolveFromLibrary(node)
+  if ((fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) && fromLibrary.requiresImport) {
+    mutations["@import"] = fromLibrary.requiresImport
+  }
+  return BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
+    "VAR": id.v
+  }, {}, {}, mutations);
 }

@@ -2,7 +2,7 @@ Blockly.Blocks['ast_Subscript'] = {
     init: function () {
         this.setInputsInline(true);
         this.setOutput(true);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.SEQUENCES);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
         this.sliceKinds_ = ["I"];
 
         this.appendValueInput("VALUE")

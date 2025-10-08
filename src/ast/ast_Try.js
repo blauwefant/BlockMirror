@@ -16,7 +16,7 @@ Blockly.Blocks['ast_Try'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.EXCEPTIONS);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.EXCEPTIONS));
         this.updateShape_();
     },
     // TODO: Not mutable currently

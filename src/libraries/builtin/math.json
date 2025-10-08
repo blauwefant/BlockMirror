@@ -2,7 +2,7 @@
   "__colour": "MATH",
   "__toolbox": false,
   "": [
-    "abs(x: Any, /): Any",
+    "abs(x: numbers.Number, /): numbers.Number",
     "bin(x: Any, /): str",
     "hash(object, /): int",
     "hex(int, /): str",
@@ -13,6 +13,20 @@
     "round(number: float | int, ndigits: int | None = None): float | int // round(___)",
     "sum(iterable, /, start: float | int = 0): float | int",
     "divmod(a: float | int, b: float | int): tuple[int, float]"
+  ],
+  "random": [
+    "choice(seq: collections.abc.Sequence): Any",
+    "shuffle(seq: collections.abc.Sequence): None",
+    "randrange(start: int, stop: int, step: int=1, /): int",
+    "randint(a: int, b: int): int",
+    "getrandbits(k: int): int"
+  ],
+  "math": [
+    "e: numbers.Number",
+    "exp(x: numbers.Number): numbers.Number",
+    "ceil floor(x): numbers.Integral",
+    "sin cos tan asin acos atan(x: numbers.Number): numbers.Number",
+    "log(x: numbers.Number, base=math.e): numbers.Number"
   ],
   "class numbers.Number": [],
   "class numbers.Complex(numbers.Number)": [
@@ -35,8 +49,8 @@
     "__init__(self, value: int | str = 0, /, base: int = 10): None",
     "as_integer_ratio(self): tuple[int, int]",
     "bit_length(self): int",
-    "from_bytes(cls, bytes, byteorder: str = \"big\", *, signed: bool = False): int // {}.from_bytes(___)",
-    "to_bytes(self, length: int = 1, byteorder: str =\"big\", *, signed: bool = False): bytes",
+    "from_bytes(cls, bytes, byteorder: typing.Literal['big', 'little'] = 'big', *, signed: bool = False): int // {}.from_bytes(___)",
+    "to_bytes(self, length: int = 1, byteorder: typing.Literal['big', 'little'] = 'big', *, signed: bool = False): bytes",
     "is_integer(self): bool"
   ]
 }

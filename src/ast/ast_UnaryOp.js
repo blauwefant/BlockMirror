@@ -17,7 +17,7 @@ BlockMirrorTextToBlocks.UNARYOPS.forEach(function (unaryop) {
             {"type": "input_value", "name": "VALUE"}
         ],
         "inputsInline": false,
-        "output": null,
+        "output": unaryop[1] === 'Not' ? "Boolean" : null,
         "colour": (unaryop[1] === 'Not' ?
             BlockMirrorTextToBlocks.COLOR.LOGIC :
             BlockMirrorTextToBlocks.COLOR.MATH)

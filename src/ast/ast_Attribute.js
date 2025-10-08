@@ -37,7 +37,11 @@ Blockly.Blocks['ast_Attribute'] = {
         this.import_ = xmlElement.getAttribute('import');
         this.isFull_ = "true" === xmlElement.getAttribute('full');
         this.names_ = xmlElement.getAttribute('names').split(' ');
-        this.givenColour_ = parseInt(xmlElement.getAttribute('colour'), 10);
+        let colour = xmlElement.getAttribute('colour')
+        this.givenColour_ = parseInt(colour, 10);
+        if (isNaN(this.givenColour_)) {
+          this.givenColour_ = colour;
+        }
         this.updateShape_();
     },
     updateShape_: function () {
@@ -94,7 +98,6 @@ python.pythonGenerator.forBlock['ast_Attribute'] = function(block, generator) {
 
     if (block.isFull_) {
         value = python.pythonGenerator.valueToCode(block, 'VALUE', python.Order.NONE) || python.pythonGenerator.blank;
-        value = python.pythonGenerator.imports.getType(value) ?? value
     } else {
         value = python.pythonGenerator.getVariableName(block.getFieldValue('VALUE'),
             Blockly.Variables.NAME_TYPE);
@@ -115,7 +118,7 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
     let attrStr = Sk.ffi.remapToJs(node.attr)
     let returns = 'Any';
     let fromLibrary = this.resolveFromLibrary(node)
-    let alias = null
+    let importAlias = null
 
     let mutations = {
         "@returns": returns,
@@ -125,7 +128,6 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
         "@import": '',
         "@full": false,
         "@names": '',
-        "@colour": BlockMirrorTextToBlocks.COLOR.OO,
     };
 
     if (fromLibrary) {
@@ -145,15 +147,17 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
         } else if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
             if (fromLibrary.requiresImport) {
                 mutations["@import"] = fromLibrary.requiresImport
-                let type
-                [type, alias] = fromLibrary.requiresImport.split(' as ', 2)
+                let importType
+                [importType, importAlias] = fromLibrary.requiresImport.split(' as ', 2)
             }
         }
+    } else {
+      mutations["@colour"] = this.blockMirror.configuration.convertColour("ast_Attribute", BlockMirrorTextToBlocks.COLOR.OO)
     }
 
     let newBlock
 
-    if (alias !== null) {
+    if (importAlias !== null) {
         // TODO colour from fromLibrary?
         newBlock = BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
             "VAR": attrStr

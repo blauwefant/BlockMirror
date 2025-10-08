@@ -114,7 +114,10 @@ Custom field factory functions are not yet available for all parameter types. Cu
 - `bytes.__init__`: Not fully accurate.
 - `complex.__init__`: Would need support for multiple signatures to improve accuracy.
 - `min`: *args variant and default argument.
+- `math`: module is incomplete
 - `max`: *args variant and default argument.
+- `random.randrange`: Would need support for multiple signatures to improve accuracy.
+- `random`: module is incomplete
 
 ### builtin/oo.json
 

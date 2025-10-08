@@ -21,7 +21,7 @@ Blockly.Blocks['ast_AugAssign'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.VARIABLES);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.updateShape_();
         this.updatePreposition_(this.initialPreposition_);
     },

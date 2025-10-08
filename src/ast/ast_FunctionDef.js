@@ -89,7 +89,7 @@ Blockly.Blocks['ast_FunctionDef'] = {
         this.setInputsInline(false);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.FUNCTIONS);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
         this.updateShape_();
         this.setMutator(new Blockly.icons.MutatorIcon(['ast_FunctionMutantParameter',
             'ast_FunctionMutantParameterType'], this));

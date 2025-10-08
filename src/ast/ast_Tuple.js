@@ -4,7 +4,7 @@ Blockly.Blocks["ast_Tuple"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.TUPLE);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "Tuple");
@@ -142,7 +142,7 @@ Blockly.Blocks["ast_Tuple_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.TUPLE);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
     this.appendDummyInput().appendField("Add new tuple elements below");
     this.appendStatementInput("STACK");
     this.contextMenu = false;
@@ -155,7 +155,7 @@ Blockly.Blocks["ast_Tuple_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.TUPLE);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);

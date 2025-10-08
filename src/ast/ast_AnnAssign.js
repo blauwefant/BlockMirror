@@ -9,7 +9,7 @@ Blockly.Blocks['ast_AnnAssignFull'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.VARIABLES);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.initialized_ = true;
         this.updateShape_();
     },
@@ -71,7 +71,7 @@ Blockly.Blocks['ast_AnnAssign'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.VARIABLES);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.strAnnotations_ = false;
         this.initialized_ = true;
     },
@@ -194,23 +194,16 @@ BlockMirrorTextToBlocks.prototype['ast_AnnAssign'] = function (node, parent) {
             }, mutations);
     } else {
         values['TARGET'] = this.convert(target, node);
-        let annotationElement = this.convert(annotation, node);
-        values['ANNOTATION'] = annotationElement
-        let variableType = annotationElement.getAttribute('type') === "ast_NameConstantNone" ? "None" : annotationElement.childNodes[1]?.textContent;
+        values['ANNOTATION'] = this.convert(annotation, node);
 
-      if (variableType) {
-        let fullVariableType = this.imports.getType(variableType);
+        if (target._astname === 'Name') {
+          let fullVariableType = this.resolveFromLibrary(annotation);
 
-        if (
-          node.target instanceof Sk.astnodes.Name &&
-          Sk.ffi.remapToJs(node.target.id) === python.pythonGenerator.blank
-        ) {
-          this.variables.add(fullVariableType, python.pythonGenerator.blank);
-        } else {
-          let variableName = values["TARGET"].childNodes[0].textContent;
-          this.variables.add(fullVariableType, variableName);
+          if (fullVariableType) {
+            let variableName = target.id.v;
+            this.variables.add(fullVariableType, variableName);
+          }
         }
-      }
 
         return BlockMirrorTextToBlocks.create_block("ast_AnnAssignFull", node.lineno, {},
             values,

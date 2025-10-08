@@ -3,7 +3,7 @@ Blockly.Blocks['ast_Raise'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.EXCEPTIONS);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.EXCEPTIONS));
         this.exc_ = true;
         this.cause_ = false;
 

@@ -74,69 +74,6 @@ python.pythonGenerator.scrubNakedValue = function (line) {
     return line;
 };
 
-
-/**
- * Construct the blocks required by the flyout for the variable category.
- * @param {!Blockly.Workspace} workspace The workspace containing variables.
- * @return {!Array.<!Element>} Array of XML block elements.
- */
-Blockly.Variables.flyoutCategoryBlocks = function (workspace) {
-    var variableModelList = workspace.getVariablesOfType('');
-
-    var xmlList = [];
-    if (variableModelList.length > 0) {
-        // New variables are added to the end of the variableModelList.
-        var mostRecentVariableFieldXmlString =
-                variableModelList[variableModelList.length - 1];
-        if (!Blockly.Variables._HIDE_GETTERS_SETTERS && Blockly.Blocks['ast_Assign']) {
-            let gap = Blockly.Blocks['ast_AugAssign'] ? 8 : 24;
-            let blockText = '<xml>' +
-                '<block type="ast_Assign" gap="' + gap + '">' +
-                mostRecentVariableFieldXmlString +
-                '</block>' +
-                '</xml>';
-            let block = Blockly.utils.xml.textToDom(blockText).firstChild;
-            xmlList.push(block);
-        }
-        if (!Blockly.Variables._HIDE_GETTERS_SETTERS && Blockly.Blocks['ast_AugAssign']) {
-            let gap = Blockly.Blocks['ast_Name'] ? 20 : 8;
-            let blockText = '<xml>' +
-                '<block type="ast_AugAssign" gap="' + gap + '">' +
-                mostRecentVariableFieldXmlString +
-                '<value name="VALUE">' +
-                '<shadow type="ast_Num">' +
-                '<field name="NUM">1</field>' +
-                '</shadow>' +
-                '</value>' +
-                '<mutation options="false" simple="true"></mutation>' +
-                '</block>' +
-                '</xml>';
-            let block = Blockly.utils.xml.textToDom(blockText).firstChild;
-            xmlList.push(block);
-        }
-
-        if (Blockly.Blocks['ast_Name']) {
-            variableModelList.sort(Blockly.VariableModel.compareByName);
-            for (let i = 0, variable; variable = variableModelList[i]; i++) {
-                if (!Blockly.Variables._HIDE_GETTERS_SETTERS) {
-                    let block = Blockly.utils.xml.createElement('block');
-                    block.setAttribute('type', 'ast_Name');
-                    block.setAttribute('gap', 8);
-                    block.appendChild(Blockly.Variables.generateVariableFieldDom(variable));
-                    xmlList.push(block);
-                } else {
-                    block = Blockly.utils.xml.createElement('label');
-                    block.setAttribute('text', variable.name);
-                    block.setAttribute('web-class', 'blockmirror-toolbox-variable');
-                    //block.setAttribute('gap', 8);
-                    xmlList.push(block);
-                }
-            }
-        }
-    }
-    return xmlList;
-};
-
 //******************************************************************************
 // Hacks to make variable names case-sensitive
 

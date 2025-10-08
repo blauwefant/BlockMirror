@@ -4,7 +4,7 @@ Blockly.Blocks["ast_Set"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.SET);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "Set");
@@ -138,7 +138,7 @@ Blockly.Blocks["ast_Set_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.SET);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
     this.appendDummyInput().appendField("Add new set elements below");
     this.appendStatementInput("STACK");
     this.contextMenu = false;
@@ -151,7 +151,7 @@ Blockly.Blocks["ast_Set_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.SET);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);

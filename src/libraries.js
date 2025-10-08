@@ -1,7 +1,7 @@
 const __BLANK = "___" // Mirrors python.pythonGenerator.blank
 
 function _resolve_colour(colour) {
-  if (typeof colour === "string" && typeof BlockMirrorTextToBlocks === "function") {
+  if (typeof colour === "string" && !colour.startsWith('#') && typeof BlockMirrorTextToBlocks === "function") {
     return BlockMirrorTextToBlocks.COLOR[colour]
   }
   return colour
@@ -101,9 +101,13 @@ class PythonModule {
       for (let input of members) {
         if (typeof input === "object") {
           if (input.__colour) {
-            this.colour = _resolve_colour(input.__colour)
+            this.colour = this.library.libraries.convertColour(
+              "module", _resolve_colour(input.__colour), this.fullName
+            )
           } else if (input.__color) {
-            this.colour = _resolve_colour(input.__color)
+            this.colour = this.library.libraries.convertColour(
+              "module", _resolve_colour(input.__color), this.fullName
+            )
           } else if (input.signatures) {
             for (const signature of input.signatures) {
               this.addMember(signature, input)
@@ -129,7 +133,7 @@ class PythonModule {
       let resultItem = value.toToolbox(textToBlocks)
 
       if (resultItem) {
-        result += resultItem +"<sep></sep>";
+        result += resultItem
       }
     }
 
@@ -526,7 +530,8 @@ class PythonParameter {
       } else if (blockType === "ast_Attribute") {
         let valueElement = [...blockElement.getElementsByTagName('value')].filter(child => child.getAttribute('name') === 'VALUE')[0]
         let attrElement = [...blockElement.getElementsByTagName('field')].filter(child => child.getAttribute('name') === 'ATTR')[0]
-        let importAttr = valueElement.getElementsByTagName('mutation')[0].getAttribute('import')
+        let mutationElement = valueElement.getElementsByTagName('mutation')[0]
+        let importAttr = mutationElement?.getAttribute('import')
 
         if (importAttr) {
           let fullName = importAttr.split(' as ', 1)[0];
@@ -743,49 +748,64 @@ class PythonFunction {
     return signature.split(/[( ]/, 1)[0];
   }
 
-  constructor(pythonModule, signature, comment, colour, custom) {
-    this.pythonModule = pythonModule;
-    let indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
-    this.typeHint = indexOfTypeHint < 0 ? null : new PythonTypeHint(pythonModule.library.libraries, signature.substring(indexOfTypeHint + 1));
-    let aliases
-    this.name = null;
-    [this.name, ...aliases] = signature.split("(", 1)[0].split(" ");
-
-    if ((comment ?? "").trim() === "") {
-      this.premessage = "";
-      this.message = this.name;
-    } else {
-      [this.premessage, this.message] = splitPremessageMessage(comment.split("(", 1)[0]);
-    }
-    this.parameters = new PythonParameters(this, signature, comment ?? "");
-    this.fullName = pythonModule?.fullName === "" ? this.name : (pythonModule?.fullName + "." + this.name);
-    this.colour = _resolve_colour(colour) ?? pythonModule?.library?.colour;
-    this.custom =  _resolveFunction(custom, this.fullName);
-    this.argumentOffset = 0
+  constructor(pythonModuleOrFunction, signature, comment, colour, custom) {
     this.isAliasOf = null;
 
-    this.aliases = aliases.map((value) => {
-        let result = this.cloneWithSignature(value + signature.substring(signature.indexOf("(")));
-        result.isAliasOf = this;
-        result.typeHint = this.typeHint;
-        result.colour = this.colour;
-        result.premessage = this.premessage;
-        result.message = this.message;
-        result.parameters = this.parameters;
-        result.custom = this.custom;
-        result.argumentOffset = this.argumentOffset;
-        return result
-    });
+    if (pythonModuleOrFunction instanceof PythonFunction) {
+      let original = pythonModuleOrFunction;
+      this.pythonModule = original.pythonModule;
+      this.typeHint = original.typeHint;
+      this.colour = original.colour;
+      this.premessage = original.premessage;
+      this.message = original.message;
+      this.parameters = original.parameters;
+      this.custom = original.custom;
+      this.argumentOffset = original.argumentOffset;
+      this.name = signature.split("(", 1)[0]
+    } else {
+      this.name = null;
+      this.aliasNames = null;
+      [this.name, ...this.aliasNames] = signature.split("(", 1)[0].split(" ");
+      this.pythonModule = pythonModuleOrFunction;
+      let indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
+      this.typeHint = indexOfTypeHint < 0 ? null : new PythonTypeHint(
+        this.pythonModule.library.libraries,
+        signature.substring(indexOfTypeHint + 1),
+      );
+
+      if ((comment ?? "").trim() === "") {
+        this.premessage = "";
+        this.message = "{" + this.name + "}";
+      } else {
+        [this.premessage, this.message] = splitPremessageMessage(
+          comment.split("(", 1)[0],
+        );
+      }
+      this.parameters = new PythonParameters(this, signature, comment ?? "");
+      this.fullName = this.pythonModule.fullName === ""
+          ? this.name
+          : this.pythonModule.fullName + "." + this.name;
+      this.argumentOffset = 0;
+      this.colour = _resolve_colour(colour) ?? this.pythonModule.library.colour
+
+      if (this.constructor === PythonFunction) {
+        this.custom = _resolveFunction(custom, this.fullName);
+        this.colour = this.pythonModule.library.libraries.convertColour(
+          "ast_Call", this.colour, this.fullName
+        );
+        this.createAliases();
+      }
+    }
   }
 
-  cloneWithSignature(signature) {
-    return new PythonFunction(
-      this.pythonModule,
-      signature,
-      null,
-      null,
-      null
-    );
+  createAliases() {
+    this.aliases = this.aliasNames.map(value => new this.constructor(this, value));
+
+    for (let alias of this.aliases) {
+      alias.isAliasOf = this;
+      alias.aliases = [this, ...this.aliases].filter(item => item !== alias);
+      alias.aliasNames = alias.aliases.map(alias => alias.name);
+    }
   }
 
   toPythonSource() {
@@ -850,8 +870,7 @@ class PythonFunction {
             }
           }
         } else {
-            // Addressed by an alias, so may not be functionally the same
-          this.parameters[i + this.argumentOffset]?.applyShadow(argBlock, false);
+          this.parameters[i + this.argumentOffset]?.applyShadow(argBlock);
         }
       }
     }
@@ -1062,9 +1081,11 @@ class PythonAttribute {
     let name, aliases
     [name, ...aliases] = this.names
     this.name = name.trim()
-    this.fullName = pythonClassOrModule.fullName === "" ? this.name : pythonClassOrModule.fullname + "." + this.name;
+    this.fullName = pythonClassOrModule.fullName === "" ? this.name : pythonClassOrModule.fullName + "." + this.name;
     this.typeHint = typeHint ? new PythonTypeHint(this.pythonModule.library.libraries, typeHint) : null
-    this.colour = _resolve_colour(colour) ?? pythonClassOrModule.colour;
+    this.colour = this.pythonModule.library.libraries.convertColour(
+      "ast_Attribute", _resolve_colour(colour) ?? pythonClassOrModule.colour, this.fullName
+    );
 
     if ((comment ?? "").trim() === "") {
       this.premessage = this.pythonClass == null ? "" : this.pythonClass.name;
@@ -1072,6 +1093,14 @@ class PythonAttribute {
       this.postmessage = ""
     } else {
       [this.premessage, this.message, this.postmessage] = splitPremessageMessagePostmessage(comment);
+
+      // Only for consistency with PythonFunction:
+      let messageParts = this.message.split("{" + this.name + "}", 2)
+
+      if (messageParts.length > 1) {
+        this.message = messageParts[0]
+        this.postmessage = messageParts[1] + this.postmessage
+      }
     }
 
     this.aliases = aliases.map((value) => {
@@ -1134,56 +1163,56 @@ class PythonAttribute {
 }
 
 class PythonMethod extends PythonFunction {
-  constructor(pythonClass, signature, comment, colour, custom) {
-    super(pythonClass?.pythonModule, signature, comment, colour, custom);
-    this.pythonClass = pythonClass;
-    this.fullName = pythonClass?.fullName + "." + this.name;
+  constructor(pythonClassOrMethod, signature, comment, colour, custom) {
+    super(
+      pythonClassOrMethod instanceof PythonMethod ? pythonClassOrMethod : pythonClassOrMethod.pythonModule,
+      signature, comment, colour, custom
+    );
 
-    if ((comment ?? "").trim() === "") {
-      this.message = "." + this.name;
-    }
-
-    if (this.parameters.length === 0) {
-      this.staticmethod = true
-      this.classmethod = false
-    } else if (this.parameters[0].name === 'self') {
-      this.staticmethod = false
-      this.classmethod = false
-    } else if (this.parameters[0].name === 'cls') {
-      this.staticmethod = false
-      this.classmethod = true
+    if (pythonClassOrMethod instanceof PythonMethod) {
+      let original = pythonClassOrMethod
+      this.pythonClass = original.pythonClass;
+      this.staticmethod = original.staticmethod;
+      this.classmethod = original.classmethod;
     } else {
-      this.staticmethod = true
-      this.classmethod = false
-    }
+      this.pythonClass = pythonClassOrMethod;
+      this.fullName = this.pythonClass.fullName + "." + this.name;
 
-    if (this.premessage === "" && !(this.classmethod || this.staticmethod)) {
-      this.premessage = pythonClass?.name;
-    }
+      if ((comment ?? "").trim() === "") {
+        this.message = ".{" + this.name + "}";
+      }
 
-    this.argumentOffset = this.staticmethod ? 0 : 1
+      if (this.parameters.length === 0) {
+        this.staticmethod = true;
+        this.classmethod = false;
+      } else if (this.parameters[0].name === "self") {
+        this.staticmethod = false;
+        this.classmethod = false;
+      } else if (this.parameters[0].name === "cls") {
+        this.staticmethod = false;
+        this.classmethod = true;
+      } else {
+        this.staticmethod = true;
+        this.classmethod = false;
+      }
 
-    for (let alias of this.aliases) {
-      alias.pythonClass = this.pythonClass;
-      alias.message = this.message;
-      alias.premessage = this.premessage;
-      alias.argumentOffset = this.argumentOffset;
-      alias.classmethod = this.classmethod;
-      alias.staticmethod = this.staticmethod;
+      if (this.premessage === "" && !(this.classmethod || this.staticmethod)) {
+        this.premessage = this.pythonClass.name;
+      }
+
+      this.argumentOffset = this.staticmethod ? 0 : 1;
+      this.colour = this.pythonClass.pythonModule.library.libraries.convertColour(
+        "ast_Call", this.colour, this.fullName
+      );
+
+      if (this.constructor === PythonMethod) {
+        this.custom = _resolveFunction(custom, this.fullName);
+        this.createAliases();
+      }
     }
   }
 
-    cloneWithSignature(signature) {
-      return new PythonMethod(
-        null,
-        signature,
-        null,
-        null,
-        null
-      );
-    }
-
-    toPythonSource() {
+  toPythonSource() {
     if (this.staticmethod || this.classmethod) {
       return (
           this.pythonClass.fullName + "." +
@@ -1230,21 +1259,6 @@ class PythonConstructorMethod extends PythonMethod {
     if ((comment ?? "").trim() === "") {
       this.message = pythonClass?.name
     }
-
-    for (let alias of this.aliases) {
-      alias.message = this.message;
-      alias.typeHint = this.typeHint;
-    }
-  }
-
-  cloneWithSignature(signature) {
-   return new PythonConstructorMethod(
-     null,
-     signature,
-     null,
-     null,
-     null
-    );
   }
 
   toPythonSource() {
@@ -1272,7 +1286,9 @@ class Library {
       if (name.startsWith("__")) {
         // Library metadata
         if (name === "__colour" || name === "__color") {
-          this.colour = _resolve_colour(libraryConfiguration[name])
+          this.colour = libraries.convertColour(
+            "library", _resolve_colour(libraryConfiguration[name]), name
+          );
         } else if (name === "__toolbox") {
           this.toolbox = libraryConfiguration[name];
         }
@@ -1366,10 +1382,13 @@ class Library {
 }
 
 class Libraries extends Map {
-  constructor(librariesConfiguration, translate) {
+  constructor(librariesConfiguration, translate, convertColour) {
     super()
-    this.defaultColor = _resolve_colour("FUNCTIONS")
-    this.translate_from_config = translate || ((identifier, defaultValue) => defaultValue)
+    this.translate_from_config = translate ?? ((identifier, defaultValue) => defaultValue)
+    this.convertColour = convertColour ?? ((type, defaultValue, fromLibrary) => defaultValue)
+    this.defaultColor = this.convertColour(
+      "libraries", _resolve_colour("FUNCTIONS")
+    );
     for (let name in librariesConfiguration) {
       this.set(name, new Library(name, librariesConfiguration[name], this))
     }

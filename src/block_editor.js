@@ -33,8 +33,14 @@ function BlockMirrorBlockEditor(blockMirror) {
     };
     this.workspace = Blockly.inject(blockMirror.tags.blockEditor,
         blocklyOptions);
+
+    this.workspace.registerToolboxCategoryCallback(
+      'VARIABLE', this.variableFlyoutCallback);
+
     this.workspace.libraries = blockMirror.libraries;
     this.workspace.toolbox.flyout.workspace_.libraries = blockMirror.libraries;
+    this.workspace.convertColour = blockMirror.configuration.convertColour;
+    this.workspace.toolbox.flyout.workspace_.convertColour = blockMirror.configuration.convertColour;
     // Configure Blockly
     this.workspace.addChangeListener(this.changed.bind(this));
 
@@ -54,6 +60,97 @@ function BlockMirrorBlockEditor(blockMirror) {
     // TODO optimize
     this.blockMirror.addChangeListener(event => this.remakeToolbox());
 }
+
+
+/**
+ * Construct the blocks required by the flyout for the variable category.
+ * @param {!Blockly.Workspace} workspace The workspace containing variables.
+ * @return {!Array.<!Element>} Array of XML block elements.
+ */
+BlockMirrorBlockEditor.prototype.variableFlyoutCallback = function (workspace) {
+  var xmlList = [];
+
+  const button = document.createElement('button');
+  button.setAttribute('text', '%{BKY_NEW_VARIABLE}');
+  button.setAttribute('callbackKey', 'CREATE_VARIABLE');
+
+  workspace.registerButtonCallback('CREATE_VARIABLE', function (button) {
+    Blockly.Variables.createVariableButtonHandler(button.getTargetWorkspace());
+  });
+
+  xmlList.push(button);
+
+  var variableModelList = workspace.getVariableMap().getVariablesOfType('');
+
+  if (variableModelList.length > 0) {
+    // New variables are added to the end of the variableModelList.
+    let mostRecentVariableState;
+
+    for (let i = variableModelList.length - 1; i >= 0; i--) {
+      let variable = variableModelList[i];
+
+      if (variable.name !== python.pythonGenerator.blank) {
+        mostRecentVariableState = variable;
+        break;
+      }
+    }
+
+    if (mostRecentVariableState && !Blockly.Variables._HIDE_GETTERS_SETTERS) {
+      let mostRecentVariableFieldXmlString =
+        '<field name="VAR"><shadow type="ast_Name">' +
+        mostRecentVariableState.getName() +
+        "</shadow></field>";
+
+      xmlList.push(
+        Blockly.utils.xml.textToDom(
+          (blockText =
+            '<block type="ast_Assign" gap="8">' +
+            mostRecentVariableFieldXmlString +
+            "</block>"),
+        ),
+      );
+
+      let blockText =
+        '<block type="ast_AugAssign" gap="8">' +
+        mostRecentVariableFieldXmlString +
+        '<value name="VALUE">' +
+        '<shadow type="ast_Num">' +
+        '<field name="NUM">1</field>' +
+        "</shadow>" +
+        "</value>" +
+        '<mutation options="false" simple="true"></mutation>' +
+        "</block>";
+      xmlList.push(Blockly.utils.xml.textToDom(blockText));
+    }
+  }
+
+  xmlList.push(
+    Blockly.utils.xml.textToDom(
+      '<block type="ast_Assign" gap="8"><mutation targets="1" simple="false"></mutation></block>',
+    ),
+  );
+
+  variableModelList.sort(Blockly.VariableModel.compareByName);
+  for (let i = 0, variable; variable = variableModelList[i]; i++) {
+    if (variable.name === python.pythonGenerator.blank) {
+      continue;
+    } else if (Blockly.Variables._HIDE_GETTERS_SETTERS) {
+      block = Blockly.utils.xml.createElement('label');
+      block.setAttribute('text', variable.name);
+      block.setAttribute('web-class', 'blockmirror-toolbox-variable');
+      //block.setAttribute('gap', 8);
+      xmlList.push(block);
+    } else {
+      let block = Blockly.utils.xml.createElement('block');
+      block.setAttribute('type', 'ast_Name');
+      block.setAttribute('gap', 8);
+      block.appendChild(Blockly.Variables.generateVariableFieldDom(variable));
+      xmlList.push(block);
+    }
+  }
+
+  return xmlList;
+};
 
 BlockMirrorBlockEditor.prototype.resizeReadOnlyDiv = function () {
     if (this.readOnlyDiv_ !== null) {
@@ -126,7 +223,7 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
         if (typeof category === "string") {
             return category;
         }
-        let colour = BlockMirrorTextToBlocks.COLOR[category.colour];
+        let colour = this.blockMirror.configuration.convertColour("toolbox", BlockMirrorTextToBlocks.COLOR[category.colour], category.name);
         let header = `<category name="${category.name}" colour="${colour}"`;
         if (category.custom) {
             header += ` custom="${category.custom}">`;
@@ -135,7 +232,7 @@ BlockMirrorBlockEditor.prototype.toolboxPythonToBlocks = function (toolboxPython
         }
         let body = (category.blocks || []).map((code) => {
           if (code === '') {
-            return "<sep/>";
+            return "<sep gap='50'></sep>";
           }
 
           let textToBlocks = this.blockMirror.textToBlocks;

@@ -3,7 +3,7 @@ Blockly.Blocks['ast_Assign'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.VARIABLES);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.targetCount_ = 1;
         this.simpleTarget_ = true;
         this.updateShape_();
@@ -92,7 +92,7 @@ BlockMirrorTextToBlocks.prototype['ast_Assign'] = function (node, parent) {
 
     let values;
     let fields = {};
-    let simpleTarget = (targets.length === 1 && targets[0]._astname === 'Name');
+    let simpleTarget = (targets.length === 1 && targets[0] instanceof Sk.astnodes.Name && targets[0].id.v !== python.pythonGenerator.blank);
     if (simpleTarget) {
         values = {};
         let variableName = Sk.ffi.remapToJs(targets[0].id)
@@ -114,5 +114,5 @@ BlockMirrorTextToBlocks.prototype['ast_Assign'] = function (node, parent) {
         }, {
             "@targets": targets.length,
             "@simple": simpleTarget
-        });
+  });
 };

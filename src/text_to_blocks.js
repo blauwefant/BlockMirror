@@ -2,9 +2,13 @@ function BlockMirrorTextToBlocks(blockMirror) {
     this.blockMirror = blockMirror;
     this.hiddenImports = ["plt"];
     this.strictAnnotations = ['int', 'float', 'str', 'bool'];
+
     if (!BlockMirrorTextToBlocks.LOADED) {
-        Blockly.common.defineBlocksWithJsonArray(BlockMirrorTextToBlocks.BLOCKS);
-        BlockMirrorTextToBlocks.LOADED = true;
+      for (const blockElement of BlockMirrorTextToBlocks.BLOCKS) {
+        blockElement.colour = blockMirror.configuration.convertColour(blockElement.type, blockElement.colour);
+      }
+      Blockly.common.defineBlocksWithJsonArray(BlockMirrorTextToBlocks.BLOCKS);
+      BlockMirrorTextToBlocks.LOADED = true;
     }
     this.imports = new TypeRegistry();
     this.variables = new TypesRegistry();
@@ -586,19 +590,15 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function(node) {
         let potentialModule = this.getAsModule(caller);
 
         if (potentialModule) {
-          let fullTypeName = this.variables.getSingleType(potentialModule);
+          let resolvedFromLibrary = this.variables.getSingleType(potentialModule) ?? this.blockMirror.libraries.resolve(potentialModule);
 
-          if (!fullTypeName) {
-            // Needed for variables defined in the root module of a library
-            let resolvedFromLibrary =
-              this.blockMirror.libraries.resolve(potentialModule);
+          let fullTypeName
 
-            if (resolvedFromLibrary instanceof PythonAttribute) {
-              fullTypeName = resolvedFromLibrary.typeHint.value;
-            }
-          }
-
-          if (!fullTypeName) {
+          if (resolvedFromLibrary instanceof PythonAttribute) {
+            fullTypeName = resolvedFromLibrary.typeHint.value;
+          } else if (resolvedFromLibrary) {
+            fullTypeName = resolvedFromLibrary.fullName;
+          } else {
             fullTypeName = this.imports.getType(potentialModule) ?? potentialModule;
           }
 

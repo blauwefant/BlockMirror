@@ -4,7 +4,7 @@ Blockly.Blocks["ast_DictItem"] = {
     this.appendValueInput("VALUE").setCheck(null).appendField(":");
     this.setInputsInline(true);
     this.setOutput(true, "DictPair");
-    this.setColour(BlockMirrorTextToBlocks.COLOR.DICTIONARY);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
   },
 };
 
@@ -14,7 +14,7 @@ Blockly.Blocks["ast_Dict"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.DICTIONARY);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "Dict");
@@ -167,7 +167,7 @@ Blockly.Blocks["ast_Dict_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.DICTIONARY);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
     this.appendDummyInput().appendField("Add new dict elements below");
     this.appendStatementInput("STACK");
     this.contextMenu = false;
@@ -180,7 +180,7 @@ Blockly.Blocks["ast_Dict_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.DICTIONARY);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);

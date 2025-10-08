@@ -28,7 +28,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
         {"type": "input_value", "name": "B"}
     ],
     "inputsInline": true,
-    "output": null,
+    "output": "Boolean",
     "colour": BlockMirrorTextToBlocks.COLOR.LOGIC
 });
 

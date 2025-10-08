@@ -172,7 +172,39 @@ Blockly.Blocks['ast_Call'] = {
         }
         return "";
     },
-    updateShapeForArguments() {
+    updateShapeOfMessage: function() {
+      let messageParts = [this.message_];
+      if (this.fromLibrary_) {
+        let fromLibraryName = this.fromLibrary_.split('.').at(-1)
+        messageParts = this.message_.split("{" + fromLibraryName + "}", 2)
+      }
+
+      let messageInput = this.getInput('MESSAGE_INPUT')
+      if (messageParts.length === 1) {
+        this.setFieldValue(this.message_ + " (", "MESSAGE");
+        messageInput.removeField('MESSAGE_NAME', true)
+        messageInput.removeField('MESSAGE_POST', true)
+      } else {
+        this.setFieldValue(messageParts[0], "MESSAGE");
+        let fromLibrary = this.workspace.libraries.resolve(this.fromLibrary_);
+
+        if (fromLibrary.aliases.length === 0) {
+          this.setFieldValue(messageParts[0] + fromLibrary.name + messageParts[1] + " (", "MESSAGE");
+          messageInput.removeField('MESSAGE_NAME', true)
+          messageInput.removeField('MESSAGE_POST', true)
+        } else if (messageInput.fieldRow.length === 1) {
+          this.setFieldValue(messageParts[0], "MESSAGE");
+          messageInput.appendField(new Blockly.FieldDropdown(
+            [[fromLibrary.name, fromLibrary.name],
+            ...fromLibrary.aliases.map(function (alias) {
+              return [alias.name, alias.name];
+            })]
+          ), "MESSAGE_NAME");
+          messageInput.appendField(new Blockly.FieldLabel(messageParts[1] + " ("), "MESSAGE_POST")
+        }
+      }
+    },
+    updateShapeOfArguments() {
         // Process arguments
         let drawnArgumentCount = this.getDrawnArgumentCount_();
 
@@ -243,8 +275,8 @@ Blockly.Blocks['ast_Call'] = {
             this.removeInput('FUNC');
         }
 
-        this.setFieldValue(this.message_ + " (", "MESSAGE");
-        this.updateShapeForArguments();
+        this.updateShapeOfMessage();
+        this.updateShapeOfArguments();
         let i = this.getDrawnArgumentCount_();
 
         // Closing parentheses
@@ -267,7 +299,13 @@ Blockly.Blocks['ast_Call'] = {
         // Set return state
         this.setPreviousStatement(true);
         this.setNextStatement(true);
-        this.setOutput(this.returns_ !== 'None');
+        if (this.returns_ === 'None') {
+          this.setOutput(false);
+        } else if (this.returns_ === 'bool') {
+          this.setOutput(true, 'Boolean');
+        } else {
+          this.setOutput(true);
+        }
 
         // Remove deleted inputs.
         while (this.getInput('ARG' + i)) {
@@ -322,7 +360,11 @@ Blockly.Blocks['ast_Call'] = {
         this.premessage_ = xmlElement.getAttribute('premessage');
         this.import_ = xmlElement.getAttribute('import');
         this.fromLibrary_ = xmlElement.getAttribute('fromlibrary');
-        this.givenColour_ = parseInt(xmlElement.getAttribute('colour'), 10);
+        let colour = xmlElement.getAttribute('colour')
+        this.givenColour_ = parseInt(colour, 10);
+        if (isNaN(this.givenColour_)) {
+          this.givenColour_ = colour;
+        }
 
         var args = [];
         var paramIds = [];
@@ -410,23 +452,31 @@ python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
     }
     // Get the caller
     let funcName, fromLibrary
+    let name = block.getField('MESSAGE_NAME')?.getValue()
+
+    if (name) {
+      name = this.name_.substring(0, this.name_.lastIndexOf('.') + 1) + name;
+    } else {
+      name = this.name_;
+    }
+
     if (block.isMethod_) {
         let caller = python.pythonGenerator.valueToCode(block, 'FUNC', python.Order.FUNCTION_CALL) ||
             python.pythonGenerator.blank;
         let funcInputTargetBlock = block.getInputTargetBlock('FUNC')
 
         if (funcInputTargetBlock?.returns_) {
-            fromLibrary = generator.libraries.resolve(funcInputTargetBlock.returns_ + this.name_)
-            funcName = caller + this.name_
+            fromLibrary = generator.libraries.resolve(funcInputTargetBlock.returns_ + name)
+            funcName = caller + name
         } else {
             let resolvedCaller = python.pythonGenerator.variables.getSingleType(caller) ?? caller
             resolvedCaller = python.pythonGenerator.imports.getType(resolvedCaller) ?? resolvedCaller
-            fromLibrary = generator.libraries.resolve(resolvedCaller + this.name_)
-            funcName = resolvedCaller + this.name_
+            fromLibrary = generator.libraries.resolve(resolvedCaller + name)
+            funcName = resolvedCaller + name
         }
     } else {
-        funcName = this.name_;
-        fromLibrary = generator.libraries.resolve(this.name_)
+        funcName = name;
+        fromLibrary = generator.libraries.resolve(name)
     }
 
     if (fromLibrary) {
@@ -489,7 +539,6 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     let message;
     let name;
     let caller = null;
-    let colour = BlockMirrorTextToBlocks.COLOR.FUNCTIONS;
     let returns = 'Any';
     let fromLibrary = this.resolveFromLibrary(func)
 
@@ -564,20 +613,26 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         }
     }
 
-    if (fromLibrary) {
-        if (fromLibrary.custom) {
-            try {
-                let result = fromLibrary.custom(node, parent, this)
+    let colour;
 
-                if (result !== null && result !== undefined) {
-                  return result
-                }
-            } catch (e) {
-                console.error(e);
-                // We tried to be fancy and failed, better fall back to default behavior!
-            }
-        }
-        colour = fromLibrary.colour;
+    if (fromLibrary) {
+      if (fromLibrary.custom) {
+          try {
+              let result = fromLibrary.custom(node, parent, this)
+
+              if (result !== null && result !== undefined) {
+                return result
+              }
+          } catch (e) {
+              console.error(e);
+              // We tried to be fancy and failed, better fall back to default behavior!
+          }
+      }
+      colour = fromLibrary.colour;
+    } else {
+      colour = this.blockMirror.configuration.convertColour(
+        "ast_Call", BlockMirrorTextToBlocks.COLOR.FUNCTIONS
+      );
     }
 
     let argumentsNormal = {};

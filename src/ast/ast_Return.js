@@ -5,7 +5,7 @@ Blockly.Blocks['ast_ReturnFull'] = {
     this.setInputsInline(true)
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(BlockMirrorTextToBlocks.COLOR.FUNCTIONS);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
   }
 };
 

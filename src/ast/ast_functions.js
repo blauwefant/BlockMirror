@@ -42,7 +42,9 @@ BlockMirrorTextToBlocks['turtleRadians'] = function (node, parent, textToBlocks)
     }
 };
 
-if (typeof FieldAngle === "function") {
+if (typeof registerFieldAngle === "function") {
+    registerFieldAngle();
+
     function _turtleAngleField(block, clockwise, offset=90) {
         if (block.type === 'ast_Num' && turtle_angle_units.size <= 1) {
             if (turtle_angle_units.size === 0) {

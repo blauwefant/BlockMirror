@@ -38,7 +38,7 @@ function BlockMirror(configuration) {
     this.validateConfiguration(configuration);
     this.initializeVariables();
 
-    if (!this.configuration.skipSkulpt) {
+  if (!this.configuration.skipSkulpt) {
         this.loadSkulpt();
     }
 
@@ -108,6 +108,7 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
     this.configuration.showDefaultArguments = configuration.showDefaultArguments ?? false;
     this.configuration.move = configuration.move ?? {};
     this.configuration.zoom = configuration.zoom ?? {controls: true};
+    this.configuration.convertColour = configuration.convertColour ?? ((type, defaultValue, name) => defaultValue);
 };
 
 BlockMirror.prototype.initializeVariables = function () {
@@ -154,7 +155,7 @@ BlockMirror.prototype.initializeVariables = function () {
 
     // Listeners
     this.listeners_ = [];
-    this.libraries = new Libraries(this.configuration.libraries, this.configuration.translate);
+    this.libraries = new Libraries(this.configuration.libraries, this.configuration.translate, this.configuration.convertColour);
 };
 
 BlockMirror.prototype.loadSkulpt = function () {

@@ -5,7 +5,7 @@ Blockly.Blocks["ast_List"] = {
    */
   init: function () {
     this.setHelpUrl(Blockly.Msg["LISTS_CREATE_WITH_HELPURL"]);
-    this.setColour(BlockMirrorTextToBlocks.COLOR.LIST);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "List");
@@ -139,7 +139,7 @@ Blockly.Blocks["ast_List_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.LIST);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
     this.appendDummyInput().appendField("Add new list elements below");
     this.appendStatementInput("STACK");
     this.contextMenu = false;
@@ -152,7 +152,7 @@ Blockly.Blocks["ast_List_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(BlockMirrorTextToBlocks.COLOR.LIST);
+    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);

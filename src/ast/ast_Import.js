@@ -11,7 +11,7 @@ Blockly.Blocks['ast_Import'] = {
         this.setInputsInline(false);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.PYTHON);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.PYTHON));
         this.updateShape_();
     },
     // TODO: Not mutable currently

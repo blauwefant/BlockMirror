@@ -19,7 +19,7 @@ python.pythonGenerator.forBlock['ast_Expr'] = function(block, generator) {
 BlockMirrorTextToBlocks.prototype['ast_Expr'] = function (node, parent) {
     let converted = this.convert(node.value, node);
 
-    if (converted.constructor === Array) {
+    if (converted?.constructor === Array) {
         return converted[0];
     } else if (this.isTopLevel(parent) && this.filename === "toolbox.py") {
         // For toolbox only

@@ -9,7 +9,7 @@ Blockly.Blocks['ast_While'] = {
         this.setInputsInline(false);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(BlockMirrorTextToBlocks.COLOR.CONTROL);
+        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.CONTROL));
         this.updateShape_();
     },
     // TODO: Not mutable currently
