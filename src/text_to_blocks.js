@@ -573,6 +573,13 @@ BlockMirrorTextToBlocks.prototype.getAsModule = function (node) {
 BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function(node) {
     if (node._astname === 'Name') {
         let name = Sk.ffi.remapToJs(node.id);
+
+        // First check if this may be a globally known variable
+        let resolved = this.blockMirror.libraries.resolve(name)
+
+        if (resolved) {
+          return resolved;
+        }
         let fullTypeName = this.imports.getType(name) ?? name
         return this.blockMirror.libraries.resolve(fullTypeName)
     } else if (node._astname === 'Call') {

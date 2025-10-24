@@ -2025,17 +2025,23 @@ BlockMirrorTextToBlocks.prototype.resolveFromLibrary = function (node) {
   if (node._astname === 'Name') {
     var _this$imports$getType;
     var name = Sk.ffi.remapToJs(node.id);
+
+    // First check if this may be a globally known variable
+    var resolved = this.blockMirror.libraries.resolve(name);
+    if (resolved) {
+      return resolved;
+    }
     var fullTypeName = (_this$imports$getType = this.imports.getType(name)) !== null && _this$imports$getType !== void 0 ? _this$imports$getType : name;
     return this.blockMirror.libraries.resolve(fullTypeName);
   } else if (node._astname === 'Call') {
     var _this$imports$getType2;
     var _name = Sk.ffi.remapToJs(node.func.id);
     var _fullTypeName = (_this$imports$getType2 = this.imports.getType(_name)) !== null && _this$imports$getType2 !== void 0 ? _this$imports$getType2 : _name;
-    var resolved = this.blockMirror.libraries.resolve(_fullTypeName);
-    if (resolved instanceof PythonClass) {
-      return resolved;
-    } else if (resolved instanceof PythonFunction && resolved.typeHint) {
-      return resolved.typeHint.resolveSingleClass();
+    var _resolved = this.blockMirror.libraries.resolve(_fullTypeName);
+    if (_resolved instanceof PythonClass) {
+      return _resolved;
+    } else if (_resolved instanceof PythonFunction && _resolved.typeHint) {
+      return _resolved.typeHint.resolveSingleClass();
     }
   } else if (node._astname === 'Attribute') {
     var caller = node.value;
@@ -2359,9 +2365,9 @@ var PythonTypeHint = /*#__PURE__*/function () {
             _iterator12.f();
           }
         } else {
-          var _resolved = this.libraries.resolve(this.value);
-          if (_resolved instanceof PythonTypeAliasType) {
-            this._referencedTypeAliases.push(_resolved);
+          var _resolved2 = this.libraries.resolve(this.value);
+          if (_resolved2 instanceof PythonTypeAliasType) {
+            this._referencedTypeAliases.push(_resolved2);
           }
         }
       }
@@ -9738,7 +9744,7 @@ BlockMirror.LIBRARIES['builtin math'] = {
   "math": [
     "e: numbers.Number",
     "exp(x: numbers.Number): numbers.Number",
-    "ceil floor(x): numbers.Integral // {ceiling | floor}",
+    "ceil floor(x): numbers.Integral",
     "sin cos tan asin acos atan(x: numbers.Number): numbers.Number",
     "log(x: numbers.Number, base=math.e): numbers.Number"
   ],
