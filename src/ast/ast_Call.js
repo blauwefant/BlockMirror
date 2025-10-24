@@ -26,6 +26,7 @@ Blockly.Blocks['ast_Call'] = {
         this.name_ = null;
         this.message_ = "function";
         this.premessage_ = "";
+        this.postmessage_ = "";
         this.import_ = "";
         this.fromLibrary_ = null;
 
@@ -173,34 +174,29 @@ Blockly.Blocks['ast_Call'] = {
         return "";
     },
     updateShapeOfMessage: function() {
-      let messageParts = [this.message_];
-      if (this.fromLibrary_) {
-        let fromLibraryName = this.fromLibrary_.split('.').at(-1)
-        messageParts = this.message_.split("{" + fromLibraryName + "}", 2)
-      }
-
       let messageInput = this.getInput('MESSAGE_INPUT')
-      if (messageParts.length === 1) {
-        this.setFieldValue(this.message_ + " (", "MESSAGE");
+
+      if (this.fromLibrary_ === "") {
+        this.setFieldValue(this.message_ + this.postmessage_ + " (", "MESSAGE");
         messageInput.removeField('MESSAGE_NAME', true)
         messageInput.removeField('MESSAGE_POST', true)
       } else {
-        this.setFieldValue(messageParts[0], "MESSAGE");
+        this.setFieldValue(this.message_, "MESSAGE");
         let fromLibrary = this.workspace.libraries.resolve(this.fromLibrary_);
 
-        if (fromLibrary.aliases.length === 0) {
-          this.setFieldValue(messageParts[0] + fromLibrary.name + messageParts[1] + " (", "MESSAGE");
+        if (fromLibrary.labels.length === 1) {
+          this.setFieldValue(this.message_ + fromLibrary.label + this.postmessage_ + " (", "MESSAGE");
           messageInput.removeField('MESSAGE_NAME', true)
           messageInput.removeField('MESSAGE_POST', true)
         } else if (messageInput.fieldRow.length === 1) {
-          this.setFieldValue(messageParts[0], "MESSAGE");
+          this.setFieldValue(this.message_, "MESSAGE");
           messageInput.appendField(new Blockly.FieldDropdown(
-            [[fromLibrary.name, fromLibrary.name],
+            [[fromLibrary.label, fromLibrary.name],
             ...fromLibrary.aliases.map(function (alias) {
-              return [alias.name, alias.name];
+              return [alias.label, alias.name];
             })]
           ), "MESSAGE_NAME");
-          messageInput.appendField(new Blockly.FieldLabel(messageParts[1] + " ("), "MESSAGE_POST")
+          messageInput.appendField(new Blockly.FieldLabel(this.postmessage_ + " ("), "MESSAGE_POST")
         }
       }
     },
@@ -331,6 +327,7 @@ Blockly.Blocks['ast_Call'] = {
         container.setAttribute('method', this.isMethod_);
         container.setAttribute('message', this.message_);
         container.setAttribute('premessage', this.premessage_);
+        container.setAttribute('postmessage', this.postmessage_);
         container.setAttribute('import', this.import_);
         container.setAttribute('fromlibrary', this.fromLibrary_);
         container.setAttribute('colour', this.givenColour_);
@@ -358,6 +355,7 @@ Blockly.Blocks['ast_Call'] = {
         this.isMethod_ = "true" === xmlElement.getAttribute('method');
         this.message_ = xmlElement.getAttribute('message');
         this.premessage_ = xmlElement.getAttribute('premessage');
+        this.postmessage_ = xmlElement.getAttribute('postmessage');
         this.import_ = xmlElement.getAttribute('import');
         this.fromLibrary_ = xmlElement.getAttribute('fromlibrary');
         let colour = xmlElement.getAttribute('colour')
@@ -536,6 +534,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     let isMethod = false;
     let import_ = null;
     let premessage = "";
+    let postmessage = "";
     let message;
     let name;
     let caller = null;
@@ -572,8 +571,9 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
             }
 
             name = fromLibrary.name;
-            premessage = fromLibrary.premessage
-            message = fromLibrary.message
+            premessage = fromLibrary.premessage;
+            postmessage = fromLibrary.postmessage;
+            message = fromLibrary.message;
             if (fromLibrary.typeHint) {
               returns = fromLibrary.typeHint.flattened().toString()
             }
@@ -601,11 +601,6 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                     name = fromLibrary.name;
                 } else {
                     name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
-
-                }
-
-                if (message === fromLibrary.name) {
-                    message = name;
                 }
             }
         } else {
@@ -646,6 +641,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         "@name": name,
         "@message": message,
         "@premessage": premessage,
+        "@postmessage": postmessage,
         "@colour": colour,
         "@import": import_ ?? "",
         "@fromlibrary": fromLibrary?.fullName ?? ""

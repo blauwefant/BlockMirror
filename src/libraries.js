@@ -758,14 +758,21 @@ class PythonFunction {
       this.colour = original.colour;
       this.premessage = original.premessage;
       this.message = original.message;
+      this.postmessage = original.postmessage;
       this.parameters = original.parameters;
       this.custom = original.custom;
       this.argumentOffset = original.argumentOffset;
+      this.names = original.names;
+      this.labels = original.labels;
       this.name = signature.split("(", 1)[0]
+      this.fullName = this.pythonModule.fullName === ""
+        ? this.name
+        : this.pythonModule.fullName + "." + this.name;
     } else {
       this.name = null;
-      this.aliasNames = null;
-      [this.name, ...this.aliasNames] = signature.split("(", 1)[0].split(" ");
+      this.names = signature.split("(", 1)[0].split(" ");
+      this.name = this.names[0];
+      this.label = this.name;
       this.pythonModule = pythonModuleOrFunction;
       let indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
       this.typeHint = indexOfTypeHint < 0 ? null : new PythonTypeHint(
@@ -775,11 +782,47 @@ class PythonFunction {
 
       if ((comment ?? "").trim() === "") {
         this.premessage = "";
-        this.message = "{" + this.name + "}";
+        this.message = this.pythonModule.fullName === ""
+          ? ""
+          : this.pythonModule.fullName + ".";
+        this.postmessage = "";
+
+        // If no comment is in the specification, aliases should be made available.
+        this.labels = [...this.names]
       } else {
         [this.premessage, this.message] = splitPremessageMessage(
           comment.split("(", 1)[0],
         );
+
+        this.postmessage = "";
+
+        if (this.names.length === 1) {
+          // If there are no aliases, accolades are optional in the specification.
+          this.label = this.message;
+          this.message = "";
+          this.labels = [this.label]
+        } else {
+          let messageParts = this.message.split(/\{([^}]+)\}/, 3);
+
+          if (messageParts.length > 1) {
+            this.message = messageParts[0];
+            this.labels = [...this.names]
+            let labels = messageParts[1].split("|");
+
+            for (const [index, label] of labels.entries()) {
+              this.labels[index] = label.trim();
+            }
+
+            this.label = this.labels[0]
+            this.postmessage = messageParts[2];
+          } else {
+            // If there are aliases, but no accolades in the specification,
+            //  aliases are likely intended to be hidden.
+            this.label = this.message;
+            this.message = "";
+            this.labels = [this.label]
+          }
+        }
       }
       this.parameters = new PythonParameters(this, signature, comment ?? "");
       this.fullName = this.pythonModule.fullName === ""
@@ -799,12 +842,23 @@ class PythonFunction {
   }
 
   createAliases() {
-    this.aliases = this.aliasNames.map(value => new this.constructor(this, value));
+    this.aliases = this.names.slice(1).map(name => new this.constructor(this, name));
 
-    for (let alias of this.aliases) {
+    if (this.labels.length <= 1) {
+      for (const alias of this.aliases) {
+        alias.label = this.label;
+      }
+    } else {
+      for (const [index, alias] of this.aliases.entries()) {
+        alias.label = this.labels[index + 1];
+      }
+    }
+
+    for (const alias of this.aliases) {
       alias.isAliasOf = this;
       alias.aliases = [this, ...this.aliases].filter(item => item !== alias);
-      alias.aliasNames = alias.aliases.map(alias => alias.name);
+      alias.names = this.names;
+      alias.labels = this.labels;
     }
   }
 
@@ -1077,10 +1131,9 @@ class PythonAttribute {
         this.pythonModule = pythonClassOrModule
     }
     let [names, typeHint] = signature.trim().split(":", 2)
-    this.names = names.split(" ")
-    let name, aliases
-    [name, ...aliases] = this.names
-    this.name = name.trim()
+    this.names = names.trim().split(" ")
+    this.labels = [...this.names]
+    this.name = this.names[0]
     this.fullName = pythonClassOrModule.fullName === "" ? this.name : pythonClassOrModule.fullName + "." + this.name;
     this.typeHint = typeHint ? new PythonTypeHint(this.pythonModule.library.libraries, typeHint) : null
     this.colour = this.pythonModule.library.libraries.convertColour(
@@ -1093,19 +1146,24 @@ class PythonAttribute {
       this.postmessage = ""
     } else {
       [this.premessage, this.message, this.postmessage] = splitPremessageMessagePostmessage(comment);
-
-      // Only for consistency with PythonFunction:
-      let messageParts = this.message.split("{" + this.name + "}", 2)
+      let messageParts = this.message.split(/\{([^}]+)\}/, 3)
 
       if (messageParts.length > 1) {
         this.message = messageParts[0]
-        this.postmessage = messageParts[1] + this.postmessage
+
+        let labels = messageParts[1].split('|')
+        for (const [index, label] of labels.entries()) {
+          this.labels[index] = label.trim()
+        }
+
+        this.postmessage = messageParts[2] + this.postmessage
       }
     }
 
-    this.aliases = aliases.map((value) => {
+    this.aliases = this.names.slice(1).map((value) => {
       let result = new PythonAttribute(pythonClassOrModule, value + ':' + (this.typeHint ?? ""), comment, colour);
       result.names = this.names
+      result.labels = this.labels
       return result
     });
   }
@@ -1174,12 +1232,13 @@ class PythonMethod extends PythonFunction {
       this.pythonClass = original.pythonClass;
       this.staticmethod = original.staticmethod;
       this.classmethod = original.classmethod;
+      this.fullName = this.pythonClass.fullName + "." + this.name;
     } else {
       this.pythonClass = pythonClassOrMethod;
       this.fullName = this.pythonClass.fullName + "." + this.name;
 
       if ((comment ?? "").trim() === "") {
-        this.message = ".{" + this.name + "}";
+        this.message = ".";
       }
 
       if (this.parameters.length === 0) {
@@ -1257,7 +1316,8 @@ class PythonConstructorMethod extends PythonMethod {
     this.typeHint = new PythonTypeHint(pythonClass.pythonModule.library.libraries, pythonClass.fullName);
 
     if ((comment ?? "").trim() === "") {
-      this.message = pythonClass?.name
+      this.label = pythonClass?.name
+      this.message = "";
     }
   }
 

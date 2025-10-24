@@ -9,6 +9,7 @@ Blockly.Blocks['ast_Attribute'] = {
         this.import_ = "";
         this.isFull_ = false;
         this.names_ = [];
+        this.labels_ = [];
         this.givenColour_ = BlockMirrorTextToBlocks.COLOR.OO;
 
         this.appendDummyInput('NAME').appendField(' ', 'premessage')
@@ -25,7 +26,8 @@ Blockly.Blocks['ast_Attribute'] = {
         container.setAttribute('returns', this.returns_);
         container.setAttribute('import', this.import_);
         container.setAttribute('full', this.isFull_);
-        container.setAttribute('names', this.names_.join(' '));
+        container.setAttribute('names', this.names_.join('|'));
+        container.setAttribute('labels', this.labels_.join('|'));
         container.setAttribute('colour', this.givenColour_);
         return container;
     },
@@ -36,7 +38,8 @@ Blockly.Blocks['ast_Attribute'] = {
         this.returns_ = xmlElement.getAttribute('returns');
         this.import_ = xmlElement.getAttribute('import');
         this.isFull_ = "true" === xmlElement.getAttribute('full');
-        this.names_ = xmlElement.getAttribute('names').split(' ');
+        this.names_ = xmlElement.getAttribute('names').split('|');
+        this.labels_ = xmlElement.getAttribute('labels').split('|');
         let colour = xmlElement.getAttribute('colour')
         this.givenColour_ = parseInt(colour, 10);
         if (isNaN(this.givenColour_)) {
@@ -68,7 +71,7 @@ Blockly.Blocks['ast_Attribute'] = {
                 let nameInput = this.getInput('NAME')
                 nameInput.removeField('ATTR')
                 nameInput.insertFieldAt(this.isFull_ ? 1 : 3, new Blockly.FieldDropdown(this.names_.map(
-                    item => [item, item])
+                    (item, index) => [this.labels_[index], item])
                 ), 'ATTR')
             }
         } else if (this.names_.length <= 1) {
@@ -128,6 +131,7 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
         "@import": '',
         "@full": false,
         "@names": '',
+        "@labels": '',
     };
 
     if (fromLibrary) {
@@ -139,7 +143,9 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
             mutations["@message"] = fromLibrary.message
             mutations["@postmessage"] = fromLibrary.postmessage
             mutations["@returns"] = fromLibrary.typeHint?.flattened().toString() ?? returns
-            mutations["@names"] = fromLibrary.names.join(" ")
+            mutations["@names"] = fromLibrary.names.join("|")
+            mutations["@labels"] = fromLibrary.labels.join("|")
+
 
             if (fromLibrary.pythonClass === null) {
                 mutations["@import"] = fromLibrary.pythonModule.requiresImport ?? ""
