@@ -2167,8 +2167,7 @@ var PythonModule = /*#__PURE__*/function () {
         }
       } else {
         var _inputObject$colour2;
-        var _translatedComment2 = this.translate(code.split(":", 1)[0], comment);
-        member = new PythonAttribute(this, code, _translatedComment2, (_inputObject$colour2 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour2 !== void 0 ? _inputObject$colour2 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
+        member = new PythonAttribute(this, code, this.translate(PythonAttribute.extractName(code), comment), (_inputObject$colour2 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour2 !== void 0 ? _inputObject$colour2 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
         var _iterator0 = _createForOfIteratorHelper(member.aliases),
           _step0;
         try {
@@ -2754,7 +2753,7 @@ function _shouldShadow(argBlock, defaultValue) {
       var attrElement = _toConsumableArray(blockElement.getElementsByTagName('field')).filter(function (child) {
         return child.getAttribute('name') === 'ATTR';
       })[0];
-      var mutationElement = valueElement.getElementsByTagName('mutation')[0];
+      var mutationElement = (valueElement !== null && valueElement !== void 0 ? valueElement : blockElement).getElementsByTagName('mutation')[0];
       var importAttr = mutationElement === null || mutationElement === void 0 ? void 0 : mutationElement.getAttribute('import');
       if (importAttr) {
         var fullName = importAttr.split(' as ', 1)[0];
@@ -3254,7 +3253,7 @@ var PythonClass = /*#__PURE__*/function () {
         }
       } else {
         var _inputObject$colour5;
-        member = new PythonAttribute(this, code, this.translate(code.split(":", 1)[0], comment), (_inputObject$colour5 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour5 !== void 0 ? _inputObject$colour5 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
+        member = new PythonAttribute(this, code, this.translate(PythonAttribute.extractName(code), comment), (_inputObject$colour5 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour5 !== void 0 ? _inputObject$colour5 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
         var _iterator26 = _createForOfIteratorHelper(member.aliases),
           _step26;
         try {
@@ -3273,6 +3272,9 @@ var PythonClass = /*#__PURE__*/function () {
   }, {
     key: "translate",
     value: function translate(memberName, defaultValue) {
+      if (memberName === "") {
+        return this.pythonModule.translate(this.name, defaultValue);
+      }
       return this.pythonModule.translate(this.name + "." + memberName, defaultValue);
     }
   }, {
@@ -3364,7 +3366,7 @@ var PythonAttribute = /*#__PURE__*/function () {
     this.typeHint = typeHint ? new PythonTypeHint(this.pythonModule.library.libraries, typeHint) : null;
     this.colour = this.pythonModule.library.libraries.convertColour("ast_Attribute", (_resolve_colour3 = _resolve_colour(colour)) !== null && _resolve_colour3 !== void 0 ? _resolve_colour3 : pythonClassOrModule.colour, this.fullName);
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
-      this.premessage = this.pythonClass == null ? "" : this.pythonClass.name;
+      this.premessage = this.pythonClass == null ? "" : this.pythonClass.translate("", this.pythonClass.name);
       this.message = this.pythonClass == null && this.pythonModule.fullName === "" ? "" : ".";
       this.postmessage = "";
     } else {
@@ -3373,6 +3375,9 @@ var PythonAttribute = /*#__PURE__*/function () {
       this.premessage = _splitPremessageMessa4[0];
       this.message = _splitPremessageMessa4[1];
       this.postmessage = _splitPremessageMessa4[2];
+      if (this.premessage === "" && this.pythonClass !== null) {
+        this.premessage = this.pythonClass.translate("", this.pythonClass.name);
+      }
       var messageParts = this.message.split(/\{([^}]+)\}/, 3);
       if (messageParts.length > 1) {
         this.message = messageParts[0];
@@ -3452,6 +3457,11 @@ var PythonAttribute = /*#__PURE__*/function () {
     value: function isA(signature) {
       return !signature.includes("(") && !signature.startsWith("type ");
     }
+  }, {
+    key: "extractName",
+    value: function extractName(signature) {
+      return signature.split(/[: ]/, 1)[0];
+    }
   }]);
 }();
 var PythonMethod = /*#__PURE__*/function (_PythonFunction) {
@@ -3485,7 +3495,7 @@ var PythonMethod = /*#__PURE__*/function (_PythonFunction) {
         _this11.classmethod = false;
       }
       if (_this11.premessage === "" && !(_this11.classmethod || _this11.staticmethod)) {
-        _this11.premessage = _this11.pythonClass.name;
+        _this11.premessage = _this11.pythonClass.translate("", _this11.pythonClass.name);
       }
       _this11.argumentOffset = _this11.staticmethod ? 0 : 1;
       _this11.colour = _this11.pythonClass.pythonModule.library.libraries.convertColour("ast_Call", _this11.colour, _this11.fullName);
@@ -7472,10 +7482,12 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         if (fromLibrary.pythonModule.name === "") {
           name = fromLibrary.name;
         } else {
-          var _this$imports$getName;
           name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
-          var moduleName = (_this$imports$getName = this.imports.getName(fromLibrary.pythonModule.fullName)) !== null && _this$imports$getName !== void 0 ? _this$imports$getName : fromLibrary.pythonModule.name;
-          message = moduleName + message;
+          if (message === ".") {
+            var _this$imports$getName;
+            var moduleName = (_this$imports$getName = this.imports.getName(fromLibrary.pythonModule.fullName)) !== null && _this$imports$getName !== void 0 ? _this$imports$getName : fromLibrary.pythonModule.name;
+            message = moduleName + message;
+          }
         }
       }
     } else {

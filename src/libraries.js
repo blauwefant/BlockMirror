@@ -51,11 +51,10 @@ class PythonModule {
         this.members.set(alias.name, alias);
       }
     } else {
-      const translatedComment = this.translate(code.split(":", 1)[0], comment);
       member = new PythonAttribute(
           this,
           code,
-          translatedComment,
+          this.translate(PythonAttribute.extractName(code), comment),
           inputObject?.colour ?? inputObject?.color,
       );
 
@@ -530,7 +529,7 @@ class PythonParameter {
       } else if (blockType === "ast_Attribute") {
         let valueElement = [...blockElement.getElementsByTagName('value')].filter(child => child.getAttribute('name') === 'VALUE')[0]
         let attrElement = [...blockElement.getElementsByTagName('field')].filter(child => child.getAttribute('name') === 'ATTR')[0]
-        let mutationElement = valueElement.getElementsByTagName('mutation')[0]
+        let mutationElement = (valueElement ?? blockElement).getElementsByTagName('mutation')[0]
         let importAttr = mutationElement?.getAttribute('import')
 
         if (importAttr) {
@@ -989,7 +988,7 @@ class PythonClass {
       member = new PythonAttribute(
           this,
           code,
-          this.translate(code.split(":", 1)[0], comment),
+          this.translate(PythonAttribute.extractName(code), comment),
           inputObject?.colour ?? inputObject?.color,
       );
 
@@ -1002,6 +1001,9 @@ class PythonClass {
   }
 
   translate(memberName, defaultValue) {
+    if (memberName === "") {
+      return this.pythonModule.translate(this.name, defaultValue);
+    }
     return this.pythonModule.translate(this.name + "." + memberName, defaultValue);
   }
 
@@ -1122,6 +1124,10 @@ class PythonAttribute {
     return !signature.includes("(") && !signature.startsWith("type ");
   }
 
+  static extractName(signature) {
+    return signature.split(/[: ]/, 1)[0];
+  }
+
   constructor(pythonClassOrModule, signature, comment, colour) {
     this.isAliasOf = null
 
@@ -1143,11 +1149,16 @@ class PythonAttribute {
     );
 
     if ((comment ?? "").trim() === "") {
-      this.premessage = this.pythonClass == null ? "" : this.pythonClass.name;
+      this.premessage = this.pythonClass == null ? "" : this.pythonClass.translate("", this.pythonClass.name);
       this.message = this.pythonClass == null && this.pythonModule.fullName === "" ? "" : "."
       this.postmessage = ""
     } else {
       [this.premessage, this.message, this.postmessage] = splitPremessageMessagePostmessage(comment);
+
+      if (this.premessage === "" && this.pythonClass !== null) {
+        this.premessage = this.pythonClass.translate("", this.pythonClass.name);
+      }
+
       let messageParts = this.message.split(/\{([^}]+)\}/, 3)
 
       if (messageParts.length > 1) {
@@ -1259,7 +1270,7 @@ class PythonMethod extends PythonFunction {
       }
 
       if (this.premessage === "" && !(this.classmethod || this.staticmethod)) {
-        this.premessage = this.pythonClass.name;
+        this.premessage = this.pythonClass.translate("", this.pythonClass.name);
       }
 
       this.argumentOffset = this.staticmethod ? 0 : 1;

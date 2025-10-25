@@ -50,23 +50,14 @@ function addMemberToTranslationsMap(member, translationsMap) {
         // } else {
         //     translationsMap.set(member.fullName, `${member.message}`)
         // }
-    } else if (member instanceof blockMirrorLibraries.PythonAttribute && !member.isAliasOf) {
-      let value, labelsPart
-      let premessage = member.premessage ? member.premessage + " " : "";
-
-      if (member.labels.length > 1) {
-        labelsPart = "{" + member.labels.join(" | ") + "}";
-      } else {
-        labelsPart = member.labels[0];
-      }
-
+    } else if (member instanceof blockMirrorLibraries.PythonAttribute && !member.isAliasOf && member.labels.length > 1) {
+      // Only dropdown attributes can be translated for now
       if (member.pythonClass || member.pythonModule.fullName !== "") {
-        value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
-      } else {
-        value = `${premessage}${member.message}${labelsPart}${member.postmessage}`;
+        let labelsPart = "{" + member.labels.join(" | ") + "}";
+        let premessage = member.premessage ? member.premessage + " " : "";
+        let value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
+        translationsMap.set(member.fullName, value);
       }
-
-      translationsMap.set(member.fullName, value);
     }
 }
 
