@@ -11,22 +11,62 @@ let librariesDir = path.resolve(baseDir, 'src/libraries/')
 let librariesConfig = {}
 
 function addMemberToTranslationsMap(member, translationsMap) {
-    if (member instanceof blockMirrorLibraries.PythonFunction && !member.isAliasOf || member instanceof blockMirrorLibraries.PythonAttribute) {
-        if (member instanceof blockMirrorLibraries.PythonConstructorMethod) {
-            translationsMap.set(member.pythonClass.fullName, `${member.message}`)
-        } else if (member instanceof blockMirrorLibraries.PythonMethod) {
-            if (member.premessage) {
-                translationsMap.set(member.fullName, `${member.premessage.trimEnd()} {}${member.message}`)
-            } else {
-                translationsMap.set(member.fullName, `{}${member.message}`)
-            }
-        } else if (member.premessage && member.message) {
-            translationsMap.set(member.fullName, `${member.premessage}{}${member.message}`)
-        } else if (member.message) {
-            translationsMap.set(member.fullName, `${member.message}`)
+    if (member instanceof blockMirrorLibraries.PythonFunction && !member.isAliasOf) {
+      let key, value;
+      let premessage = member.premessage ? member.premessage + " " : "";
+
+      if (member instanceof blockMirrorLibraries.PythonConstructorMethod) {
+        key = member.pythonClass.fullName;
+        value = `${premessage}${member.message}${member.postmessage}`;
+      } else {
+        let labelsPart;
+        key = member.fullName;
+
+        if (member.labels.length > 1) {
+          labelsPart = "{" + member.labels.join(" | ") + "}";
         } else {
-            translationsMap.set(member.fullName, `${member.message}`)
+          labelsPart = member.labels[0];
         }
+
+        if (member instanceof blockMirrorLibraries.PythonMethod) {
+          value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
+        } else {
+          value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
+        }
+      }
+      translationsMap.set(key, value);
+        // if (member instanceof blockMirrorLibraries.PythonConstructorMethod) {
+        //     translationsMap.set(, `${member.message}`)
+        // } else if (member instanceof blockMirrorLibraries.PythonMethod) {
+        //     if (member.premessage) {
+        //         translationsMap.set(member.fullName, `${member.premessage.trimEnd()} {}${member.message}`)
+        //     } else {
+        //         translationsMap.set(member.fullName, `{}${member.message}`)
+        //     }
+        // } else if (member.premessage && member.message) {
+        //     translationsMap.set(member.fullName, `${member.premessage}{}${member.message}`)
+        // } else if (member.message) {
+        //     translationsMap.set(member.fullName, `${member.message}`)
+        // } else {
+        //     translationsMap.set(member.fullName, `${member.message}`)
+        // }
+    } else if (member instanceof blockMirrorLibraries.PythonAttribute && !member.isAliasOf) {
+      let value, labelsPart
+      let premessage = member.premessage ? member.premessage + " " : "";
+
+      if (member.labels.length > 1) {
+        labelsPart = "{" + member.labels.join(" | ") + "}";
+      } else {
+        labelsPart = member.labels[0];
+      }
+
+      if (member.pythonClass || member.pythonModule.fullName !== "") {
+        value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
+      } else {
+        value = `${premessage}${member.message}${labelsPart}${member.postmessage}`;
+      }
+
+      translationsMap.set(member.fullName, value);
     }
 }
 

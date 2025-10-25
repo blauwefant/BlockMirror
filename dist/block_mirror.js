@@ -2953,7 +2953,7 @@ var PythonFunction = /*#__PURE__*/function () {
       this.typeHint = indexOfTypeHint < 0 ? null : new PythonTypeHint(this.pythonModule.library.libraries, signature.substring(indexOfTypeHint + 1));
       if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
         this.premessage = "";
-        this.message = this.pythonModule.fullName === "" ? "" : this.pythonModule.fullName + ".";
+        this.message = this.pythonModule.fullName === "" ? "" : ".";
         this.postmessage = "";
 
         // If no comment is in the specification, aliases should be made available.
@@ -3345,6 +3345,7 @@ var PythonAttribute = /*#__PURE__*/function () {
     var _resolve_colour3,
       _this10 = this;
     _classCallCheck(this, PythonAttribute);
+    this.isAliasOf = null;
     if (pythonClassOrModule instanceof PythonClass) {
       this.pythonClass = pythonClassOrModule;
       this.pythonModule = pythonClassOrModule.pythonModule;
@@ -3364,7 +3365,7 @@ var PythonAttribute = /*#__PURE__*/function () {
     this.colour = this.pythonModule.library.libraries.convertColour("ast_Attribute", (_resolve_colour3 = _resolve_colour(colour)) !== null && _resolve_colour3 !== void 0 ? _resolve_colour3 : pythonClassOrModule.colour, this.fullName);
     if ((comment !== null && comment !== void 0 ? comment : "").trim() === "") {
       this.premessage = this.pythonClass == null ? "" : this.pythonClass.name;
-      this.message = ".";
+      this.message = this.pythonClass == null && this.pythonModule.fullName === "" ? "" : ".";
       this.postmessage = "";
     } else {
       var _splitPremessageMessa3 = splitPremessageMessagePostmessage(comment);
@@ -3396,6 +3397,7 @@ var PythonAttribute = /*#__PURE__*/function () {
     this.aliases = this.names.slice(1).map(function (value) {
       var _this10$typeHint;
       var result = new PythonAttribute(pythonClassOrModule, value + ':' + ((_this10$typeHint = _this10.typeHint) !== null && _this10$typeHint !== void 0 ? _this10$typeHint : ""), comment, colour);
+      result.isAliasOf = _this10;
       result.names = _this10.names;
       result.labels = _this10.labels;
       return result;
@@ -7470,7 +7472,10 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
         if (fromLibrary.pythonModule.name === "") {
           name = fromLibrary.name;
         } else {
+          var _this$imports$getName;
           name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
+          var moduleName = (_this$imports$getName = this.imports.getName(fromLibrary.pythonModule.fullName)) !== null && _this$imports$getName !== void 0 ? _this$imports$getName : fromLibrary.pythonModule.name;
+          message = moduleName + message;
         }
       }
     } else {

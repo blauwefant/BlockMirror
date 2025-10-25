@@ -784,7 +784,7 @@ class PythonFunction {
         this.premessage = "";
         this.message = this.pythonModule.fullName === ""
           ? ""
-          : this.pythonModule.fullName + ".";
+          : ".";
         this.postmessage = "";
 
         // If no comment is in the specification, aliases should be made available.
@@ -1123,6 +1123,8 @@ class PythonAttribute {
   }
 
   constructor(pythonClassOrModule, signature, comment, colour) {
+    this.isAliasOf = null
+
     if (pythonClassOrModule instanceof PythonClass) {
         this.pythonClass = pythonClassOrModule
         this.pythonModule = pythonClassOrModule.pythonModule
@@ -1142,7 +1144,7 @@ class PythonAttribute {
 
     if ((comment ?? "").trim() === "") {
       this.premessage = this.pythonClass == null ? "" : this.pythonClass.name;
-      this.message = "."
+      this.message = this.pythonClass == null && this.pythonModule.fullName === "" ? "" : "."
       this.postmessage = ""
     } else {
       [this.premessage, this.message, this.postmessage] = splitPremessageMessagePostmessage(comment);
@@ -1162,6 +1164,7 @@ class PythonAttribute {
 
     this.aliases = this.names.slice(1).map((value) => {
       let result = new PythonAttribute(pythonClassOrModule, value + ':' + (this.typeHint ?? ""), comment, colour);
+      result.isAliasOf = this
       result.names = this.names
       result.labels = this.labels
       return result

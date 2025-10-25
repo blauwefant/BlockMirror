@@ -598,9 +598,12 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
                 isMethod = false;
 
                 if (fromLibrary.pythonModule.name === "") {
-                    name = fromLibrary.name;
+                  name = fromLibrary.name;
                 } else {
-                    name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
+                  name = fromLibrary.pythonModule.name + "." + fromLibrary.name;
+
+                  let moduleName = this.imports.getName(fromLibrary.pythonModule.fullName) ?? fromLibrary.pythonModule.name
+                  message = moduleName + message
                 }
             }
         } else {
