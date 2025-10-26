@@ -13,21 +13,14 @@ let librariesConfig = {}
 function addMemberToTranslationsMap(member, translationsMap) {
     if (member instanceof blockMirrorLibraries.PythonFunction && !member.isAliasOf) {
       let key, value;
-      let premessage = member.premessage ? member.premessage + " " : "";
+      let premessage = member.premessage && (!member.pythonClass || member.premessage !== member.pythonClass.name) ? member.premessage + " " : "";
 
       if (member instanceof blockMirrorLibraries.PythonConstructorMethod) {
         key = member.pythonClass.fullName;
         value = `${premessage}${member.message}${member.postmessage}`;
       } else {
-        let labelsPart;
         key = member.fullName;
-
-        if (member.labels.length > 1) {
-          labelsPart = "{" + member.labels.join(" | ") + "}";
-        } else {
-          labelsPart = member.labels[0];
-        }
-
+        let labelsPart = "{" + member.labels.join(" | ") + "}";
         if (member instanceof blockMirrorLibraries.PythonMethod) {
           value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
         } else {
@@ -50,14 +43,18 @@ function addMemberToTranslationsMap(member, translationsMap) {
         // } else {
         //     translationsMap.set(member.fullName, `${member.message}`)
         // }
-    } else if (member instanceof blockMirrorLibraries.PythonAttribute && !member.isAliasOf && member.labels.length > 1) {
+    } else if (member instanceof blockMirrorLibraries.PythonAttribute && !member.isAliasOf) {
       // Only dropdown attributes can be translated for now
-      if (member.pythonClass || member.pythonModule.fullName !== "") {
-        let labelsPart = "{" + member.labels.join(" | ") + "}";
-        let premessage = member.premessage ? member.premessage + " " : "";
-        let value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
-        translationsMap.set(member.fullName, value);
+      let labelsPart = "{" + member.labels.join(" | ") + "}";
+      let premessage = member.premessage && (!member.pythonClass || member.premessage !== member.pythonClass.name) ? member.premessage + " " : "";
+      let value
+
+      if (!member.pythonClass && member.pythonModule.fullName === "") {
+        value = `${premessage}${member.message}${labelsPart}${member.postmessage}`;
+      } else {
+        value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
       }
+      translationsMap.set(member.fullName, value);
     }
 }
 

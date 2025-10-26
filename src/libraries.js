@@ -1173,11 +1173,14 @@ class PythonAttribute {
       }
     }
 
-    this.aliases = this.names.slice(1).map((value) => {
-      let result = new PythonAttribute(pythonClassOrModule, value + ':' + (this.typeHint ?? ""), comment, colour);
+    this.label = this.labels[0]
+
+    this.aliases = this.names.slice(1).map((name, index) => {
+      let result = new PythonAttribute(pythonClassOrModule, name + ':' + (this.typeHint ?? ""), comment, colour);
       result.isAliasOf = this
       result.names = this.names
       result.labels = this.labels
+      result.label = this.labels[index + 1]
       return result
     });
   }

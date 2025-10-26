@@ -1,9 +1,38 @@
+class LibraryLabelFieldTextInput extends Blockly.FieldTextInput {
+  constructor(libraries, prefix, value, validator, config) {
+    super(value, validator, config);
+    this._libraries = libraries;
+    this.prefix = prefix;
+  }
+
+  getDisplayText_() {
+    let text = this.getText();
+    let fromLibrary = this._libraries.resolve(this.prefix + text);
+
+    if (fromLibrary instanceof PythonAttribute) {
+      text = fromLibrary.label;
+    }
+
+    if (text.length > this.maxDisplayLength) {
+      // Truncate displayed string and add an ellipsis ('...').
+      text = text.substring(0, this.maxDisplayLength - 2) + '…';
+    }
+    // Replace whitespace with non-breaking spaces so the text doesn't collapse.
+    text = text.replace(/\s/g, Blockly.Field.NBSP);
+    if (this.sourceBlock_ && this.sourceBlock_.RTL) {
+      // The SVG is LTR, force text to be RTL by adding an RLM.
+      text += '\u200F';
+    }
+    return text;
+  }
+}
+
 Blockly.Blocks['ast_Name'] = {
     init: function () {
         this.setInputsInline(true)
         this.setOutput(true, null);
         this.appendDummyInput('NAME')
-            .appendField(new Blockly.FieldTextInput('default'), 'VAR');
+            .appendField(new LibraryLabelFieldTextInput(this.workspace.libraries, '', 'default'), 'VAR');
         this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.import_ = "";
     },
@@ -89,8 +118,8 @@ BlockMirrorTextToBlocks.prototype['ast_Name'] = function (node, parent) {
   let mutations = {}
 
   let fromLibrary = this.resolveFromLibrary(node)
-  if ((fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) && fromLibrary.requiresImport) {
-    mutations["@import"] = fromLibrary.requiresImport
+  if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
+    mutations["@import"] = fromLibrary.requiresImport;
   }
   return BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
     "VAR": id.v

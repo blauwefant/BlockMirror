@@ -3399,12 +3399,14 @@ var PythonAttribute = /*#__PURE__*/function () {
         this.postmessage = messageParts[2] + this.postmessage;
       }
     }
-    this.aliases = this.names.slice(1).map(function (value) {
+    this.label = this.labels[0];
+    this.aliases = this.names.slice(1).map(function (name, index) {
       var _this10$typeHint;
-      var result = new PythonAttribute(pythonClassOrModule, value + ':' + ((_this10$typeHint = _this10.typeHint) !== null && _this10$typeHint !== void 0 ? _this10$typeHint : ""), comment, colour);
+      var result = new PythonAttribute(pythonClassOrModule, name + ':' + ((_this10$typeHint = _this10.typeHint) !== null && _this10$typeHint !== void 0 ? _this10$typeHint : ""), comment, colour);
       result.isAliasOf = _this10;
       result.names = _this10.names;
       result.labels = _this10.labels;
+      result.label = _this10.labels[index + 1];
       return result;
     });
   }
@@ -4597,11 +4599,43 @@ BlockMirrorTextToBlocks.prototype['ast_BinOp'] = function (node, parent) {
 };
 python.pythonGenerator.forBlock['ast_BinOpFull'] = python.pythonGenerator.forBlock['ast_BinOp'];
 BlockMirrorTextToBlocks.prototype['ast_BinOpFull'] = BlockMirrorTextToBlocks.prototype['ast_BinOp'];
+var LibraryLabelFieldTextInput = /*#__PURE__*/function (_Blockly$FieldTextInp) {
+  function LibraryLabelFieldTextInput(libraries, prefix, value, validator, config) {
+    var _this14;
+    _classCallCheck(this, LibraryLabelFieldTextInput);
+    _this14 = _callSuper(this, LibraryLabelFieldTextInput, [value, validator, config]);
+    _this14._libraries = libraries;
+    _this14.prefix = prefix;
+    return _this14;
+  }
+  _inherits(LibraryLabelFieldTextInput, _Blockly$FieldTextInp);
+  return _createClass(LibraryLabelFieldTextInput, [{
+    key: "getDisplayText_",
+    value: function getDisplayText_() {
+      var text = this.getText();
+      var fromLibrary = this._libraries.resolve(this.prefix + text);
+      if (fromLibrary instanceof PythonAttribute) {
+        text = fromLibrary.label;
+      }
+      if (text.length > this.maxDisplayLength) {
+        // Truncate displayed string and add an ellipsis ('...').
+        text = text.substring(0, this.maxDisplayLength - 2) + '…';
+      }
+      // Replace whitespace with non-breaking spaces so the text doesn't collapse.
+      text = text.replace(/\s/g, Blockly.Field.NBSP);
+      if (this.sourceBlock_ && this.sourceBlock_.RTL) {
+        // The SVG is LTR, force text to be RTL by adding an RLM.
+        text += "\u200F";
+      }
+      return text;
+    }
+  }]);
+}(Blockly.FieldTextInput);
 Blockly.Blocks['ast_Name'] = {
   init: function init() {
     this.setInputsInline(true);
     this.setOutput(true, null);
-    this.appendDummyInput('NAME').appendField(new Blockly.FieldTextInput('default'), 'VAR');
+    this.appendDummyInput('NAME').appendField(new LibraryLabelFieldTextInput(this.workspace.libraries, '', 'default'), 'VAR');
     this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.import_ = "";
   },
@@ -4685,7 +4719,7 @@ BlockMirrorTextToBlocks.prototype['ast_Name'] = function (node, parent) {
   }
   var mutations = {};
   var fromLibrary = this.resolveFromLibrary(node);
-  if ((fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) && fromLibrary.requiresImport) {
+  if (fromLibrary instanceof PythonClass || fromLibrary instanceof PythonModule) {
     mutations["@import"] = fromLibrary.requiresImport;
   }
   return BlockMirrorTextToBlocks.create_block('ast_Name', node.lineno, {
@@ -6656,7 +6690,7 @@ python.pythonGenerator.forBlock["ast_JoinedStr"] = function (block, generator) {
   return [code, python.Order.ATOMIC];
 };
 BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
-  var _this14 = this;
+  var _this15 = this;
   var values = node.values;
   var elements = {};
   values.forEach(function (v, i) {
@@ -6664,8 +6698,8 @@ BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
       console.log(v);
       if (!v.conversion && !v.format_spec) {
         elements["ADD" + i] = BlockMirrorTextToBlocks.create_block("ast_FormattedValue", v.lineno, {}, {
-          "VALUE": _this14.convert(v.value, node)
-        }, _this14.LOCKED_BLOCK);
+          "VALUE": _this15.convert(v.value, node)
+        }, _this15.LOCKED_BLOCK);
       } else {
         var format_spec = v.format_spec ? chompExclamation(v.format_spec.values[0].s.v) : "";
         // Can there ever be a non-1 length format_spec?
@@ -6673,14 +6707,14 @@ BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
           "FORMAT_SPEC": format_spec,
           "CONVERSION": v.conversion
         }, {
-          "VALUE": _this14.convert(v.value, node)
-        }, _this14.LOCKED_BLOCK);
+          "VALUE": _this15.convert(v.value, node)
+        }, _this15.LOCKED_BLOCK);
       }
     } else if (v._astname === "Str") {
       var text = Sk.ffi.remapToJs(v.s);
       elements["ADD" + i] = BlockMirrorTextToBlocks.create_block("ast_JoinedStrStr", v.lineno, {
         "TEXT": text
-      }, {}, _this14.LOCKED_BLOCK);
+      }, {}, _this15.LOCKED_BLOCK);
     }
   });
   return BlockMirrorTextToBlocks.create_block("ast_JoinedStr", node.lineno, {}, elements, {
@@ -6752,8 +6786,9 @@ Blockly.Blocks['ast_Attribute'] = {
     this.isFull_ = false;
     this.names_ = [];
     this.labels_ = [];
+    this.fromLibrary_ = null;
     this.givenColour_ = BlockMirrorTextToBlocks.COLOR.OO;
-    this.appendDummyInput('NAME').appendField(' ', 'premessage').appendField(new Blockly.FieldVariable('variable'), 'VALUE').appendField('.', 'message').appendField(new Blockly.FieldTextInput('attribute'), 'ATTR').appendField(' ', 'postmessage');
+    this.appendDummyInput('NAME').appendField(' ', 'premessage').appendField(new Blockly.FieldVariable('variable'), 'VALUE').appendField('.', 'message').appendField(new LibraryLabelFieldTextInput(this.workspace.libraries, "", 'attribute'), 'ATTR').appendField(' ', 'postmessage');
   },
   mutationToDom: function mutationToDom() {
     var container = document.createElement('mutation');
@@ -6765,6 +6800,7 @@ Blockly.Blocks['ast_Attribute'] = {
     container.setAttribute('full', this.isFull_);
     container.setAttribute('names', this.names_.join('|'));
     container.setAttribute('labels', this.labels_.join('|'));
+    container.setAttribute('fromlibrary', this.fromLibrary_);
     container.setAttribute('colour', this.givenColour_);
     return container;
   },
@@ -6777,6 +6813,7 @@ Blockly.Blocks['ast_Attribute'] = {
     this.isFull_ = "true" === xmlElement.getAttribute('full');
     this.names_ = xmlElement.getAttribute('names').split('|');
     this.labels_ = xmlElement.getAttribute('labels').split('|');
+    this.fromLibrary_ = xmlElement.getAttribute('fromlibrary');
     var colour = xmlElement.getAttribute('colour');
     this.givenColour_ = parseInt(colour, 10);
     if (isNaN(this.givenColour_)) {
@@ -6785,7 +6822,7 @@ Blockly.Blocks['ast_Attribute'] = {
     this.updateShape_();
   },
   updateShape_: function updateShape_() {
-    var _this15 = this;
+    var _this16 = this;
     if (this.isFull_) {
       var nameInput = this.getInput('NAME');
       if (nameInput.removeField('premessage', true)) {
@@ -6801,18 +6838,20 @@ Blockly.Blocks['ast_Attribute'] = {
       }
     }
     var attrField = this.getField('ATTR');
-    if (attrField instanceof Blockly.FieldTextInput) {
+    if (attrField instanceof LibraryLabelFieldTextInput) {
       if (this.names_.length > 1) {
         var _nameInput2 = this.getInput('NAME');
         _nameInput2.removeField('ATTR');
         _nameInput2.insertFieldAt(this.isFull_ ? 1 : 3, new Blockly.FieldDropdown(this.names_.map(function (item, index) {
-          return [_this15.labels_[index], item];
+          return [_this16.labels_[index], item];
         })), 'ATTR');
+      } else {
+        attrField.prefix = this.fromLibrary_.replace(/[^.]+$/, '');
       }
     } else if (this.names_.length <= 1) {
       var _nameInput3 = this.getInput('NAME');
       _nameInput3.removeField('ATTR');
-      _nameInput3.insertFieldAt(this.isFull_ ? 1 : 3, new Blockly.FieldTextInput('attribute'), 'ATTR');
+      _nameInput3.insertFieldAt(this.isFull_ ? 1 : 3, new LibraryLabelFieldTextInput(this.workspace.libraries, this.fromLibrary_.replace(/[^.]+$/, ''), 'attribute'), 'ATTR');
     }
     this.getField('premessage').setValue(this.premessage_);
     this.getField('message').setValue(this.message_);
@@ -6846,6 +6885,7 @@ python.pythonGenerator.forBlock['ast_Attribute'] = function (block, generator) {
   return code + "\n";
 };
 BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
+  var _fromLibrary$fullName;
   var value = node.value;
   var attrStr = Sk.ffi.remapToJs(node.attr);
   var returns = 'Any';
@@ -6859,7 +6899,8 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
     "@import": '',
     "@full": false,
     "@names": '',
-    "@labels": ''
+    "@labels": '',
+    "@fromlibrary": (_fromLibrary$fullName = fromLibrary === null || fromLibrary === void 0 ? void 0 : fromLibrary.fullName) !== null && _fromLibrary$fullName !== void 0 ? _fromLibrary$fullName : ""
   };
   if (fromLibrary) {
     // TODO support for custom behavior?
@@ -7412,9 +7453,9 @@ python.pythonGenerator.forBlock['ast_Call'] = function (block, generator) {
   return code + "\n";
 };
 BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
-  var _fromLibrary$fullName,
+  var _fromLibrary$fullName2,
     _fromLibrary,
-    _this16 = this;
+    _this17 = this;
   var func = node.func;
   var args = node.args;
   var keywords = node.keywords;
@@ -7524,7 +7565,7 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
     "@postmessage": postmessage,
     "@colour": colour,
     "@import": import_ !== null && import_ !== void 0 ? import_ : "",
-    "@fromlibrary": (_fromLibrary$fullName = (_fromLibrary = fromLibrary) === null || _fromLibrary === void 0 ? void 0 : _fromLibrary.fullName) !== null && _fromLibrary$fullName !== void 0 ? _fromLibrary$fullName : ""
+    "@fromlibrary": (_fromLibrary$fullName2 = (_fromLibrary = fromLibrary) === null || _fromLibrary === void 0 ? void 0 : _fromLibrary.fullName) !== null && _fromLibrary$fullName2 !== void 0 ? _fromLibrary$fullName2 : ""
   };
   // Handle arguments
   var overallI = 0;
@@ -7562,10 +7603,10 @@ BlockMirrorTextToBlocks.prototype['ast_Call'] = function (node, parent) {
       var arg = keyword.arg;
       var value = keyword.value;
       if (arg === null) {
-        argumentsNormal["ARG" + overallI] = _this16.convert(value, node);
+        argumentsNormal["ARG" + overallI] = _this17.convert(value, node);
         argumentsMutation["KWARGS:" + overallI] = null;
       } else {
-        argumentsNormal["ARG" + overallI] = _this16.convert(value, node);
+        argumentsNormal["ARG" + overallI] = _this17.convert(value, node);
         var keywordName = Sk.ffi.remapToJs(arg);
         if (fromLibrary instanceof PythonFunction) {
           var parameter = fromLibrary.parameters.findByKeyword(keywordName);

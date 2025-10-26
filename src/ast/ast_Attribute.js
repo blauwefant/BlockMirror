@@ -10,12 +10,13 @@ Blockly.Blocks['ast_Attribute'] = {
         this.isFull_ = false;
         this.names_ = [];
         this.labels_ = [];
+        this.fromLibrary_ = null;
         this.givenColour_ = BlockMirrorTextToBlocks.COLOR.OO;
 
         this.appendDummyInput('NAME').appendField(' ', 'premessage')
             .appendField(new Blockly.FieldVariable('variable'), 'VALUE')
             .appendField('.', 'message')
-            .appendField(new Blockly.FieldTextInput('attribute'), 'ATTR')
+            .appendField(new LibraryLabelFieldTextInput(this.workspace.libraries, "", 'attribute'), 'ATTR')
             .appendField(' ', 'postmessage');
     },
     mutationToDom: function () {
@@ -28,6 +29,7 @@ Blockly.Blocks['ast_Attribute'] = {
         container.setAttribute('full', this.isFull_);
         container.setAttribute('names', this.names_.join('|'));
         container.setAttribute('labels', this.labels_.join('|'));
+        container.setAttribute('fromlibrary', this.fromLibrary_);
         container.setAttribute('colour', this.givenColour_);
         return container;
     },
@@ -40,6 +42,7 @@ Blockly.Blocks['ast_Attribute'] = {
         this.isFull_ = "true" === xmlElement.getAttribute('full');
         this.names_ = xmlElement.getAttribute('names').split('|');
         this.labels_ = xmlElement.getAttribute('labels').split('|');
+        this.fromLibrary_ = xmlElement.getAttribute('fromlibrary');
         let colour = xmlElement.getAttribute('colour')
         this.givenColour_ = parseInt(colour, 10);
         if (isNaN(this.givenColour_)) {
@@ -66,18 +69,20 @@ Blockly.Blocks['ast_Attribute'] = {
 
         let attrField = this.getField('ATTR')
 
-        if (attrField instanceof Blockly.FieldTextInput) {
+        if (attrField instanceof LibraryLabelFieldTextInput) {
             if (this.names_.length > 1) {
                 let nameInput = this.getInput('NAME')
                 nameInput.removeField('ATTR')
                 nameInput.insertFieldAt(this.isFull_ ? 1 : 3, new Blockly.FieldDropdown(this.names_.map(
                     (item, index) => [this.labels_[index], item])
                 ), 'ATTR')
+            } else {
+              attrField.prefix = this.fromLibrary_.replace(/[^.]+$/, '')
             }
         } else if (this.names_.length <= 1) {
             let nameInput = this.getInput('NAME')
             nameInput.removeField('ATTR')
-            nameInput.insertFieldAt(this.isFull_ ? 1 : 3, new Blockly.FieldTextInput('attribute'), 'ATTR')
+            nameInput.insertFieldAt(this.isFull_ ? 1 : 3, new LibraryLabelFieldTextInput(this.workspace.libraries, this.fromLibrary_.replace(/[^.]+$/, ''), 'attribute'), 'ATTR')
         }
 
         this.getField('premessage').setValue(this.premessage_)
@@ -132,6 +137,7 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
         "@full": false,
         "@names": '',
         "@labels": '',
+        "@fromlibrary": fromLibrary?.fullName ?? ""
     };
 
     if (fromLibrary) {
@@ -145,7 +151,6 @@ BlockMirrorTextToBlocks.prototype['ast_Attribute'] = function (node, parent) {
             mutations["@returns"] = fromLibrary.typeHint?.flattened().toString() ?? returns
             mutations["@names"] = fromLibrary.names.join("|")
             mutations["@labels"] = fromLibrary.labels.join("|")
-
 
             if (fromLibrary.pythonClass === null) {
                 mutations["@import"] = fromLibrary.pythonModule.requiresImport ?? ""
