@@ -18,7 +18,7 @@
     {
       "signatures": [
         "clear(self): None",
-        "pop(self, pos: int | None = None, /): Any",
+        "pop(self, pos: int = -1, /): Any",
         "remove(self, value: Any): None"
       ],
       "colour": "SEQUENCES"

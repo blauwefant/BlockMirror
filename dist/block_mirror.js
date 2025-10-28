@@ -2965,8 +2965,13 @@ var PythonFunction = /*#__PURE__*/function () {
         this.postmessage = "";
         if (this.names.length === 1) {
           // If there are no aliases, accolades are optional in the specification.
-          this.label = this.message;
-          this.message = "";
+          if (this.message.startsWith('.')) {
+            this.label = this.message.substring(1);
+            this.message = ".";
+          } else {
+            this.label = this.message;
+            this.message = "";
+          }
           this.labels = [this.label];
         } else {
           var messageParts = this.message.split(/\{([^}]+)\}/, 3);
@@ -9768,7 +9773,7 @@ BlockMirror.LIBRARIES['builtin list'] = {
     {
       "signatures": [
         "clear(self): None",
-        "pop(self, pos: int | None = None, /): Any",
+        "pop(self, pos: int = -1, /): Any",
         "remove(self, value: Any): None"
       ],
       "colour": "SEQUENCES"

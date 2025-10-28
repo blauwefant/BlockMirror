@@ -797,8 +797,13 @@ class PythonFunction {
 
         if (this.names.length === 1) {
           // If there are no aliases, accolades are optional in the specification.
-          this.label = this.message;
-          this.message = "";
+          if (this.message.startsWith('.')) {
+            this.label = this.message.substring(1);
+            this.message = ".";
+          } else {
+            this.label = this.message;
+            this.message = "";
+          }
           this.labels = [this.label]
         } else {
           let messageParts = this.message.split(/\{([^}]+)\}/, 3);
