@@ -5,7 +5,7 @@ Blockly.Blocks["ast_List"] = {
    */
   init: function () {
     this.setHelpUrl(Blockly.Msg["LISTS_CREATE_WITH_HELPURL"]);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "List");
@@ -103,14 +103,14 @@ Blockly.Blocks["ast_List"] = {
     if (this.itemCount_ && this.getInput("EMPTY")) {
       this.removeInput("EMPTY");
     } else if (!this.itemCount_ && !this.getInput("EMPTY")) {
-      this.appendDummyInput("EMPTY").appendField("create empty list []");
+      this.appendDummyInput("EMPTY").appendField(this.translateText("create empty list []"));
     }
     // Add new inputs.
     for (var i = 0; i < this.itemCount_; i++) {
       if (!this.getInput("ADD" + i)) {
         var input = this.appendValueInput("ADD" + i);
         if (i == 0) {
-          input.appendField("create list with [");
+          input.appendField(this.translateText("create list with ["));
         } else {
           input.appendField(",").setAlign(Blockly.inputs.Align.RIGHT);
         }
@@ -139,8 +139,8 @@ Blockly.Blocks["ast_List_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
-    this.appendDummyInput().appendField("Add new list elements below");
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
+    this.appendDummyInput().appendField(this.translateText("Add new list elements below"));
     this.appendStatementInput("STACK");
     this.contextMenu = false;
   },
@@ -152,7 +152,7 @@ Blockly.Blocks["ast_List_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);

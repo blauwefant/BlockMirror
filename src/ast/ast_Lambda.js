@@ -12,7 +12,7 @@ Blockly.Blocks['ast_Lambda'] = {
             .setCheck(null);
         this.setInputsInline(false);
         this.setOutput(true);
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
         this.updateShape_();
     },
     mutationToDom: Blockly.Blocks['ast_FunctionDef'].mutationToDom,

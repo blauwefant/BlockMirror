@@ -117,7 +117,7 @@ Blockly.Blocks['ast_Call'] = {
                     paramIds.indexOf(this.quarkIds_[i]) === -1) {
                     // This connection should no longer be attached to this block.
                     connection.disconnect();
-                    connection.getSourceBlock().bumpNeighbours_();
+                    connection.getSourceBlock().bumpNeighbours();
                 }
             }
         }

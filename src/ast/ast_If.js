@@ -3,14 +3,14 @@ Blockly.Blocks['ast_If'] = {
         this.orelse_ = 0;
         this.elifs_ = 0;
         this.appendValueInput('TEST')
-            .appendField("if");
+            .appendField(this.translateText("if"));
         this.appendStatementInput("BODY")
             .setCheck(null)
             .setAlign(Blockly.inputs.Align.RIGHT);
         this.setInputsInline(false);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LOGIC));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LOGIC));
         this.updateShape_();
     },
     // TODO: Not mutable currently
@@ -33,7 +33,7 @@ Blockly.Blocks['ast_If'] = {
 
         if (this.orelse_ && !this.getInput('ELSE')) {
             this.appendDummyInput('ORELSETEST')
-                .appendField("else:");
+                .appendField(this.translateText("else:"));
             this.appendStatementInput("ORELSEBODY")
                 .setCheck(null);
         } else if (!this.orelse_ && this.getInput('ELSE')) {

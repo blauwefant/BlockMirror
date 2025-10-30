@@ -56,12 +56,10 @@ function addMemberToTranslationsMap(member, translationsMap) {
         premessage = "";
       }
 
-      if (!member.pythonClass && member.pythonModule.fullName === "") {
-        value = `${premessage}${member.message}${labelsPart}${member.postmessage}`;
-      } else {
+      if (!!member.pythonClass || member.pythonModule.fullName !== "") {
         value = `${premessage}{}${member.message}${labelsPart}${member.postmessage}`;
+        translationsMap.set(member.fullName, value);
       }
-      translationsMap.set(member.fullName, value);
     }
 }
 

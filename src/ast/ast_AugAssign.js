@@ -6,9 +6,11 @@ Blockly.Blocks['ast_AugAssign'] = {
         this.initialPreposition_ = "by";
         this.appendDummyInput("OP")
             .appendField(new Blockly.FieldDropdown(function () {
-                return block.allOptions_ ?
+                return (block.allOptions_ ?
                     BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_DISPLAY_FULL :
-                    BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_DISPLAY
+                    BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_DISPLAY).map(
+                      ([label, value]) => [block.translateText(label), value]
+                    );
             }, function (value) {
                 let block = this.sourceBlock_;
                 block.updatePreposition_(value);
@@ -21,14 +23,14 @@ Blockly.Blocks['ast_AugAssign'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.updateShape_();
         this.updatePreposition_(this.initialPreposition_);
     },
 
     updatePreposition_: function(value) {
         let preposition = BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_PREPOSITION[value];
-        this.setFieldValue(preposition, 'PREPOSITION')
+        this.setFieldValue(this.translateText(preposition), 'PREPOSITION')
     },
     /**
      * Create XML to represent list inputs.

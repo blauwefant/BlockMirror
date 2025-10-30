@@ -4,7 +4,7 @@ Blockly.Blocks["ast_DictItem"] = {
     this.appendValueInput("VALUE").setCheck(null).appendField(":");
     this.setInputsInline(true);
     this.setOutput(true, "DictPair");
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
   },
 };
 
@@ -14,7 +14,7 @@ Blockly.Blocks["ast_Dict"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "Dict");
@@ -76,7 +76,7 @@ Blockly.Blocks["ast_Dict"] = {
     // Disconnect any children that don't belong.
     for (let i = 0; i < this.itemCount_; i++) {
       var connection = this.getInput("ADD" + i).connection.targetConnection;
-      if (connection && connections.indexOf(connection) == -1) {
+      if (connection && connections.indexOf(connection) === -1) {
         let key = connection.getSourceBlock().getInput("KEY");
         if (key.connection.targetConnection) {
           key.connection.targetConnection.getSourceBlock().unplug(true);
@@ -130,7 +130,7 @@ Blockly.Blocks["ast_Dict"] = {
     if (this.itemCount_ && this.getInput("EMPTY")) {
       this.removeInput("EMPTY");
     } else if (!this.itemCount_ && !this.getInput("EMPTY")) {
-      this.appendDummyInput("EMPTY").appendField("empty dictionary");
+      this.appendDummyInput("EMPTY").appendField(this.translateText("empty dictionary"));
     }
     // Add new inputs.
     for (var i = 0; i < this.itemCount_; i++) {
@@ -138,7 +138,7 @@ Blockly.Blocks["ast_Dict"] = {
         var input = this.appendValueInput("ADD" + i).setCheck("DictPair");
         if (i === 0) {
           input
-            .appendField("create dict with")
+            .appendField(this.translateText("create dict with"))
             .setAlign(Blockly.inputs.Align.RIGHT);
         }
       }
@@ -167,8 +167,8 @@ Blockly.Blocks["ast_Dict_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
-    this.appendDummyInput().appendField("Add new dict elements below");
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
+    this.appendDummyInput().appendField(this.translateText("Add new dict elements below"));
     this.appendStatementInput("STACK");
     this.contextMenu = false;
   },
@@ -180,7 +180,7 @@ Blockly.Blocks["ast_Dict_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -193,7 +193,7 @@ python.pythonGenerator.forBlock["ast_Dict"] = function (block, generator) {
   var elements = new Array(block.itemCount_);
   for (var i = 0; i < block.itemCount_; i++) {
     let child = block.getInputTargetBlock("ADD" + i);
-    if (child === null || child.type != "ast_DictItem") {
+    if (child === null || child.type !== "ast_DictItem") {
       elements[i] =
         python.pythonGenerator.blank + ": " + python.pythonGenerator.blank;
       continue;

@@ -25,7 +25,7 @@ Blockly.Blocks["ast_Comp_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
     this.appendDummyInput().appendField("Add new comprehensions below");
     this.appendDummyInput().appendField("   For clause");
     this.appendStatementInput("STACK");
@@ -39,7 +39,7 @@ Blockly.Blocks["ast_Comp_create_with_for"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
     this.appendDummyInput().appendField("For clause");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -53,7 +53,7 @@ Blockly.Blocks["ast_Comp_create_with_if"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
     this.appendDummyInput().appendField("If clause");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -84,7 +84,7 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
      */
     init: function () {
       this.setStyle("loop_blocks");
-      this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COMP_SETTINGS[kind].color));
+      this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COMP_SETTINGS[kind].color));
       this.itemCount_ = 3;
       let input = this.appendValueInput("ELT").appendField(
         BlockMirrorTextToBlocks.COMP_SETTINGS[kind].start,

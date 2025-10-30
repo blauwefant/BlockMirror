@@ -9,7 +9,7 @@ Blockly.Blocks['ast_AnnAssignFull'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.initialized_ = true;
         this.updateShape_();
     },
@@ -71,7 +71,7 @@ Blockly.Blocks['ast_AnnAssign'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.strAnnotations_ = false;
         this.initialized_ = true;
     },

@@ -24,11 +24,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
     ['ParameterKwarg', 'Keyworded Variable length parameter', '**', false],
     ['ParameterKwargType', 'Keyworded Variable length parameter with type', '**', true, false],
 ].forEach(function (parameterTypeTuple) {
-    let parameterType = parameterTypeTuple[0],
-        parameterDescription = parameterTypeTuple[1],
-        parameterPrefix = parameterTypeTuple[2],
-        parameterTyped = parameterTypeTuple[3],
-        parameterDefault = parameterTypeTuple[4];
+  let [parameterType, parameterDescription, parameterPrefix, parameterTyped, parameterDefault] = parameterTypeTuple;
     BlockMirrorTextToBlocks.BLOCKS.push({
         "type": "ast_FunctionMutant" + parameterType,
         "message0": parameterDescription,
@@ -78,7 +74,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
 Blockly.Blocks['ast_FunctionDef'] = {
     init: function () {
         this.appendDummyInput()
-            .appendField("define")
+            .appendField(this.translateText("define"))
             .appendField(new Blockly.FieldTextInput("function"), "NAME");
         this.decoratorsCount_ = 0;
         this.parametersCount_ = 0;
@@ -89,7 +85,7 @@ Blockly.Blocks['ast_FunctionDef'] = {
         this.setInputsInline(false);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
         this.updateShape_();
         this.setMutator(new Blockly.icons.MutatorIcon(['ast_FunctionMutantParameter',
             'ast_FunctionMutantParameterType'], this));
@@ -124,7 +120,7 @@ Blockly.Blocks['ast_FunctionDef'] = {
                 this.appendValueInput("RETURNS")
                     .setCheck(null)
                     .setAlign(Blockly.inputs.Align.RIGHT)
-                    .appendField("returns");
+                    .appendField(this.translateText("returns"));
             }
             this.moveInputBefore('RETURNS', 'BODY');
         } else if (!status && currentReturn) {
@@ -261,7 +257,7 @@ Blockly.Blocks['ast_FunctionDef'] = {
                     if (this.returnConnection_) {
                         let returnBlock = returnConnection.targetBlock();
                         returnBlock.unplug();
-                        returnBlock.bumpNeighbours_();
+                        returnBlock.bumpNeighbours();
                     }
                     this.setReturnAnnotation_(false);
                 }

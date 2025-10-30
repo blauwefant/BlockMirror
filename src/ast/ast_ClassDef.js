@@ -11,7 +11,7 @@ Blockly.Blocks['ast_ClassDef'] = {
         this.setInputsInline(false);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.OO));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.OO));
         this.updateShape_();
     },
     // TODO: Not mutable currently

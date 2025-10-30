@@ -3,7 +3,7 @@ Blockly.Blocks['ast_Str'] = {
         this.setOutput(true, "String");
         this.appendDummyInput('INPUT')
             .appendField(new Blockly.FieldTextInput(''), 'TEXT');
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
         this.fieldFactory_ = "";
         Blockly.Extensions.apply('text_quotes', this);
         initBlockFieldFactory(this, ["str"])
@@ -83,7 +83,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
 
 Blockly.Blocks['ast_Image'] = {
     init: function () {
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
         this.src_ = "loading.png";
         this.updateShape_();
         this.setOutput(true);

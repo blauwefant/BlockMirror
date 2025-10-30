@@ -378,6 +378,15 @@ Blockly.Variables.nameUsedWithAnyType = function (name, workspace) {
   }
   return null;
 };
+Blockly.BlockSvg.prototype.translateText = function (identifier, defaultValue, namespace) {
+  // Find the main workspace and call the function on that.
+  return this.workspace.themeManager_.workspace.translateText(identifier, defaultValue, namespace);
+};
+Blockly.BlockSvg.prototype.convertColour = function (type, defaultValue, fromLibrary) {
+  // Find the main workspace and call the function on that.
+  return this.workspace.themeManager_.workspace.convertColour(type, defaultValue, fromLibrary);
+};
+
 /**
 
  External visible stuff
@@ -484,8 +493,7 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
   this.configuration.imageDetection = (_configuration$imageD2 = configuration.imageDetection) !== null && _configuration$imageD2 !== void 0 ? _configuration$imageD2 : 'string';
   this.configuration.imageMode = (_configuration$imageM = configuration.imageMode) !== null && _configuration$imageM !== void 0 ? _configuration$imageM : false;
   this.configuration.libraries = (_configuration$librar = configuration.libraries) !== null && _configuration$librar !== void 0 ? _configuration$librar : BlockMirror.LIBRARIES;
-  this.configuration.translate = (_configuration$transl = configuration.translate) !== null && _configuration$transl !== void 0 ? _configuration$transl : function (identifier, defaultValue) {
-    var _namespace = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : None;
+  this.configuration.translate = (_configuration$transl = configuration.translate) !== null && _configuration$transl !== void 0 ? _configuration$transl : function (identifier, defaultValue, _namespace) {
     return defaultValue === undefined || defaultValue === null ? identifier : defaultValue;
   };
   this.configuration.preferFullAttributeBlocks = (_configuration$prefer = configuration.preferFullAttributeBlocks) !== null && _configuration$prefer !== void 0 ? _configuration$prefer : false;
@@ -1021,10 +1029,11 @@ function BlockMirrorBlockEditor(blockMirror) {
   };
   this.workspace = Blockly.inject(blockMirror.tags.blockEditor, blocklyOptions);
   this.workspace.registerToolboxCategoryCallback('VARIABLE', this.variableFlyoutCallback);
+  this.workspace.convertColour = blockMirror.configuration.convertColour;
+  this.workspace.translateText = blockMirror.configuration.translate;
   this.workspace.libraries = blockMirror.libraries;
   this.workspace.toolbox.flyout.workspace_.libraries = blockMirror.libraries;
-  this.workspace.convertColour = blockMirror.configuration.convertColour;
-  this.workspace.toolbox.flyout.workspace_.convertColour = blockMirror.configuration.convertColour;
+
   // Configure Blockly
   this.workspace.addChangeListener(this.changed.bind(this));
 
@@ -1495,6 +1504,30 @@ function BlockMirrorTextToBlocks(blockMirror) {
       for (_iterator6.s(); !(_step6 = _iterator6.n()).done;) {
         var blockElement = _step6.value;
         blockElement.colour = blockMirror.configuration.convertColour(blockElement.type, blockElement.colour);
+        if (blockElement.message0) {
+          blockElement.message0 = blockMirror.configuration.translate(blockElement.message0);
+        }
+        if (blockElement.args0) {
+          var _iterator7 = _createForOfIteratorHelper(blockElement.args0),
+            _step7;
+          try {
+            for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
+              var arg = _step7.value;
+              if (arg.type === 'field_dropdown') {
+                arg.options = arg.options.map(function (_ref) {
+                  var _ref2 = _slicedToArray(_ref, 2),
+                    label = _ref2[0],
+                    value = _ref2[1];
+                  return [blockMirror.configuration.translate(label), value];
+                });
+              }
+            }
+          } catch (err) {
+            _iterator7.e(err);
+          } finally {
+            _iterator7.f();
+          }
+        }
       }
     } catch (err) {
       _iterator6.e(err);
@@ -2101,28 +2134,28 @@ var PythonModule = /*#__PURE__*/function () {
     this.members = new Map();
     this.colour = library.colour;
     if (members !== undefined) {
-      var _iterator7 = _createForOfIteratorHelper(members),
-        _step7;
+      var _iterator8 = _createForOfIteratorHelper(members),
+        _step8;
       try {
-        for (_iterator7.s(); !(_step7 = _iterator7.n()).done;) {
-          var input = _step7.value;
+        for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
+          var input = _step8.value;
           if (_typeof(input) === "object") {
             if (input.__colour) {
               this.colour = this.library.libraries.convertColour("module", _resolve_colour(input.__colour), this.fullName);
             } else if (input.__color) {
               this.colour = this.library.libraries.convertColour("module", _resolve_colour(input.__color), this.fullName);
             } else if (input.signatures) {
-              var _iterator8 = _createForOfIteratorHelper(input.signatures),
-                _step8;
+              var _iterator9 = _createForOfIteratorHelper(input.signatures),
+                _step9;
               try {
-                for (_iterator8.s(); !(_step8 = _iterator8.n()).done;) {
-                  var _signature = _step8.value;
+                for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
+                  var _signature = _step9.value;
                   this.addMember(_signature, input);
                 }
               } catch (err) {
-                _iterator8.e(err);
+                _iterator9.e(err);
               } finally {
-                _iterator8.f();
+                _iterator9.f();
               }
             } else {
               this.addMember(input.signature, input);
@@ -2132,9 +2165,9 @@ var PythonModule = /*#__PURE__*/function () {
           }
         }
       } catch (err) {
-        _iterator7.e(err);
+        _iterator8.e(err);
       } finally {
-        _iterator7.f();
+        _iterator8.f();
       }
     }
   }
@@ -2153,32 +2186,32 @@ var PythonModule = /*#__PURE__*/function () {
         var _inputObject$colour;
         var _translatedComment = this.translateFunctionComment(PythonFunction.extractName(code), comment);
         member = new PythonFunction(this, code, _translatedComment, (_inputObject$colour = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour !== void 0 ? _inputObject$colour : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
-        var _iterator9 = _createForOfIteratorHelper(member.aliases),
-          _step9;
-        try {
-          for (_iterator9.s(); !(_step9 = _iterator9.n()).done;) {
-            var alias = _step9.value;
-            this.members.set(alias.name, alias);
-          }
-        } catch (err) {
-          _iterator9.e(err);
-        } finally {
-          _iterator9.f();
-        }
-      } else {
-        var _inputObject$colour2;
-        member = new PythonAttribute(this, code, this.translate(PythonAttribute.extractName(code), comment), (_inputObject$colour2 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour2 !== void 0 ? _inputObject$colour2 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
         var _iterator0 = _createForOfIteratorHelper(member.aliases),
           _step0;
         try {
           for (_iterator0.s(); !(_step0 = _iterator0.n()).done;) {
-            var _alias = _step0.value;
-            this.members.set(_alias.name, _alias);
+            var alias = _step0.value;
+            this.members.set(alias.name, alias);
           }
         } catch (err) {
           _iterator0.e(err);
         } finally {
           _iterator0.f();
+        }
+      } else {
+        var _inputObject$colour2;
+        member = new PythonAttribute(this, code, this.translate(PythonAttribute.extractName(code), comment), (_inputObject$colour2 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour2 !== void 0 ? _inputObject$colour2 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
+        var _iterator1 = _createForOfIteratorHelper(member.aliases),
+          _step1;
+        try {
+          for (_iterator1.s(); !(_step1 = _iterator1.n()).done;) {
+            var _alias = _step1.value;
+            this.members.set(_alias.name, _alias);
+          }
+        } catch (err) {
+          _iterator1.e(err);
+        } finally {
+          _iterator1.f();
         }
       }
       this.members.set(member.name, member);
@@ -2214,20 +2247,20 @@ var PythonModule = /*#__PURE__*/function () {
     key: "toToolbox",
     value: function toToolbox(textToBlocks) {
       var result = "";
-      var _iterator1 = _createForOfIteratorHelper(this.members.values()),
-        _step1;
+      var _iterator10 = _createForOfIteratorHelper(this.members.values()),
+        _step10;
       try {
-        for (_iterator1.s(); !(_step1 = _iterator1.n()).done;) {
-          var value = _step1.value;
+        for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
+          var value = _step10.value;
           var resultItem = value.toToolbox(textToBlocks);
           if (resultItem) {
             result += resultItem;
           }
         }
       } catch (err) {
-        _iterator1.e(err);
+        _iterator10.e(err);
       } finally {
-        _iterator1.f();
+        _iterator10.f();
       }
       return result;
     }
@@ -2251,11 +2284,11 @@ var PythonModule = /*#__PURE__*/function () {
       if (this.fullName === "" && indexOfDot === 0) {
         // Special case, look for a method in all builtin classes
         var methodName = memberName.substring(1);
-        var _iterator10 = _createForOfIteratorHelper(this.members.values()),
-          _step10;
+        var _iterator11 = _createForOfIteratorHelper(this.members.values()),
+          _step11;
         try {
-          for (_iterator10.s(); !(_step10 = _iterator10.n()).done;) {
-            var _member = _step10.value;
+          for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
+            var _member = _step11.value;
             if (_member instanceof PythonClass) {
               var result = _member.resolve(methodName);
               if (result) {
@@ -2264,9 +2297,9 @@ var PythonModule = /*#__PURE__*/function () {
             }
           }
         } catch (err) {
-          _iterator10.e(err);
+          _iterator11.e(err);
         } finally {
-          _iterator10.f();
+          _iterator11.f();
         }
         return null;
       }
@@ -2283,19 +2316,19 @@ var PythonModule = /*#__PURE__*/function () {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
       typeRegistry.set(this.fullName, this.name);
-      var _iterator11 = _createForOfIteratorHelper(this.members.values()),
-        _step11;
+      var _iterator12 = _createForOfIteratorHelper(this.members.values()),
+        _step12;
       try {
-        for (_iterator11.s(); !(_step11 = _iterator11.n()).done;) {
-          var member = _step11.value;
+        for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
+          var member = _step12.value;
           if (member instanceof PythonClass) {
             typeRegistry.set(member.fullName, member.name);
           }
         }
       } catch (err) {
-        _iterator11.e(err);
+        _iterator12.e(err);
       } finally {
-        _iterator11.f();
+        _iterator12.f();
       }
     }
   }], [{
@@ -2348,20 +2381,20 @@ var PythonTypeHint = /*#__PURE__*/function () {
       if (this._referencedTypeAliases == null) {
         this._referencedTypeAliases = [];
         if (this.isUnion() || this.isOptional()) {
-          var _iterator12 = _createForOfIteratorHelper(this.typeParams),
-            _step12;
+          var _iterator13 = _createForOfIteratorHelper(this.typeParams),
+            _step13;
           try {
-            for (_iterator12.s(); !(_step12 = _iterator12.n()).done;) {
-              var typeParam = _step12.value;
+            for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
+              var typeParam = _step13.value;
               var resolved = this.libraries.resolve(typeParam);
               if (resolved instanceof PythonTypeAliasType) {
                 this._referencedTypeAliases.push(resolved);
               }
             }
           } catch (err) {
-            _iterator12.e(err);
+            _iterator13.e(err);
           } finally {
-            _iterator12.f();
+            _iterator13.f();
           }
         } else {
           var _resolved2 = this.libraries.resolve(this.value);
@@ -2386,11 +2419,11 @@ var PythonTypeHint = /*#__PURE__*/function () {
           if (this.isUnion() || this.isOptional()) {
             this._flattened = new PythonTypeHint(this.libraries, "");
             this._flattened.value = this.value;
-            var _iterator13 = _createForOfIteratorHelper(this.typeParams),
-              _step13;
+            var _iterator14 = _createForOfIteratorHelper(this.typeParams),
+              _step14;
             try {
               var _loop2 = function _loop2() {
-                var item = _step13.value;
+                var item = _step14.value;
                 var referencedTypeAlias = referencedTypeAliases.find(function (alias) {
                   return alias.fullName === item;
                 });
@@ -2407,13 +2440,13 @@ var PythonTypeHint = /*#__PURE__*/function () {
                   }
                 }
               };
-              for (_iterator13.s(); !(_step13 = _iterator13.n()).done;) {
+              for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
                 _loop2();
               }
             } catch (err) {
-              _iterator13.e(err);
+              _iterator14.e(err);
             } finally {
-              _iterator13.f();
+              _iterator14.f();
             }
           } else {
             this._flattened = referencedTypeAliases[0].flattened();
@@ -2496,11 +2529,11 @@ function _resolveFunction(identifier, fullName) {
   }
   if (identifier) {
     var result = globalThis;
-    var _iterator14 = _createForOfIteratorHelper(identifier.split('.')),
-      _step14;
+    var _iterator15 = _createForOfIteratorHelper(identifier.split('.')),
+      _step15;
     try {
-      for (_iterator14.s(); !(_step14 = _iterator14.n()).done;) {
-        var item = _step14.value;
+      for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
+        var item = _step15.value;
         result = result[item];
         if (!result) {
           console.warn("Could not find function " + identifier + " for " + fullName);
@@ -2508,9 +2541,9 @@ function _resolveFunction(identifier, fullName) {
         }
       }
     } catch (err) {
-      _iterator14.e(err);
+      _iterator15.e(err);
     } finally {
-      _iterator14.f();
+      _iterator15.f();
     }
     return result;
   }
@@ -2635,11 +2668,11 @@ var PythonParameter = /*#__PURE__*/function () {
         }
         if (argBlock instanceof HTMLElement) {
           // Blockly XML
-          var _iterator15 = _createForOfIteratorHelper(argBlock.children),
-            _step15;
+          var _iterator16 = _createForOfIteratorHelper(argBlock.children),
+            _step16;
           try {
-            for (_iterator15.s(); !(_step15 = _iterator15.n()).done;) {
-              var childElement = _step15.value;
+            for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
+              var childElement = _step16.value;
               if (childElement.tagName === (shouldShadow ? 'BLOCK' : 'SHADOW')) {
                 var replacementElement = _assertClassBrand(_PythonParameter_brand, this, _replaceTagName).call(this, childElement, shouldShadow ? 'SHADOW' : 'BLOCK');
                 this.applyShadow(replacementElement, shouldShadow);
@@ -2648,25 +2681,25 @@ var PythonParameter = /*#__PURE__*/function () {
               }
             }
           } catch (err) {
-            _iterator15.e(err);
+            _iterator16.e(err);
           } finally {
-            _iterator15.f();
+            _iterator16.f();
           }
         } else if (argBlock.shadow !== shouldShadow) {
           // Blockly block
           argBlock.shadow = shouldShadow;
           argBlock.setStyle(argBlock.getStyleName()); // Re-apply the style
-          var _iterator16 = _createForOfIteratorHelper(argBlock.getChildren()),
-            _step16;
+          var _iterator17 = _createForOfIteratorHelper(argBlock.getChildren()),
+            _step17;
           try {
-            for (_iterator16.s(); !(_step16 = _iterator16.n()).done;) {
-              var child = _step16.value;
+            for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
+              var child = _step17.value;
               this.applyShadow(child, shouldShadow);
             }
           } catch (err) {
-            _iterator16.e(err);
+            _iterator17.e(err);
           } finally {
-            _iterator16.f();
+            _iterator17.f();
           }
         }
       }
@@ -2789,11 +2822,11 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
       var positional = true;
       var keyword = !parameterParts.includes("/");
       var argIndex = 0;
-      var _iterator17 = _createForOfIteratorHelper(parameterParts),
-        _step17;
+      var _iterator18 = _createForOfIteratorHelper(parameterParts),
+        _step18;
       try {
-        for (_iterator17.s(); !(_step17 = _iterator17.n()).done;) {
-          var _parameter = _step17.value;
+        for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
+          var _parameter = _step18.value;
           if (_parameter === "/") {
             keyword = true;
           } else if (_parameter === "*") {
@@ -2815,9 +2848,9 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
 
         // Any parameter before *args should not be addressable by keyword
       } catch (err) {
-        _iterator17.e(err);
+        _iterator18.e(err);
       } finally {
-        _iterator17.f();
+        _iterator18.f();
       }
       var positionalOnly = false;
       for (var i = _this0.length - 1; i >= 0; i--) {
@@ -2834,14 +2867,14 @@ var PythonParameters = /*#__PURE__*/function (_Array) {
   return _createClass(PythonParameters, [{
     key: "toPythonSource",
     value: function toPythonSource() {
-      return _toConsumableArray(this.entries().filter(function (_ref) {
-        var _ref2 = _slicedToArray(_ref, 2),
-          key = _ref2[0],
-          value = _ref2[1];
-        return !(key === 0 && (value.name === "self" || value.name === "cls"));
-      }).map(function (_ref3) {
+      return _toConsumableArray(this.entries().filter(function (_ref3) {
         var _ref4 = _slicedToArray(_ref3, 2),
+          key = _ref4[0],
           value = _ref4[1];
+        return !(key === 0 && (value.name === "self" || value.name === "cls"));
+      }).map(function (_ref5) {
+        var _ref6 = _slicedToArray(_ref5, 2),
+          value = _ref6[1];
         return value.toPythonSource();
       })).filter(function (result) {
         return result !== "";
@@ -2864,11 +2897,11 @@ function splitParameters(input) {
   var doubleQuoted = false;
   var singleQuoted = false;
   var item = '';
-  var _iterator18 = _createForOfIteratorHelper(input),
-    _step18;
+  var _iterator19 = _createForOfIteratorHelper(input),
+    _step19;
   try {
-    for (_iterator18.s(); !(_step18 = _iterator18.n()).done;) {
-      var _char = _step18.value;
+    for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
+      var _char = _step19.value;
       if (_char === '"') {
         doubleQuoted = !doubleQuoted;
       } else if (_char === "'") {
@@ -2889,9 +2922,9 @@ function splitParameters(input) {
       item += _char;
     }
   } catch (err) {
-    _iterator18.e(err);
+    _iterator19.e(err);
   } finally {
-    _iterator18.f();
+    _iterator19.f();
   }
   item = item.trim();
   if (item !== '') {
@@ -2979,19 +3012,19 @@ var PythonFunction = /*#__PURE__*/function () {
             this.message = messageParts[0];
             this.labels = _toConsumableArray(this.names);
             var labels = messageParts[1].split("|");
-            var _iterator19 = _createForOfIteratorHelper(labels.entries()),
-              _step19;
+            var _iterator20 = _createForOfIteratorHelper(labels.entries()),
+              _step20;
             try {
-              for (_iterator19.s(); !(_step19 = _iterator19.n()).done;) {
-                var _step19$value = _slicedToArray(_step19.value, 2),
-                  index = _step19$value[0],
-                  label = _step19$value[1];
+              for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
+                var _step20$value = _slicedToArray(_step20.value, 2),
+                  index = _step20$value[0],
+                  label = _step20$value[1];
                 this.labels[index] = label.trim();
               }
             } catch (err) {
-              _iterator19.e(err);
+              _iterator20.e(err);
             } finally {
-              _iterator19.f();
+              _iterator20.f();
             }
             this.label = this.labels[0];
             this.postmessage = messageParts[2];
@@ -3023,39 +3056,39 @@ var PythonFunction = /*#__PURE__*/function () {
         return new _this1.constructor(_this1, name);
       });
       if (this.labels.length <= 1) {
-        var _iterator20 = _createForOfIteratorHelper(this.aliases),
-          _step20;
-        try {
-          for (_iterator20.s(); !(_step20 = _iterator20.n()).done;) {
-            var alias = _step20.value;
-            alias.label = this.label;
-          }
-        } catch (err) {
-          _iterator20.e(err);
-        } finally {
-          _iterator20.f();
-        }
-      } else {
-        var _iterator21 = _createForOfIteratorHelper(this.aliases.entries()),
+        var _iterator21 = _createForOfIteratorHelper(this.aliases),
           _step21;
         try {
           for (_iterator21.s(); !(_step21 = _iterator21.n()).done;) {
-            var _step21$value = _slicedToArray(_step21.value, 2),
-              index = _step21$value[0],
-              _alias2 = _step21$value[1];
-            _alias2.label = this.labels[index + 1];
+            var alias = _step21.value;
+            alias.label = this.label;
           }
         } catch (err) {
           _iterator21.e(err);
         } finally {
           _iterator21.f();
         }
+      } else {
+        var _iterator22 = _createForOfIteratorHelper(this.aliases.entries()),
+          _step22;
+        try {
+          for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
+            var _step22$value = _slicedToArray(_step22.value, 2),
+              index = _step22$value[0],
+              _alias2 = _step22$value[1];
+            _alias2.label = this.labels[index + 1];
+          }
+        } catch (err) {
+          _iterator22.e(err);
+        } finally {
+          _iterator22.f();
+        }
       }
-      var _iterator22 = _createForOfIteratorHelper(this.aliases),
-        _step22;
+      var _iterator23 = _createForOfIteratorHelper(this.aliases),
+        _step23;
       try {
         var _loop3 = function _loop3() {
-          var alias = _step22.value;
+          var alias = _step23.value;
           alias.isAliasOf = _this1;
           alias.aliases = [_this1].concat(_toConsumableArray(_this1.aliases)).filter(function (item) {
             return item !== alias;
@@ -3063,13 +3096,13 @@ var PythonFunction = /*#__PURE__*/function () {
           alias.names = _this1.names;
           alias.labels = _this1.labels;
         };
-        for (_iterator22.s(); !(_step22 = _iterator22.n()).done;) {
+        for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
           _loop3();
         }
       } catch (err) {
-        _iterator22.e(err);
+        _iterator23.e(err);
       } finally {
-        _iterator22.f();
+        _iterator23.f();
       }
     }
   }, {
@@ -3195,24 +3228,24 @@ var PythonClass = /*#__PURE__*/function () {
 
     // Default constructor
     this.members.set("__init__", new PythonConstructorMethod(this, "__init__()", "", null, null));
-    var _iterator23 = _createForOfIteratorHelper(members),
-      _step23;
+    var _iterator24 = _createForOfIteratorHelper(members),
+      _step24;
     try {
-      for (_iterator23.s(); !(_step23 = _iterator23.n()).done;) {
-        var input = _step23.value;
+      for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
+        var input = _step24.value;
         if (_typeof(input) === "object") {
           if (input.signatures) {
-            var _iterator24 = _createForOfIteratorHelper(input.signatures),
-              _step24;
+            var _iterator25 = _createForOfIteratorHelper(input.signatures),
+              _step25;
             try {
-              for (_iterator24.s(); !(_step24 = _iterator24.n()).done;) {
-                var _signature2 = _step24.value;
+              for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
+                var _signature2 = _step25.value;
                 this.addMember(_signature2, input);
               }
             } catch (err) {
-              _iterator24.e(err);
+              _iterator25.e(err);
             } finally {
-              _iterator24.f();
+              _iterator25.f();
             }
           } else {
             this.addMember(input.signature, input);
@@ -3222,9 +3255,9 @@ var PythonClass = /*#__PURE__*/function () {
         }
       }
     } catch (err) {
-      _iterator23.e(err);
+      _iterator24.e(err);
     } finally {
-      _iterator23.f();
+      _iterator24.f();
     }
   }
   return _createClass(PythonClass, [{
@@ -3243,33 +3276,33 @@ var PythonClass = /*#__PURE__*/function () {
         } else {
           var _inputObject$colour4;
           member = new PythonMethod(this, code, this.translateFunctionComment(PythonFunction.extractName(code), comment), (_inputObject$colour4 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour4 !== void 0 ? _inputObject$colour4 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color, inputObject === null || inputObject === void 0 ? void 0 : inputObject.custom);
-          var _iterator25 = _createForOfIteratorHelper(member.aliases),
-            _step25;
+          var _iterator26 = _createForOfIteratorHelper(member.aliases),
+            _step26;
           try {
-            for (_iterator25.s(); !(_step25 = _iterator25.n()).done;) {
-              var alias = _step25.value;
+            for (_iterator26.s(); !(_step26 = _iterator26.n()).done;) {
+              var alias = _step26.value;
               this.members.set(alias.name, alias);
             }
           } catch (err) {
-            _iterator25.e(err);
+            _iterator26.e(err);
           } finally {
-            _iterator25.f();
+            _iterator26.f();
           }
         }
       } else {
         var _inputObject$colour5;
         member = new PythonAttribute(this, code, this.translate(PythonAttribute.extractName(code), comment), (_inputObject$colour5 = inputObject === null || inputObject === void 0 ? void 0 : inputObject.colour) !== null && _inputObject$colour5 !== void 0 ? _inputObject$colour5 : inputObject === null || inputObject === void 0 ? void 0 : inputObject.color);
-        var _iterator26 = _createForOfIteratorHelper(member.aliases),
-          _step26;
+        var _iterator27 = _createForOfIteratorHelper(member.aliases),
+          _step27;
         try {
-          for (_iterator26.s(); !(_step26 = _iterator26.n()).done;) {
-            var _alias3 = _step26.value;
+          for (_iterator27.s(); !(_step27 = _iterator27.n()).done;) {
+            var _alias3 = _step27.value;
             this.members.set(_alias3.name, _alias3);
           }
         } catch (err) {
-          _iterator26.e(err);
+          _iterator27.e(err);
         } finally {
-          _iterator26.f();
+          _iterator27.f();
         }
       }
       this.members.set(member.name, member);
@@ -3305,17 +3338,17 @@ var PythonClass = /*#__PURE__*/function () {
     key: "toToolbox",
     value: function toToolbox(textToBlocks) {
       var result = "";
-      var _iterator27 = _createForOfIteratorHelper(this.members.values()),
-        _step27;
+      var _iterator28 = _createForOfIteratorHelper(this.members.values()),
+        _step28;
       try {
-        for (_iterator27.s(); !(_step27 = _iterator27.n()).done;) {
-          var member = _step27.value;
+        for (_iterator28.s(); !(_step28 = _iterator28.n()).done;) {
+          var member = _step28.value;
           result += member.toToolbox(textToBlocks);
         }
       } catch (err) {
-        _iterator27.e(err);
+        _iterator28.e(err);
       } finally {
-        _iterator27.f();
+        _iterator28.f();
       }
       return result;
     }
@@ -3387,19 +3420,19 @@ var PythonAttribute = /*#__PURE__*/function () {
       if (messageParts.length > 1) {
         this.message = messageParts[0];
         var labels = messageParts[1].split('|');
-        var _iterator28 = _createForOfIteratorHelper(labels.entries()),
-          _step28;
+        var _iterator29 = _createForOfIteratorHelper(labels.entries()),
+          _step29;
         try {
-          for (_iterator28.s(); !(_step28 = _iterator28.n()).done;) {
-            var _step28$value = _slicedToArray(_step28.value, 2),
-              index = _step28$value[0],
-              label = _step28$value[1];
+          for (_iterator29.s(); !(_step29 = _iterator29.n()).done;) {
+            var _step29$value = _slicedToArray(_step29.value, 2),
+              index = _step29$value[0],
+              label = _step29$value[1];
             this.labels[index] = label.trim();
           }
         } catch (err) {
-          _iterator28.e(err);
+          _iterator29.e(err);
         } finally {
-          _iterator28.f();
+          _iterator29.f();
         }
         this.postmessage = messageParts[2] + this.postmessage;
       }
@@ -3622,30 +3655,30 @@ var Library = /*#__PURE__*/function () {
         return this.toolbox;
       }
       if (imports) {
-        var _iterator29 = _createForOfIteratorHelper(imports.types()),
-          _step29;
+        var _iterator30 = _createForOfIteratorHelper(imports.types()),
+          _step30;
         try {
-          for (_iterator29.s(); !(_step29 = _iterator29.n()).done;) {
-            var importedType = _step29.value;
-            var _iterator30 = _createForOfIteratorHelper(this.modules.values()),
-              _step30;
+          for (_iterator30.s(); !(_step30 = _iterator30.n()).done;) {
+            var importedType = _step30.value;
+            var _iterator31 = _createForOfIteratorHelper(this.modules.values()),
+              _step31;
             try {
-              for (_iterator30.s(); !(_step30 = _iterator30.n()).done;) {
-                var _module2 = _step30.value;
+              for (_iterator31.s(); !(_step31 = _iterator31.n()).done;) {
+                var _module2 = _step31.value;
                 if (_module2.resolve(importedType) !== null) {
                   return true;
                 }
               }
             } catch (err) {
-              _iterator30.e(err);
+              _iterator31.e(err);
             } finally {
-              _iterator30.f();
+              _iterator31.f();
             }
           }
         } catch (err) {
-          _iterator29.e(err);
+          _iterator30.e(err);
         } finally {
-          _iterator29.f();
+          _iterator30.f();
         }
         return false;
       }
@@ -3658,17 +3691,17 @@ var Library = /*#__PURE__*/function () {
         return "";
       }
       var categoryXml = "<category name=\"".concat(this.name, "\">"); // TODO color
-      var _iterator31 = _createForOfIteratorHelper(this.modules.values()),
-        _step31;
+      var _iterator32 = _createForOfIteratorHelper(this.modules.values()),
+        _step32;
       try {
-        for (_iterator31.s(); !(_step31 = _iterator31.n()).done;) {
-          var _module3 = _step31.value;
+        for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
+          var _module3 = _step32.value;
           categoryXml += _module3.toToolbox(textToBlocks);
         }
       } catch (err) {
-        _iterator31.e(err);
+        _iterator32.e(err);
       } finally {
-        _iterator31.f();
+        _iterator32.f();
       }
       categoryXml += "</category>";
       return categoryXml;
@@ -3676,20 +3709,20 @@ var Library = /*#__PURE__*/function () {
   }, {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
-      var _iterator32 = _createForOfIteratorHelper(this.modules.values()),
-        _step32;
+      var _iterator33 = _createForOfIteratorHelper(this.modules.values()),
+        _step33;
       try {
-        for (_iterator32.s(); !(_step32 = _iterator32.n()).done;) {
-          var _module4 = _step32.value;
+        for (_iterator33.s(); !(_step33 = _iterator33.n()).done;) {
+          var _module4 = _step33.value;
           if (_module4.fullName === "") {
             continue;
           }
           _module4.registerImports(typeRegistry);
         }
       } catch (err) {
-        _iterator32.e(err);
+        _iterator33.e(err);
       } finally {
-        _iterator32.f();
+        _iterator33.f();
       }
     }
   }, {
@@ -3730,17 +3763,17 @@ var Libraries = /*#__PURE__*/function (_Map) {
     key: "toToolbox",
     value: function toToolbox(textToBlocks) {
       var result = "";
-      var _iterator33 = _createForOfIteratorHelper(this.values()),
-        _step33;
+      var _iterator34 = _createForOfIteratorHelper(this.values()),
+        _step34;
       try {
-        for (_iterator33.s(); !(_step33 = _iterator33.n()).done;) {
-          var library = _step33.value;
+        for (_iterator34.s(); !(_step34 = _iterator34.n()).done;) {
+          var library = _step34.value;
           result += library.toToolbox(textToBlocks);
         }
       } catch (err) {
-        _iterator33.e(err);
+        _iterator34.e(err);
       } finally {
-        _iterator33.f();
+        _iterator34.f();
       }
       return result;
     }
@@ -3757,37 +3790,37 @@ var Libraries = /*#__PURE__*/function (_Map) {
         // Might not contain a module name, check the built-ins
         foundModules = this.findModulesByName('');
       }
-      var _iterator34 = _createForOfIteratorHelper(foundModules),
-        _step34;
+      var _iterator35 = _createForOfIteratorHelper(foundModules),
+        _step35;
       try {
-        for (_iterator34.s(); !(_step34 = _iterator34.n()).done;) {
-          var foundModule = _step34.value;
+        for (_iterator35.s(); !(_step35 = _iterator35.n()).done;) {
+          var foundModule = _step35.value;
           var found = foundModule.resolve(fullName);
           if (found) {
             return found;
           }
         }
       } catch (err) {
-        _iterator34.e(err);
+        _iterator35.e(err);
       } finally {
-        _iterator34.f();
+        _iterator35.f();
       }
       return null;
     }
   }, {
     key: "registerImports",
     value: function registerImports(typeRegistry) {
-      var _iterator35 = _createForOfIteratorHelper(this.values()),
-        _step35;
+      var _iterator36 = _createForOfIteratorHelper(this.values()),
+        _step36;
       try {
-        for (_iterator35.s(); !(_step35 = _iterator35.n()).done;) {
-          var library = _step35.value;
+        for (_iterator36.s(); !(_step36 = _iterator36.n()).done;) {
+          var library = _step36.value;
           library.registerImports(typeRegistry);
         }
       } catch (err) {
-        _iterator35.e(err);
+        _iterator36.e(err);
       } finally {
-        _iterator35.f();
+        _iterator36.f();
       }
     }
   }, {
@@ -3850,11 +3883,11 @@ function updateBlockFieldFactory(block, pythonTypeNames, render) {
           var typeHint = (_parameter3 = parameter) === null || _parameter3 === void 0 ? void 0 : _parameter3.typeHint;
           if (typeHint) {
             var typeAliases = typeHint.referencedTypeAliases();
-            var _iterator36 = _createForOfIteratorHelper(typeAliases),
-              _step36;
+            var _iterator37 = _createForOfIteratorHelper(typeAliases),
+              _step37;
             try {
               var _loop4 = function _loop4() {
-                var typeAlias = _step36.value;
+                var typeAlias = _step37.value;
                 if (pythonTypeNames.some(function (pythonTypeName) {
                   return typeAlias.matches(pythonTypeName);
                 })) {
@@ -3862,15 +3895,15 @@ function updateBlockFieldFactory(block, pythonTypeNames, render) {
                   return 1; // break
                 }
               };
-              for (_iterator36.s(); !(_step36 = _iterator36.n()).done;) {
+              for (_iterator37.s(); !(_step37 = _iterator37.n()).done;) {
                 if (_loop4()) break;
               }
 
               // TODO case with Literal[...] | None
             } catch (err) {
-              _iterator36.e(err);
+              _iterator37.e(err);
             } finally {
-              _iterator36.f();
+              _iterator37.f();
             }
             if (block.fieldFactory_ === "" && typeHint.flattened().isLiteral()) {
               block.fieldFactory_ = fieldFactoryForLiteral(typeHint);
@@ -4281,12 +4314,12 @@ Blockly.Blocks['ast_If'] = {
   init: function init() {
     this.orelse_ = 0;
     this.elifs_ = 0;
-    this.appendValueInput('TEST').appendField("if");
+    this.appendValueInput('TEST').appendField(this.translateText("if"));
     this.appendStatementInput("BODY").setCheck(null).setAlign(Blockly.inputs.Align.RIGHT);
     this.setInputsInline(false);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LOGIC));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LOGIC));
     this.updateShape_();
   },
   // TODO: Not mutable currently
@@ -4305,7 +4338,7 @@ Blockly.Blocks['ast_If'] = {
       i++;
     }
     if (this.orelse_ && !this.getInput('ELSE')) {
-      this.appendDummyInput('ORELSETEST').appendField("else:");
+      this.appendDummyInput('ORELSETEST').appendField(this.translateText("else:"));
       this.appendStatementInput("ORELSEBODY").setCheck(null);
     } else if (!this.orelse_ && this.getInput('ELSE')) {
       block.removeInput('ORELSETEST');
@@ -4401,19 +4434,19 @@ BlockMirrorTextToBlocks.prototype['ast_If'] = function (node, parent) {
 Blockly.Blocks['ast_While'] = {
   init: function init() {
     this.orelse_ = 0;
-    this.appendValueInput('TEST').appendField("while");
+    this.appendValueInput('TEST').appendField(this.translateText("while"));
     this.appendStatementInput("BODY").setCheck(null).setAlign(Blockly.inputs.Align.RIGHT);
     this.setInputsInline(false);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.CONTROL));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.CONTROL));
     this.updateShape_();
   },
   // TODO: Not mutable currently
   updateShape_: function updateShape_() {
     var latestInput = "BODY";
     if (this.orelse_ && !this.getInput('ELSE')) {
-      this.appendDummyInput('ORELSETEST').appendField("else:");
+      this.appendDummyInput('ORELSETEST').appendField(this.translateText("else:"));
       this.appendStatementInput("ORELSEBODY").setCheck(null);
     } else if (!this.orelse_ && this.getInput('ELSE')) {
       block.removeInput('ORELSETEST');
@@ -4475,7 +4508,7 @@ Blockly.Blocks['ast_Num'] = {
   init: function init() {
     this.setOutput(true, "Number");
     this.appendDummyInput('INPUT').appendField(new Blockly.FieldNumber(0), 'NUM');
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.MATH));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.MATH));
     this.fieldFactory_ = "";
     // TODO perhaps more numeric types to check, but this handles the most common scenarios.
     initBlockFieldFactory(this, ["int", "float"]);
@@ -4604,44 +4637,12 @@ BlockMirrorTextToBlocks.prototype['ast_BinOp'] = function (node, parent) {
 };
 python.pythonGenerator.forBlock['ast_BinOpFull'] = python.pythonGenerator.forBlock['ast_BinOp'];
 BlockMirrorTextToBlocks.prototype['ast_BinOpFull'] = BlockMirrorTextToBlocks.prototype['ast_BinOp'];
-var LibraryLabelFieldTextInput = /*#__PURE__*/function (_Blockly$FieldTextInp) {
-  function LibraryLabelFieldTextInput(libraries, prefix, value, validator, config) {
-    var _this14;
-    _classCallCheck(this, LibraryLabelFieldTextInput);
-    _this14 = _callSuper(this, LibraryLabelFieldTextInput, [value, validator, config]);
-    _this14._libraries = libraries;
-    _this14.prefix = prefix;
-    return _this14;
-  }
-  _inherits(LibraryLabelFieldTextInput, _Blockly$FieldTextInp);
-  return _createClass(LibraryLabelFieldTextInput, [{
-    key: "getDisplayText_",
-    value: function getDisplayText_() {
-      var text = this.getText();
-      var fromLibrary = this._libraries.resolve(this.prefix + text);
-      if (fromLibrary instanceof PythonAttribute) {
-        text = fromLibrary.label;
-      }
-      if (text.length > this.maxDisplayLength) {
-        // Truncate displayed string and add an ellipsis ('...').
-        text = text.substring(0, this.maxDisplayLength - 2) + '…';
-      }
-      // Replace whitespace with non-breaking spaces so the text doesn't collapse.
-      text = text.replace(/\s/g, Blockly.Field.NBSP);
-      if (this.sourceBlock_ && this.sourceBlock_.RTL) {
-        // The SVG is LTR, force text to be RTL by adding an RLM.
-        text += "\u200F";
-      }
-      return text;
-    }
-  }]);
-}(Blockly.FieldTextInput);
 Blockly.Blocks['ast_Name'] = {
   init: function init() {
     this.setInputsInline(true);
     this.setOutput(true, null);
-    this.appendDummyInput('NAME').appendField(new LibraryLabelFieldTextInput(this.workspace.libraries, '', 'default'), 'VAR');
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.appendDummyInput('NAME').appendField(new Blockly.FieldTextInput('default'), 'VAR');
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.import_ = "";
   },
   mutationToDom: function mutationToDom() {
@@ -4736,7 +4737,7 @@ Blockly.Blocks['ast_Assign'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.targetCount_ = 1;
     this.simpleTarget_ = true;
     this.updateShape_();
@@ -4744,7 +4745,7 @@ Blockly.Blocks['ast_Assign'] = {
   },
   updateShape_: function updateShape_() {
     if (!this.getInput('VALUE')) {
-      this.appendDummyInput().appendField("set");
+      this.appendDummyInput().appendField(this.translateText("set"));
       this.appendValueInput('VALUE').appendField('=');
     }
     var i = 0;
@@ -4844,7 +4845,7 @@ Blockly.Blocks['ast_AnnAssignFull'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.initialized_ = true;
     this.updateShape_();
   },
@@ -4889,7 +4890,7 @@ Blockly.Blocks['ast_AnnAssign'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.strAnnotations_ = false;
     this.initialized_ = true;
   },
@@ -5017,7 +5018,12 @@ Blockly.Blocks['ast_AugAssign'] = {
     this.allOptions_ = false;
     this.initialPreposition_ = "by";
     this.appendDummyInput("OP").appendField(new Blockly.FieldDropdown(function () {
-      return block.allOptions_ ? BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_DISPLAY_FULL : BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_DISPLAY;
+      return (block.allOptions_ ? BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_DISPLAY_FULL : BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_DISPLAY).map(function (_ref7) {
+        var _ref8 = _slicedToArray(_ref7, 2),
+          label = _ref8[0],
+          value = _ref8[1];
+        return [block.translateText(label), value];
+      });
     }, function (value) {
       var block = this.sourceBlock_;
       block.updatePreposition_(value);
@@ -5027,13 +5033,13 @@ Blockly.Blocks['ast_AugAssign'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.updateShape_();
     this.updatePreposition_(this.initialPreposition_);
   },
   updatePreposition_: function updatePreposition_(value) {
     var preposition = BlockMirrorTextToBlocks.BINOPS_AUGASSIGN_PREPOSITION[value];
-    this.setFieldValue(preposition, 'PREPOSITION');
+    this.setFieldValue(this.translateText(preposition), 'PREPOSITION');
   },
   /**
    * Create XML to represent list inputs.
@@ -5123,7 +5129,7 @@ Blockly.Blocks['ast_Str'] = {
   init: function init() {
     this.setOutput(true, "String");
     this.appendDummyInput('INPUT').appendField(new Blockly.FieldTextInput(''), 'TEXT');
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
     this.fieldFactory_ = "";
     Blockly.Extensions.apply('text_quotes', this);
     initBlockFieldFactory(this, ["str"]);
@@ -5198,7 +5204,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
 }
 Blockly.Blocks['ast_Image'] = {
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
     this.src_ = "loading.png";
     this.updateShape_();
     this.setOutput(true);
@@ -5597,7 +5603,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
 });
 python.pythonGenerator.forBlock['ast_NameConstantBoolean'] = function (block, generator) {
   // Boolean values true and false.
-  var code = block.getFieldValue('BOOL') == 'TRUE' ? 'True' : 'False';
+  var code = block.getFieldValue('BOOL') === 'TRUE' ? 'True' : 'False';
   return [code, python.Order.ATOMIC];
 };
 python.pythonGenerator.forBlock['ast_NameConstantNone'] = function (block, generator) {
@@ -5625,7 +5631,7 @@ Blockly.Blocks["ast_List"] = {
    */
   init: function init() {
     this.setHelpUrl(Blockly.Msg["LISTS_CREATE_WITH_HELPURL"]);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "List");
@@ -5720,14 +5726,14 @@ Blockly.Blocks["ast_List"] = {
     if (this.itemCount_ && this.getInput("EMPTY")) {
       this.removeInput("EMPTY");
     } else if (!this.itemCount_ && !this.getInput("EMPTY")) {
-      this.appendDummyInput("EMPTY").appendField("create empty list []");
+      this.appendDummyInput("EMPTY").appendField(this.translateText("create empty list []"));
     }
     // Add new inputs.
     for (var i = 0; i < this.itemCount_; i++) {
       if (!this.getInput("ADD" + i)) {
         var input = this.appendValueInput("ADD" + i);
         if (i == 0) {
-          input.appendField("create list with [");
+          input.appendField(this.translateText("create list with ["));
         } else {
           input.appendField(",").setAlign(Blockly.inputs.Align.RIGHT);
         }
@@ -5753,8 +5759,8 @@ Blockly.Blocks["ast_List_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
-    this.appendDummyInput().appendField("Add new list elements below");
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
+    this.appendDummyInput().appendField(this.translateText("Add new list elements below"));
     this.appendStatementInput("STACK");
     this.contextMenu = false;
   }
@@ -5765,7 +5771,7 @@ Blockly.Blocks["ast_List_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.LIST));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -5796,7 +5802,7 @@ Blockly.Blocks["ast_Tuple"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "Tuple");
@@ -5930,7 +5936,7 @@ Blockly.Blocks["ast_Tuple_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
     this.appendDummyInput().appendField("Add new tuple elements below");
     this.appendStatementInput("STACK");
     this.contextMenu = false;
@@ -5942,7 +5948,7 @@ Blockly.Blocks["ast_Tuple_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TUPLE));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -5977,7 +5983,7 @@ Blockly.Blocks["ast_Set"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "Set");
@@ -6105,7 +6111,7 @@ Blockly.Blocks["ast_Set_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
     this.appendDummyInput().appendField("Add new set elements below");
     this.appendStatementInput("STACK");
     this.contextMenu = false;
@@ -6117,7 +6123,7 @@ Blockly.Blocks["ast_Set_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SET));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -6150,7 +6156,7 @@ Blockly.Blocks["ast_DictItem"] = {
     this.appendValueInput("VALUE").setCheck(null).appendField(":");
     this.setInputsInline(true);
     this.setOutput(true, "DictPair");
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
   }
 };
 Blockly.Blocks["ast_Dict"] = {
@@ -6159,7 +6165,7 @@ Blockly.Blocks["ast_Dict"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setOutput(true, "Dict");
@@ -6218,7 +6224,7 @@ Blockly.Blocks["ast_Dict"] = {
     // Disconnect any children that don't belong.
     for (var i = 0; i < this.itemCount_; i++) {
       var connection = this.getInput("ADD" + i).connection.targetConnection;
-      if (connection && connections.indexOf(connection) == -1) {
+      if (connection && connections.indexOf(connection) === -1) {
         var key = connection.getSourceBlock().getInput("KEY");
         if (key.connection.targetConnection) {
           key.connection.targetConnection.getSourceBlock().unplug(true);
@@ -6272,14 +6278,14 @@ Blockly.Blocks["ast_Dict"] = {
     if (this.itemCount_ && this.getInput("EMPTY")) {
       this.removeInput("EMPTY");
     } else if (!this.itemCount_ && !this.getInput("EMPTY")) {
-      this.appendDummyInput("EMPTY").appendField("empty dictionary");
+      this.appendDummyInput("EMPTY").appendField(this.translateText("empty dictionary"));
     }
     // Add new inputs.
     for (var i = 0; i < this.itemCount_; i++) {
       if (!this.getInput("ADD" + i)) {
         var input = this.appendValueInput("ADD" + i).setCheck("DictPair");
         if (i === 0) {
-          input.appendField("create dict with").setAlign(Blockly.inputs.Align.RIGHT);
+          input.appendField(this.translateText("create dict with")).setAlign(Blockly.inputs.Align.RIGHT);
         }
       }
     }
@@ -6306,8 +6312,8 @@ Blockly.Blocks["ast_Dict_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
-    this.appendDummyInput().appendField("Add new dict elements below");
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
+    this.appendDummyInput().appendField(this.translateText("Add new dict elements below"));
     this.appendStatementInput("STACK");
     this.contextMenu = false;
   }
@@ -6318,7 +6324,7 @@ Blockly.Blocks["ast_Dict_create_with_item"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.DICTIONARY));
     this.appendDummyInput().appendField("Element");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -6330,7 +6336,7 @@ python.pythonGenerator.forBlock["ast_Dict"] = function (block, generator) {
   var elements = new Array(block.itemCount_);
   for (var i = 0; i < block.itemCount_; i++) {
     var child = block.getInputTargetBlock("ADD" + i);
-    if (child === null || child.type != "ast_DictItem") {
+    if (child === null || child.type !== "ast_DictItem") {
       elements[i] = python.pythonGenerator.blank + ": " + python.pythonGenerator.blank;
       continue;
     }
@@ -6444,7 +6450,7 @@ Blockly.Blocks["ast_JoinedStr"] = {
    * Block for JoinedStr and FormattedValue
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
     this.itemCount_ = 3;
     this.updateShape_();
     this.setInputsInline(true);
@@ -6595,7 +6601,7 @@ Blockly.Blocks["ast_JoinedStr_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
     this.appendDummyInput().appendField("Add new values and strings below");
     this.appendStatementInput("STACK");
     this.contextMenu = false;
@@ -6607,7 +6613,7 @@ Blockly.Blocks["ast_JoinedStr_create_with_item_S"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
     this.appendDummyInput().appendField("Text");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -6620,7 +6626,7 @@ Blockly.Blocks["ast_JoinedStr_create_with_item_FV"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.appendDummyInput().appendField("Expression");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -6633,7 +6639,7 @@ Blockly.Blocks["ast_JoinedStr_create_with_item_FVF"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.appendDummyInput().appendField("Formatted Expression");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -6695,7 +6701,7 @@ python.pythonGenerator.forBlock["ast_JoinedStr"] = function (block, generator) {
   return [code, python.Order.ATOMIC];
 };
 BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
-  var _this15 = this;
+  var _this14 = this;
   var values = node.values;
   var elements = {};
   values.forEach(function (v, i) {
@@ -6703,8 +6709,8 @@ BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
       console.log(v);
       if (!v.conversion && !v.format_spec) {
         elements["ADD" + i] = BlockMirrorTextToBlocks.create_block("ast_FormattedValue", v.lineno, {}, {
-          "VALUE": _this15.convert(v.value, node)
-        }, _this15.LOCKED_BLOCK);
+          "VALUE": _this14.convert(v.value, node)
+        }, _this14.LOCKED_BLOCK);
       } else {
         var format_spec = v.format_spec ? chompExclamation(v.format_spec.values[0].s.v) : "";
         // Can there ever be a non-1 length format_spec?
@@ -6712,14 +6718,14 @@ BlockMirrorTextToBlocks.prototype["ast_JoinedStr"] = function (node, parent) {
           "FORMAT_SPEC": format_spec,
           "CONVERSION": v.conversion
         }, {
-          "VALUE": _this15.convert(v.value, node)
-        }, _this15.LOCKED_BLOCK);
+          "VALUE": _this14.convert(v.value, node)
+        }, _this14.LOCKED_BLOCK);
       }
     } else if (v._astname === "Str") {
       var text = Sk.ffi.remapToJs(v.s);
       elements["ADD" + i] = BlockMirrorTextToBlocks.create_block("ast_JoinedStrStr", v.lineno, {
         "TEXT": text
-      }, {}, _this15.LOCKED_BLOCK);
+      }, {}, _this14.LOCKED_BLOCK);
     }
   });
   return BlockMirrorTextToBlocks.create_block("ast_JoinedStr", node.lineno, {}, elements, {
@@ -6779,6 +6785,38 @@ BlockMirrorTextToBlocks.prototype['ast_IfExp'] = function (node, parent) {
     "ORELSE": this.convert(orelse, node)
   });
 };
+var LibraryLabelFieldTextInput = /*#__PURE__*/function (_Blockly$FieldTextInp) {
+  function LibraryLabelFieldTextInput(libraries, prefix, value, validator, config) {
+    var _this15;
+    _classCallCheck(this, LibraryLabelFieldTextInput);
+    _this15 = _callSuper(this, LibraryLabelFieldTextInput, [value, validator, config]);
+    _this15._libraries = libraries;
+    _this15.prefix = prefix;
+    return _this15;
+  }
+  _inherits(LibraryLabelFieldTextInput, _Blockly$FieldTextInp);
+  return _createClass(LibraryLabelFieldTextInput, [{
+    key: "getDisplayText_",
+    value: function getDisplayText_() {
+      var text = this.getText();
+      var fromLibrary = this._libraries.resolve(this.prefix + text);
+      if (fromLibrary instanceof PythonAttribute) {
+        text = fromLibrary.label;
+      }
+      if (text.length > this.maxDisplayLength) {
+        // Truncate displayed string and add an ellipsis ('...').
+        text = text.substring(0, this.maxDisplayLength - 2) + '…';
+      }
+      // Replace whitespace with non-breaking spaces so the text doesn't collapse.
+      text = text.replace(/\s/g, Blockly.Field.NBSP);
+      if (this.sourceBlock_ && this.sourceBlock_.RTL) {
+        // The SVG is LTR, force text to be RTL by adding an RLM.
+        text += "\u200F";
+      }
+      return text;
+    }
+  }]);
+}(Blockly.FieldTextInput);
 Blockly.Blocks['ast_Attribute'] = {
   init: function init() {
     this.setInputsInline(true);
@@ -7072,7 +7110,7 @@ Blockly.Blocks['ast_Call'] = {
         if (mutatorOpen && connection && paramIds.indexOf(this.quarkIds_[i]) === -1) {
           // This connection should no longer be attached to this block.
           connection.disconnect();
-          connection.getSourceBlock().bumpNeighbours_();
+          connection.getSourceBlock().bumpNeighbours();
         }
       }
     }
@@ -7674,7 +7712,7 @@ Blockly.Blocks['ast_Raise'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.EXCEPTIONS));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.EXCEPTIONS));
     this.exc_ = true;
     this.cause_ = false;
     this.appendDummyInput().appendField("raise");
@@ -7754,9 +7792,9 @@ Blockly.Blocks['ast_Delete'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.targetCount_ = 1;
-    this.appendDummyInput().appendField("delete");
+    this.appendDummyInput().appendField(this.translateText("delete"));
     this.updateShape_();
   },
   updateShape_: function updateShape_() {
@@ -7816,7 +7854,7 @@ Blockly.Blocks['ast_Subscript'] = {
   init: function init() {
     this.setInputsInline(true);
     this.setOutput(true);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
     this.sliceKinds_ = ["I"];
     this.appendValueInput("VALUE").setCheck(null);
     this.appendDummyInput('OPEN_BRACKET').appendField("[");
@@ -8034,7 +8072,7 @@ Blockly.Blocks["ast_Comp_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
     this.appendDummyInput().appendField("Add new comprehensions below");
     this.appendDummyInput().appendField("   For clause");
     this.appendStatementInput("STACK");
@@ -8047,7 +8085,7 @@ Blockly.Blocks["ast_Comp_create_with_for"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
     this.appendDummyInput().appendField("For clause");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -8060,7 +8098,7 @@ Blockly.Blocks["ast_Comp_create_with_if"] = {
    * @this Blockly.Block
    */
   init: function init() {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.SEQUENCES));
     this.appendDummyInput().appendField("If clause");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -8097,7 +8135,7 @@ BlockMirrorTextToBlocks.COMP_SETTINGS = {
      */
     init: function init() {
       this.setStyle("loop_blocks");
-      this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COMP_SETTINGS[kind].color));
+      this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COMP_SETTINGS[kind].color));
       this.itemCount_ = 3;
       var input = this.appendValueInput("ELT").appendField(BlockMirrorTextToBlocks.COMP_SETTINGS[kind].start);
       if (kind === "DictComp") {
@@ -8376,11 +8414,12 @@ BlockMirrorTextToBlocks.BLOCKS.push({
 
 // The elements you can put into the mutator
 [['Parameter', 'Parameter', '', false, false], ['ParameterType', 'Parameter with type', '', true, false], ['ParameterDefault', 'Parameter with default value', '', false, true], ['ParameterDefaultType', 'Parameter with type and default value', '', true, true], ['ParameterVararg', 'Variable length parameter', '*', false, false], ['ParameterVarargType', 'Variable length parameter with type', '*', true, false], ['ParameterKwarg', 'Keyworded Variable length parameter', '**', false], ['ParameterKwargType', 'Keyworded Variable length parameter with type', '**', true, false]].forEach(function (parameterTypeTuple) {
-  var parameterType = parameterTypeTuple[0],
-    parameterDescription = parameterTypeTuple[1],
-    parameterPrefix = parameterTypeTuple[2],
-    parameterTyped = parameterTypeTuple[3],
-    parameterDefault = parameterTypeTuple[4];
+  var _parameterTypeTuple = _slicedToArray(parameterTypeTuple, 5),
+    parameterType = _parameterTypeTuple[0],
+    parameterDescription = _parameterTypeTuple[1],
+    parameterPrefix = _parameterTypeTuple[2],
+    parameterTyped = _parameterTypeTuple[3],
+    parameterDefault = _parameterTypeTuple[4];
   BlockMirrorTextToBlocks.BLOCKS.push({
     "type": "ast_FunctionMutant" + parameterType,
     "message0": parameterDescription,
@@ -8435,7 +8474,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
 
 Blockly.Blocks['ast_FunctionDef'] = {
   init: function init() {
-    this.appendDummyInput().appendField("define").appendField(new Blockly.FieldTextInput("function"), "NAME");
+    this.appendDummyInput().appendField(this.translateText("define")).appendField(new Blockly.FieldTextInput("function"), "NAME");
     this.decoratorsCount_ = 0;
     this.parametersCount_ = 0;
     this.hasReturn_ = false;
@@ -8444,7 +8483,7 @@ Blockly.Blocks['ast_FunctionDef'] = {
     this.setInputsInline(false);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
     this.updateShape_();
     this.setMutator(new Blockly.icons.MutatorIcon(['ast_FunctionMutantParameter', 'ast_FunctionMutantParameterType'], this));
   },
@@ -8475,7 +8514,7 @@ Blockly.Blocks['ast_FunctionDef'] = {
     var currentReturn = this.getInput('RETURNS');
     if (status) {
       if (!currentReturn) {
-        this.appendValueInput("RETURNS").setCheck(null).setAlign(Blockly.inputs.Align.RIGHT).appendField("returns");
+        this.appendValueInput("RETURNS").setCheck(null).setAlign(Blockly.inputs.Align.RIGHT).appendField(this.translateText("returns"));
       }
       this.moveInputBefore('RETURNS', 'BODY');
     } else if (!status && currentReturn) {
@@ -8607,7 +8646,7 @@ Blockly.Blocks['ast_FunctionDef'] = {
           if (this.returnConnection_) {
             var returnBlock = returnConnection.targetBlock();
             returnBlock.unplug();
-            returnBlock.bumpNeighbours_();
+            returnBlock.bumpNeighbours();
           }
           this.setReturnAnnotation_(false);
         }
@@ -8762,7 +8801,7 @@ Blockly.Blocks['ast_Lambda'] = {
     this.appendValueInput("BODY").appendField("body").setAlign(Blockly.inputs.Align.RIGHT).setCheck(null);
     this.setInputsInline(false);
     this.setOutput(true);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
     this.updateShape_();
   },
   mutationToDom: Blockly.Blocks['ast_FunctionDef'].mutationToDom,
@@ -8800,11 +8839,11 @@ BlockMirrorTextToBlocks.prototype['ast_Lambda'] = function (node, parent) {
 };
 Blockly.Blocks['ast_ReturnFull'] = {
   init: function init() {
-    this.appendValueInput('VALUE').appendField('return');
+    this.appendValueInput('VALUE').appendField(this.translateText('return'));
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
   }
 };
 BlockMirrorTextToBlocks.BLOCKS.push({
@@ -8893,7 +8932,7 @@ Blockly.Blocks['ast_Global'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.nameCount_ = 1;
     this.appendDummyInput('GLOBAL').appendField("make global", "START_GLOBALS");
     this.updateShape_();
@@ -9006,7 +9045,7 @@ Blockly.Blocks['ast_Try'] = {
     this.setInputsInline(true);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.EXCEPTIONS));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.EXCEPTIONS));
     this.updateShape_();
   },
   // TODO: Not mutable currently
@@ -9145,7 +9184,7 @@ Blockly.Blocks['ast_ClassDef'] = {
     this.setInputsInline(false);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.OO));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.OO));
     this.updateShape_();
   },
   // TODO: Not mutable currently
@@ -9280,7 +9319,7 @@ Blockly.Blocks['ast_Import'] = {
     this.setInputsInline(false);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.PYTHON));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.PYTHON));
     this.updateShape_();
   },
   // TODO: Not mutable currently
@@ -9462,7 +9501,7 @@ Blockly.Blocks['ast_With'] = {
     this.setInputsInline(false);
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.CONTROL));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.CONTROL));
     this.updateShape_();
   },
   /**

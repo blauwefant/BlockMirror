@@ -6,6 +6,19 @@ function BlockMirrorTextToBlocks(blockMirror) {
     if (!BlockMirrorTextToBlocks.LOADED) {
       for (const blockElement of BlockMirrorTextToBlocks.BLOCKS) {
         blockElement.colour = blockMirror.configuration.convertColour(blockElement.type, blockElement.colour);
+
+        if (blockElement.message0) {
+          blockElement.message0 = blockMirror.configuration.translate(blockElement.message0)
+        }
+        if (blockElement.args0) {
+          for (const arg of blockElement.args0) {
+            if (arg.type === 'field_dropdown') {
+              arg.options = arg.options.map(
+                ([label, value]) => [blockMirror.configuration.translate(label), value]
+              );
+            }
+          }
+        }
       }
       Blockly.common.defineBlocksWithJsonArray(BlockMirrorTextToBlocks.BLOCKS);
       BlockMirrorTextToBlocks.LOADED = true;

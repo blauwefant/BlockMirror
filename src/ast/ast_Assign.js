@@ -3,7 +3,7 @@ Blockly.Blocks['ast_Assign'] = {
         this.setInputsInline(true);
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
         this.targetCount_ = 1;
         this.simpleTarget_ = true;
         this.updateShape_();
@@ -12,7 +12,7 @@ Blockly.Blocks['ast_Assign'] = {
     updateShape_: function () {
         if (!this.getInput('VALUE')) {
             this.appendDummyInput()
-                .appendField("set");
+                .appendField(this.translateText("set"));
             this.appendValueInput('VALUE')
                 .appendField('=');
         }

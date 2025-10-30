@@ -23,7 +23,7 @@ BlockMirrorTextToBlocks.BLOCKS.push({
 
 python.pythonGenerator.forBlock['ast_NameConstantBoolean'] = function(block, generator) {
     // Boolean values true and false.
-    var code = (block.getFieldValue('BOOL') == 'TRUE') ? 'True' : 'False';
+    var code = (block.getFieldValue('BOOL') === 'TRUE') ? 'True' : 'False';
     return [code, python.Order.ATOMIC];
 };
 

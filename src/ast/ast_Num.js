@@ -3,7 +3,7 @@ Blockly.Blocks['ast_Num'] = {
         this.setOutput(true, "Number");
         this.appendDummyInput('INPUT')
             .appendField(new Blockly.FieldNumber(0), 'NUM');
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.MATH));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.MATH));
         this.fieldFactory_ = "";
         // TODO perhaps more numeric types to check, but this handles the most common scenarios.
         initBlockFieldFactory(this, ["int", "float"])

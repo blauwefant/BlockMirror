@@ -72,7 +72,7 @@ Blockly.Blocks["ast_JoinedStr"] = {
      * Block for JoinedStr and FormattedValue
      */
     init: function () {
-        this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+        this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
         this.itemCount_ = 3;
         this.updateShape_();
         this.setInputsInline(true);
@@ -240,7 +240,7 @@ Blockly.Blocks["ast_JoinedStr_create_with_container"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
     this.appendDummyInput().appendField("Add new values and strings below");
     this.appendStatementInput("STACK");
     this.contextMenu = false;
@@ -253,7 +253,7 @@ Blockly.Blocks["ast_JoinedStr_create_with_item_S"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
     this.appendDummyInput().appendField("Text");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -267,7 +267,7 @@ Blockly.Blocks["ast_JoinedStr_create_with_item_FV"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.appendDummyInput().appendField("Expression");
     this.setPreviousStatement(true);
     this.setNextStatement(true);
@@ -281,7 +281,7 @@ Blockly.Blocks["ast_JoinedStr_create_with_item_FVF"] = {
    * @this Blockly.Block
    */
   init: function () {
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.VARIABLES));
     this.appendDummyInput().appendField("Formatted Expression");
     this.setPreviousStatement(true);
     this.setNextStatement(true);

@@ -102,7 +102,7 @@ BlockMirror.prototype.validateConfiguration = function (configuration) {
     this.configuration.imageDetection = configuration.imageDetection ?? 'string';
     this.configuration.imageMode = configuration.imageMode ?? false;
     this.configuration.libraries = configuration.libraries ?? BlockMirror.LIBRARIES;
-    this.configuration.translate = configuration.translate ?? ((identifier, defaultValue, _namespace=None) =>
+    this.configuration.translate = configuration.translate ?? ((identifier, defaultValue, _namespace) =>
         defaultValue === undefined || defaultValue === null ? identifier : defaultValue);
     this.configuration.preferFullAttributeBlocks = configuration.preferFullAttributeBlocks ?? false;
     this.configuration.showDefaultArguments = configuration.showDefaultArguments ?? false;

@@ -147,3 +147,13 @@ Blockly.Variables.nameUsedWithAnyType = function(name, workspace) {
   }
   return null;
 };
+
+Blockly.BlockSvg.prototype.translateText = function(identifier, defaultValue, namespace) {
+  // Find the main workspace and call the function on that.
+  return this.workspace.themeManager_.workspace.translateText(identifier, defaultValue, namespace);
+}
+
+Blockly.BlockSvg.prototype.convertColour = function(type, defaultValue, fromLibrary) {
+  // Find the main workspace and call the function on that.
+  return this.workspace.themeManager_.workspace.convertColour(type, defaultValue, fromLibrary);
+}

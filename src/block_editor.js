@@ -37,11 +37,12 @@ function BlockMirrorBlockEditor(blockMirror) {
     this.workspace.registerToolboxCategoryCallback(
       'VARIABLE', this.variableFlyoutCallback);
 
+    this.workspace.convertColour = blockMirror.configuration.convertColour;
+    this.workspace.translateText = blockMirror.configuration.translate;
     this.workspace.libraries = blockMirror.libraries;
     this.workspace.toolbox.flyout.workspace_.libraries = blockMirror.libraries;
-    this.workspace.convertColour = blockMirror.configuration.convertColour;
-    this.workspace.toolbox.flyout.workspace_.convertColour = blockMirror.configuration.convertColour;
-    // Configure Blockly
+
+  // Configure Blockly
     this.workspace.addChangeListener(this.changed.bind(this));
 
     // Configure Blockly DIV
@@ -60,7 +61,6 @@ function BlockMirrorBlockEditor(blockMirror) {
     // TODO optimize
     this.blockMirror.addChangeListener(event => this.remakeToolbox());
 }
-
 
 /**
  * Construct the blocks required by the flyout for the variable category.

@@ -1,11 +1,11 @@
 Blockly.Blocks['ast_ReturnFull'] = {
   init: function() {
     this.appendValueInput('VALUE')
-      .appendField('return');
+      .appendField(this.translateText('return'));
     this.setInputsInline(true)
     this.setPreviousStatement(true, null);
     this.setNextStatement(true, null);
-    this.setColour(this.workspace.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
+    this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.FUNCTIONS));
   }
 };
 
