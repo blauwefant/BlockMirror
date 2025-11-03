@@ -41,6 +41,22 @@ function addMemberToTranslationsMap(member, translationsMap) {
         }
       }
       translationsMap.set(key, value);
+
+      if (!member.name.startsWith("__") || member.name === "__init__") {
+        for (let parameter of member.parameters) {
+          if (
+            parameter.keyword &&
+            (member.classmethod ? parameter.name !== "cls" : parameter.name !== "self") &&
+            parameter.name.length > 1 &&
+            !parameter.variableLength
+          ) {
+            let key = "KEYWORD:" + parameter.name;
+            let value = translationsMap.get(key) ?? new Set();
+            value.add(member.fullName);
+            translationsMap.set(key, value);
+          }
+        }
+      }
     } else if (member instanceof blockMirrorLibraries.PythonAttribute && !member.isAliasOf) {
       let premessage, value, labelsPart;
 
@@ -76,7 +92,7 @@ let libraryTranslationsMap = new Map()
 
 for (const library of libraries.values()) {
     let libraryPrefix = library.name.split(" ", 1)[0]
-    let translationsMap = libraryTranslationsMap.get(libraryPrefix) || new Map()
+    let translationsMap = libraryTranslationsMap.get(libraryPrefix) ?? new Map()
 
     for (const module of library.modules.values()) {
         for (const member of module.members.values()) {
@@ -99,13 +115,18 @@ for (let [libraryName, translationsMap] of libraryTranslationsMap) {
     potData += "# Default English texts are part of the library definitions.\n\n"
 
     for (const [key, value] of translationsMap) {
-        if (/[a-zA-Z]/.test(key)) {
-            if (value && value !== key) {
-                potData += `#. ${value}\n`
-            }
-            potData += `msgid "${key.replace('"', '\\"')}"\n`;
-            potData += `msgstr ""\n\n`;
+      let isKeyword = key.startsWith("KEYWORD:")
+      let cleanKey = isKeyword ? key.substring(8) : key;
+
+      if (/[a-zA-Z]/.test(cleanKey)) {
+        if (isKeyword) {
+          potData += `#. keyword parameter from: ${[...value].sort().join(', ')}\n`;
+        } else if (value && value !== cleanKey) {
+          potData += `#. ${value}\n`;
         }
+        potData += `msgid "${cleanKey.replace('"', '\\"')}"\n`;
+        potData += `msgstr ""\n\n`;
+      }
     }
 
     let potDir = path.resolve(baseDir, 'translations/libraries/' + libraryName)

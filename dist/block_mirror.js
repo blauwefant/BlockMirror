@@ -5132,7 +5132,7 @@ Blockly.Blocks['ast_Str'] = {
     this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
     this.fieldFactory_ = "";
     Blockly.Extensions.apply('text_quotes', this);
-    initBlockFieldFactory(this, ["str"]);
+    initBlockFieldFactory(this, ["str", "typing.Literal"]);
   },
   updateShape_: function updateShape_() {
     var input = this.getInput('INPUT');
@@ -7166,15 +7166,14 @@ Blockly.Blocks['ast_Call'] = {
     }
     return "";
   },
-  updateShapeOfMessage: function updateShapeOfMessage() {
+  updateShapeOfMessage: function updateShapeOfMessage(fromLibrary) {
     var messageInput = this.getInput('MESSAGE_INPUT');
-    if (this.fromLibrary_ === "") {
+    if (!fromLibrary) {
       this.setFieldValue(this.message_ + this.postmessage_ + " (", "MESSAGE");
       messageInput.removeField('MESSAGE_NAME', true);
       messageInput.removeField('MESSAGE_POST', true);
     } else {
       this.setFieldValue(this.message_, "MESSAGE");
-      var fromLibrary = this.workspace.libraries.resolve(this.fromLibrary_);
       if (fromLibrary.labels.length === 1) {
         this.setFieldValue(this.message_ + fromLibrary.label + this.postmessage_ + " (", "MESSAGE");
         messageInput.removeField('MESSAGE_NAME', true);
@@ -7188,9 +7187,14 @@ Blockly.Blocks['ast_Call'] = {
       }
     }
   },
-  updateShapeOfArguments: function updateShapeOfArguments() {
+  updateShapeOfArguments: function updateShapeOfArguments(fromLibrary) {
     // Process arguments
     var drawnArgumentCount = this.getDrawnArgumentCount_();
+    var translateArgumentLabel = fromLibrary ? function (item) {
+      return fromLibrary.pythonModule.library.translate(item, item);
+    } : function (item) {
+      return item;
+    };
     for (var i = 0; i < drawnArgumentCount; i++) {
       var argument = this.arguments_[i];
       var argumentName = this.parseArgument_(argument);
@@ -7207,30 +7211,33 @@ Blockly.Blocks['ast_Call'] = {
         if (argumentNames.length > 1) {
           if (field instanceof Blockly.FieldLabel) {
             field = new Blockly.FieldDropdown(argumentNames.map(function (item) {
-              return [item, item];
+              return [translateArgumentLabel(item), item];
             }));
             var input = input.getInput('ARG' + i);
             input.removeField('ARGNAME' + i);
             input.insertFieldAt(0, field);
           } else {
             field.setOptions(argumentNames.map(function (item) {
-              return [item, item];
+              return [translateArgumentLabel(item), item];
             }));
           }
+          field.setValue(argumentName, false);
         } else if (!(field instanceof Blockly.FieldLabel)) {
-          field = new Blockly.FieldLabel(argumentName);
+          var label = postfix === "=" ? translateArgumentLabel(argumentName) : argumentName;
+          field = new Blockly.FieldLabel(label);
           var _input = _input.getInput('ARG' + i);
           _input.removeField('ARGNAME' + i);
           _input.insertFieldAt(0, field);
         }
-        field.setValue(argumentName, false);
       } else {
         // Add new input.
         // For now, this assumes the function definition does not change.
         if (argumentNames.length > 1) {
           field = new Blockly.FieldDropdown(argumentNames.map(function (item) {
-            return [item, item];
+            return [translateArgumentLabel(item), item];
           }));
+        } else if (postfix === '=') {
+          field = new Blockly.FieldLabel(translateArgumentLabel(argumentName));
         } else {
           field = new Blockly.FieldLabel(argumentName);
         }
@@ -7257,8 +7264,9 @@ Blockly.Blocks['ast_Call'] = {
     } else if (!this.isMethod_ && this.getInput('FUNC')) {
       this.removeInput('FUNC');
     }
-    this.updateShapeOfMessage();
-    this.updateShapeOfArguments();
+    var fromLibrary = this.fromLibrary_ === "" ? null : this.workspace.libraries.resolve(this.fromLibrary_);
+    this.updateShapeOfMessage(fromLibrary);
+    this.updateShapeOfArguments(fromLibrary);
     var i = this.getDrawnArgumentCount_();
 
     // Closing parentheses
@@ -7480,7 +7488,12 @@ python.pythonGenerator.forBlock['ast_Call'] = function (block, generator) {
     if (argument.startsWith('KWARGS:')) {
       args.push("**" + value);
     } else if (argument.startsWith('KEYWORD:')) {
-      var keyword = block.getFieldValue('ARGNAME' + i);
+      var keyword = void 0;
+      if (block.getField('ARGNAME' + i) instanceof Blockly.FieldLabel) {
+        keyword = argument.substring(8);
+      } else {
+        keyword = block.getFieldValue('ARGNAME' + i);
+      }
       args.push(keyword + "=" + value);
     } else {
       args.push(value);
@@ -9785,7 +9798,7 @@ BlockMirror.LIBRARIES['builtin file'] = {
   "__colour": "FILE",
   "__toolbox": false,
   "": [
-    "input(prompt: str | None = None): str",
+    "input(prompt: str | None = None, /): str",
     "open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None): Any",
     "print(*objects, sep: str = ' ', end: str ='\\n', file=None, flush: bool = False): None"
   ]
@@ -9800,7 +9813,7 @@ BlockMirror.LIBRARIES['builtin list'] = {
     "index(self, item, /): int"
   ],
   "class collections.abc.MutableSequence(collections.abc.Sequence)": [
-    "append(self, value): None // to list {} append (___)",
+    "append(self, value, /): None // to list {} append (___)",
     "extend(self, other: collections.abc.Sequence, /): None",
     "insert(self, pos, elmnt, /): None // to list {} insert at (___, ___)",
     "reverse(self): collections.abc.MutableSequence"
@@ -9813,7 +9826,7 @@ BlockMirror.LIBRARIES['builtin list'] = {
       "signatures": [
         "clear(self): None",
         "pop(self, pos: int = -1, /): Any",
-        "remove(self, value: Any): None"
+        "remove(self, value: Any, /): None"
       ],
       "colour": "SEQUENCES"
     }
@@ -9828,20 +9841,20 @@ BlockMirror.LIBRARIES['builtin math'] = {
     "bin(x: Any, /): str",
     "hash(object, /): int",
     "hex(int, /): str",
-    "min(iterable, *, key=None): Any",
-    "max(iterable, *, key=None): Any",
+    "min(iterable, /, *, key=None): Any",
+    "max(iterable, /, *, key=None): Any",
     "oct(int, /): str",
     "pow(base, exp, mod=None): Any",
     "round(number: float | int, ndigits: int | None = None): float | int // round(___)",
     "sum(iterable, /, start: float | int = 0): float | int",
-    "divmod(a: float | int, b: float | int): tuple[int, float]"
+    "divmod(a: float | int, b: float | int, /): tuple[int, float]"
   ],
   "random": [
     "choice(seq: collections.abc.Sequence): Any",
-    "shuffle(seq: collections.abc.Sequence): None",
+    "shuffle(x: collections.abc.Sequence): None",
     "randrange(start: int, stop: int, step: int=1, /): int",
     "randint(a: int, b: int): int",
-    "getrandbits(k: int): int"
+    "getrandbits(k: int, /): int"
   ],
   "math": [
     "e: numbers.Number",
@@ -9863,7 +9876,7 @@ BlockMirror.LIBRARIES['builtin math'] = {
   "class float(numbers.Real)": [
     "__init__(self, value: float | str = 0.0, /): None",
     "as_integer_ratio(self): tuple[int, int]",
-    "fromhex(cls, string: str): float // {}.fromhex(___)",
+    "fromhex(cls, string: str, /): float",
     "hex(): str",
     "is_integer(self): bool"
   ],
@@ -9883,7 +9896,7 @@ BlockMirror.LIBRARIES['builtin oo'] = {
   "": [
     "callable(object: Any, /): bool",
     "classmethod(method, /): Any",
-    "getattr(object, name: str): Any",
+    "getattr(object, name: str, /): Any",
     "hasattr(object, name: str, /): bool",
     "isinstance(object, classinfo, /): bool",
     "issubclass(object, classinfo, /): bool",
@@ -9891,8 +9904,8 @@ BlockMirror.LIBRARIES['builtin oo'] = {
     "staticmethod(method, /): Any",
     {
       "signatures": [
-        "all(iterable): bool",
-        "any(iterable): bool"
+        "all(iterable, /): bool",
+        "any(iterable, /): bool"
       ],
       "colour": "LOGIC"
     }
@@ -9945,9 +9958,9 @@ BlockMirror.LIBRARIES['builtin python'] = {
   "": [
     "breakpoint(*args, **kws): None",
     "compile(source, filename, mode, flags: int = 0, dont_inherit: bool = False, optimize: int = -1)",
-    "dir(object = None): list",
-    "eval(source, /, globals: dict | None = None, locals=None): Any",
-    "exec(source, /, globals: dict | None = None, locals=None, *, closure=None): None",
+    "dir(object = None, /): list",
+    "eval(source, globals: dict | None = None, locals=None, /): Any",
+    "exec(source, globals: dict | None = None, locals=None, *, closure=None, /): None",
     "help(request = None): Any",
     "id(object, /): int",
     "__import__(name, globals=None, locals=None, fromlist=(), level: int = 0)"
@@ -9966,12 +9979,12 @@ BlockMirror.LIBRARIES['builtin sequences'] = {
   "__toolbox": false,
   "": [
     "enumerate(iterable, start: int = 0): iterator",
-    "filter(function, iterable): iterator",
-    "iter(object, sentinel = ___): iterator",
-    "len(s): int",
+    "filter(function, iterable, /): iterator",
+    "iter(object, sentinel = ___, /): iterator",
+    "len(s, /): int",
     "map(function, iterable, *iterables): iterator",
-    "next(iterator, default = ___): Any",
-    "reversed(seq): iterator",
+    "next(iterator, default = ___, /): Any",
+    "reversed(seq, /): iterator",
     "sorted(iterable, /, *, key = None, reverse: boolean = False): list",
     "zip(*iterables, strict: boolean = False): iterator"
   ],
@@ -10038,7 +10051,7 @@ BlockMirror.LIBRARIES['builtin text'] = {
   "": [
     "ascii(object: Any, /): str",
     "chr(i: int, /): str",
-    "format(value: Any, format_spec=''): Any",
+    "format(value: Any, format_spec='', /): Any",
     "ord(c: str, /): int",
     "repr(object: Any, /): str"
   ],
@@ -10069,7 +10082,7 @@ BlockMirror.LIBRARIES['builtin text'] = {
     "isspace(self): bool",
     "istitle(self): bool",
     "isupper(self): bool",
-    "join(self, iterable): str",
+    "join(self, iterable, /): str",
     "ljust(self, width: int, fillchar: str = \" \", /): str",
     "lower(self): str",
     "lstrip(self, chars: str | None = None, /): str",
@@ -10081,16 +10094,16 @@ BlockMirror.LIBRARIES['builtin text'] = {
     "rjust(self, width: int, fillchar: str = \" \", /): str",
     "rpartition(self, sep: str, /): tuple[str, str, str]",
     "rsplit(self, sep: str | None = None, maxsplit: int = -1): list[str]",
-    "rstrip(self, chars: str | None = None): str",
+    "rstrip(self, chars: str | None = None, /): str",
     "split(self, sep: str | None = None, maxsplit: int = -1): list[str]",
     "splitlines(self, keepends: bool = False): list[str]",
     "startswith(self, prefix, start: int | None = None, end: int | None = None, /): bool",
-    "strip(self, chars: str | None = None): str",
+    "strip(self, chars: str | None = None, /): str",
     "swapcase(self): str",
     "title(self): str",
-    "translate(self, table): str",
+    "translate(self, table, /): str",
     "upper(self): str",
-    "zfill(self, width: int): str"
+    "zfill(self, width: int, /): str"
   ]
 };
 

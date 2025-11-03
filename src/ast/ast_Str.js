@@ -6,7 +6,7 @@ Blockly.Blocks['ast_Str'] = {
         this.setColour(this.convertColour(this.type, BlockMirrorTextToBlocks.COLOR.TEXT));
         this.fieldFactory_ = "";
         Blockly.Extensions.apply('text_quotes', this);
-        initBlockFieldFactory(this, ["str"])
+        initBlockFieldFactory(this, ["str", "typing.Literal"])
     },
     updateShape_: function () {
         let input = this.getInput('INPUT')

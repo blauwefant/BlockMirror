@@ -3,12 +3,12 @@
   "__toolbox": false,
   "": [
     "enumerate(iterable, start: int = 0): iterator",
-    "filter(function, iterable): iterator",
-    "iter(object, sentinel = ___): iterator",
-    "len(s): int",
+    "filter(function, iterable, /): iterator",
+    "iter(object, sentinel = ___, /): iterator",
+    "len(s, /): int",
     "map(function, iterable, *iterables): iterator",
-    "next(iterator, default = ___): Any",
-    "reversed(seq): iterator",
+    "next(iterator, default = ___, /): Any",
+    "reversed(seq, /): iterator",
     "sorted(iterable, /, *, key = None, reverse: boolean = False): list",
     "zip(*iterables, strict: boolean = False): iterator"
   ],

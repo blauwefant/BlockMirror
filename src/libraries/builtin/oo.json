@@ -4,7 +4,7 @@
   "": [
     "callable(object: Any, /): bool",
     "classmethod(method, /): Any",
-    "getattr(object, name: str): Any",
+    "getattr(object, name: str, /): Any",
     "hasattr(object, name: str, /): bool",
     "isinstance(object, classinfo, /): bool",
     "issubclass(object, classinfo, /): bool",
@@ -12,8 +12,8 @@
     "staticmethod(method, /): Any",
     {
       "signatures": [
-        "all(iterable): bool",
-        "any(iterable): bool"
+        "all(iterable, /): bool",
+        "any(iterable, /): bool"
       ],
       "colour": "LOGIC"
     }

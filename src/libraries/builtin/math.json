@@ -6,20 +6,20 @@
     "bin(x: Any, /): str",
     "hash(object, /): int",
     "hex(int, /): str",
-    "min(iterable, *, key=None): Any",
-    "max(iterable, *, key=None): Any",
+    "min(iterable, /, *, key=None): Any",
+    "max(iterable, /, *, key=None): Any",
     "oct(int, /): str",
     "pow(base, exp, mod=None): Any",
     "round(number: float | int, ndigits: int | None = None): float | int // round(___)",
     "sum(iterable, /, start: float | int = 0): float | int",
-    "divmod(a: float | int, b: float | int): tuple[int, float]"
+    "divmod(a: float | int, b: float | int, /): tuple[int, float]"
   ],
   "random": [
     "choice(seq: collections.abc.Sequence): Any",
-    "shuffle(seq: collections.abc.Sequence): None",
+    "shuffle(x: collections.abc.Sequence): None",
     "randrange(start: int, stop: int, step: int=1, /): int",
     "randint(a: int, b: int): int",
-    "getrandbits(k: int): int"
+    "getrandbits(k: int, /): int"
   ],
   "math": [
     "e: numbers.Number",
@@ -41,7 +41,7 @@
   "class float(numbers.Real)": [
     "__init__(self, value: float | str = 0.0, /): None",
     "as_integer_ratio(self): tuple[int, int]",
-    "fromhex(cls, string: str): float // {}.fromhex(___)",
+    "fromhex(cls, string: str, /): float",
     "hex(): str",
     "is_integer(self): bool"
   ],

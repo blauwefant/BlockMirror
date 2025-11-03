@@ -629,6 +629,7 @@ class PythonParameters extends Array {
           positional = false;
         } else {
           let isSelfOrCls = argIndex === 0 && (parameter === "self" || parameter === "cls")
+
           let pythonParameter = new PythonParameter(
               pythonFunction,
               parameter,

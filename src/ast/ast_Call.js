@@ -173,16 +173,15 @@ Blockly.Blocks['ast_Call'] = {
         }
         return "";
     },
-    updateShapeOfMessage: function() {
+    updateShapeOfMessage: function(fromLibrary) {
       let messageInput = this.getInput('MESSAGE_INPUT')
 
-      if (this.fromLibrary_ === "") {
+      if (!fromLibrary) {
         this.setFieldValue(this.message_ + this.postmessage_ + " (", "MESSAGE");
         messageInput.removeField('MESSAGE_NAME', true)
         messageInput.removeField('MESSAGE_POST', true)
       } else {
         this.setFieldValue(this.message_, "MESSAGE");
-        let fromLibrary = this.workspace.libraries.resolve(this.fromLibrary_);
 
         if (fromLibrary.labels.length === 1) {
           this.setFieldValue(this.message_ + fromLibrary.label + this.postmessage_ + " (", "MESSAGE");
@@ -200,11 +199,12 @@ Blockly.Blocks['ast_Call'] = {
         }
       }
     },
-    updateShapeOfArguments() {
-        // Process arguments
-        let drawnArgumentCount = this.getDrawnArgumentCount_();
+    updateShapeOfArguments(fromLibrary) {
+      // Process arguments
+      let drawnArgumentCount = this.getDrawnArgumentCount_();
+      let translateArgumentLabel = fromLibrary ? (item => fromLibrary.pythonModule.library.translate(item, item)) : (item => item)
 
-        for (let i = 0; i < drawnArgumentCount; i++) {
+      for (let i = 0; i < drawnArgumentCount; i++) {
             let argument = this.arguments_[i];
             let argumentName = this.parseArgument_(argument);
             let argumentNames = []
@@ -221,27 +221,32 @@ Blockly.Blocks['ast_Call'] = {
             if (field) {
                 if (argumentNames.length > 1) {
                     if (field instanceof Blockly.FieldLabel) {
-                        field = new Blockly.FieldDropdown(argumentNames.map(item => [item, item]));
+                        field = new Blockly.FieldDropdown(argumentNames.map(item => [
+                          translateArgumentLabel(item), item]
+                        ));
                         let input = input.getInput('ARG' + i)
                         input.removeField('ARGNAME' + i);
                         input.insertFieldAt(0, field);
                     } else {
-                        field.setOptions(argumentNames.map(item => [item, item]));
+                        field.setOptions(argumentNames.map(item => [translateArgumentLabel(item), item]));
                     }
+                    field.setValue(argumentName, false);
                 } else if (!(field instanceof Blockly.FieldLabel)) {
-                    field = new Blockly.FieldLabel(argumentName);
+                    let label = postfix === "=" ? translateArgumentLabel(argumentName) : argumentName;
+                    field = new Blockly.FieldLabel(label);
                     let input = input.getInput('ARG' + i)
                     input.removeField('ARGNAME' + i);
                     input.insertFieldAt(0, field);
                 }
-                field.setValue(argumentName, false);
             } else {
                 // Add new input.
                 // For now, this assumes the function definition does not change.
                 if (argumentNames.length > 1) {
-                    field = new Blockly.FieldDropdown(argumentNames.map(item => [item, item]))
+                  field = new Blockly.FieldDropdown(argumentNames.map(item => [translateArgumentLabel(item), item]))
+                } else if (postfix === '=') {
+                  field = new Blockly.FieldLabel(translateArgumentLabel(argumentName));
                 } else {
-                    field = new Blockly.FieldLabel(argumentName);
+                  field = new Blockly.FieldLabel(argumentName);
                 }
                 postfixField = new Blockly.FieldLabel(postfix);
                 this.appendValueInput('ARG' + i)
@@ -271,8 +276,10 @@ Blockly.Blocks['ast_Call'] = {
             this.removeInput('FUNC');
         }
 
-        this.updateShapeOfMessage();
-        this.updateShapeOfArguments();
+        let fromLibrary = (this.fromLibrary_ === "" ? null : this.workspace.libraries.resolve(this.fromLibrary_));
+
+        this.updateShapeOfMessage(fromLibrary);
+        this.updateShapeOfArguments(fromLibrary);
         let i = this.getDrawnArgumentCount_();
 
         // Closing parentheses
@@ -510,7 +517,14 @@ python.pythonGenerator.forBlock['ast_Call'] = function(block, generator) {
         if (argument.startsWith('KWARGS:')) {
             args.push("**" + value);
         } else if (argument.startsWith('KEYWORD:')) {
-            let keyword = block.getFieldValue('ARGNAME' + i);
+            let keyword;
+
+            if (block.getField('ARGNAME' + i) instanceof Blockly.FieldLabel) {
+              keyword = argument.substring(8);
+            } else {
+              keyword = block.getFieldValue('ARGNAME' + i);
+            }
+
             args.push(keyword + "=" + value);
         } else {
             args.push(value);
