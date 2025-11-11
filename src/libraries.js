@@ -774,7 +774,13 @@ class PythonFunction {
       this.name = this.names[0];
       this.label = this.name;
       this.pythonModule = pythonModuleOrFunction;
-      let indexOfTypeHint = signature.indexOf(":", signature.indexOf(")") + 1);
+      let indexOfStart = signature.indexOf(")") + 1
+      let indexOfTypeHint = signature.indexOf("->", indexOfStart);
+
+      if (indexOfTypeHint < 0) {
+        indexOfTypeHint = signature.indexOf(":", indexOfStart);
+      }
+
       this.typeHint = indexOfTypeHint < 0 ? null : new PythonTypeHint(
         this.pythonModule.library.libraries,
         signature.substring(indexOfTypeHint + 1),
