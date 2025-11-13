@@ -148,4 +148,7 @@ Custom field factory functions are not yet available for all parameter types. Cu
 - Tuples cannot yet be passed as individual arguments instead.
 - Skipped some: pen, color, Filling, Visibility, Appearance and most that come after this
 - `setup`: Support startx, starty arguments.
-
+- Missing functions:
+  - addshape register_shape(name, shape=None): None
+  - turtles
+- No object-oriented approach implemented (yet)

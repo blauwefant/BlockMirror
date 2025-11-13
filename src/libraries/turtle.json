@@ -19,7 +19,7 @@
         "fieldFactory": "BlockMirrorTextToBlocks.turtleColorField"
       },
         "forward fd(amount: float): None // move turtle forward by(50)",
-        "backward bd(amount: float): None // move turtle backward by(50)",
+        "backward bd back(amount: float): None // move turtle backward by(50)",
         "left lt(angle: turtle._AngleLeft): None // turn turtle left by(90)",
         "right rt(angle: turtle._AngleRight): None // turn turtle right by(90)",
         "goto setpos setposition(x: float, y: float | None = None): None // move turtle to position(0, 0)",
@@ -58,6 +58,7 @@
         "pensize(width: float | None = None): float | None // set or get the pen size",
         "isdown(): bool // check if the pen is down",
 
+        "bgcolor(color: turtle._Color | None = None): turtle._Color | None // set or get the background color('green')",
         "pencolor(color: turtle._Color | None = None): turtle._Color | None // set or get the pen color('blue')",
         "fillcolor(color: turtle._Color | None = None): turtle._Color | None // set or get the fill color('yellow')",
 
